@@ -1,0 +1,50 @@
+The access flags recognized by ChanServ are described below. In order to set a flag, you must
+have Write Access to the ACCESS list (A flag). Some flags will also require an addition flag to
+set, which is noted in [square brackets].
+
+F   Permanent Founder of the channel. This may not be toggled directly.
+f   Co-Founder. [F]
+a   Read Access to the ACCESS list.
+A   Write Access to the ACCESS list [f].
+v   Voice. User may use the VOICE and DEVOICE commands on himself. [V]
+V   Voice Manager. User may use the VOICE and DEVOICE commands on anyone. [h]
+q   Quiet. User may not be voiced on the channel. [V]
+Q   SuperQuiet. As q, but if supported, the user will also be silenced on the channel. [h]
+h   HalfOp. User may use the HALFOP and DEHALFOP commands on himself. [H]
+H   HalfOp Manager. User may use the HALFOP and DEHALFOP commands on anyone. [o]
+D   DeHalfOp. User may not be halfopped on the channel. [o]
+o   Op. User may use the OP and DEOP commands on himself. [O]
+O   Op Manager. User may use the OP and DEOP commands on anyone. [p]
+d   DeOp. User may not be opped on the channel. [p]
+p   Protected. User may use the PROTECT and DEPROTECT commands on himself. [P]
+P   Protected User Manager. User may use the PROTECT and DEPROTECT commands on anyone. [n or f]
+n   Owner. User may use the OWNER and DEOWNER commands on himself. [N]
+N   Owner Manager. User may use the OWNER and DEOWNER commands on anyone. [F]
+k   User may use the KICK command. [h]
+K   Banned. User may not join the channel. [B]
+b   User may use the BAN command. [h]
+B   User may view and edit the AKICK list. [f]
+e   User is exempt from bans. ChanServ will use the channel BanEx (+e) list if supported. [E]
+E   User may view and edit the EXEMPTS list. [f]
+i   User may use the INVITE command on himself. [I]
+I   User may use the INVITE command on anyone, and may edit the INVITES list. [f]
+m   User may use the MODE command. [f]
+c   User may use the CLEAR command. [f] Subcommands of CLEAR dependant on other flags.
+t   User may use the TOPIC command. [T]
+T   User may set the +t flag. [f]
+g   User may use the GETKEY command. [G]
+G   User may set the +g flag. [f]
+u   User may use the UNBAN command on humself. [U]
+U   User may use the UNBAN command on anyone. [f]
+M   User may send MEMOs to the channel. [f]
+C   User may use Public Commands.
+x   User may use BotServ BADWORDS and SET. [f]
+X   User may use BotServ SAY and ACT. [O]
+y   BotServ bot will display a greet message on join. [f]
+Y   User is immune to BotServ kickers. [f]
+z   User may use INFO to see all information about the channel. [f]
+Z   User use of KICK or BAN does not have message prefixed. [f]
+s   User may use the SET command. [f]
+S   Not implemented yet. [f]
+l   User may use LOCK and UNLOCK of single ACCESS entries. [f]
+L   User may use LOCK and UNLOCK of single AKICK, EXMEMPTS, or INVITES entries. [f]
