@@ -209,7 +209,7 @@ NextLine:
                             Call basFunctions.LogEvent(basMain.LogTypeError, Replies.ConfigFileUnexpectedConfVersion)
                         End If
                     Case "SERVERTYPE"
-                        basMain.Config.ServerType = DirectiveVal
+                        basMain.Config.ServerType = UCase(DirectiveVal)
                     Case "UPLINKHOST"
                         basMain.Config.UplinkHost = DirectiveVal
                     Case "UPLINKPORT"
