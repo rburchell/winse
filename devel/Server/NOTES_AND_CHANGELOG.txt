@@ -40,6 +40,7 @@ Services:
 [-----------------------------------]
 
 24/07/2004 - Jason
+ -[MsS][---] Coded MassServ OPERJOIN
  -[RS] [---] Added rootserv INJECT, Services Master can INJECT to non-ircop services
  -[--] [---] DENY ADD now also automaticly enforces all active denys.
  -[AG] [Fix] Bugfix for DENY on Unreal

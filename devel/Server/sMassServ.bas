@@ -46,6 +46,8 @@ Public Sub MassservHandler(Cmd As String, Sender As Integer)
             Call sMassServ.sJoin(Sender, Parameters)
         Case "SERVPART"
             Call sMassServ.sPart(Sender, Parameters)
+        Case "OPERJOIN"
+            Call sMassServ.OperJoin(Sender, Parameters)
         Case Else
             Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.UnknownCommand)
     End Select
@@ -60,7 +62,7 @@ Private Sub Help(Sender As Integer, Cmd)
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  SERVPART     #<chan>        Make all Services bots part a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLBOTJOIN  #<chan>        Make all bots join a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLBOTPART  #<chan>        Make all bots part a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLOPERJOIN #<chan>        Make all opers join a channel")
+    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  OPERJOIN #<chan>        Make all opers join a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  -----------------------------------------")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *MMODE   #<chan>  <mode>    Mass Mode a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *MKICK   #<chan>  <reason>  Kick all users from a channel")
@@ -77,6 +79,18 @@ End Sub
 
 Private Sub sPart(Sender As Integer, Channel As String)
     Call basFunctions.PartServicesFromChannel(Sender, Channel)
+End Sub
+
+Private Sub OperJoin(Sender As Integer, Channel As String)
+Dim l As Integer
+For l = LBound(Users) To UBound(Users)
+  If Not Users(l).Nick = "" Then
+    If InStr(Users(l).Modes, "o") Then
+      Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+      Call basFunctions.SendData("SVSJOIN " & Users(l).Nick & " " & Channel)
+    End If
+  End If
+Next l
 End Sub
 
 'Callin subs for channel mode changes
