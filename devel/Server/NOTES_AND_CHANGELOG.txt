@@ -41,7 +41,8 @@ Services:
 
 26/07/2004 - Jason
  -[RS] [---] RootServ Inject can inject to Oper services with the exception of
-             AdminServ and Agent if the proper config directive is set
+             AdminServ and Agent if the proper config directive is set and the
+             user has the "I" (AccFlagCanRootServSuperInject) flag
  -[RS] [---] RootServ Inject is no longer restricted to Masters, but to its own flag
  -[CO] [---] Added a permissions flag for recieving services notices by
              NotifyAllUsersWithServicesAccess.  Only users with flag "g"
