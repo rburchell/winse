@@ -113,17 +113,17 @@ Private Sub Register(Sender As Integer, ChannelToRegister As String, Password As
     End If
 
     With basMain.Channels(ChanIndex)
-        Call basFileIO.SetInitEntry("channels.db", ChannelToRegister, "Topic", "Registered by " & basMain.Users(Sender).Nick)
-        Call basFileIO.SetInitEntry("channels.db", ChannelToRegister, "TopicSetBy", basMain.Service(0).Nick)
-        Call basFileIO.SetInitEntry("channels.db", ChannelToRegister, "Founder", basMain.Users(Sender).Nick)
-        Call basFileIO.SetInitEntry("channels.db", ChannelToRegister, "FounderPassword", Password)
-        Call basFileIO.SetInitEntry("channels.db", ChannelToRegister, "MLock", "+ntr")
+        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "Topic", "Registered by " & basMain.Users(Sender).Nick)
+        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "TopicSetBy", basMain.Service(0).Nick)
+        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "Founder", basMain.Users(Sender).Nick)
+        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "FounderPassword", Password)
+        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "MLock", "+ntr")
     End With
     Dim TotalRegisteredChannels As Variant
-    TotalRegisteredChannels = CDec(basFileIO.GetInitEntry("index.db", "Totals", "TotalRegisteredChannels", -1))
+    TotalRegisteredChannels = CDec(basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredChannels", -1))
     TotalRegisteredChannels = CStr(TotalRegisteredChannels + 1)
-    Call basFileIO.SetInitEntry("index.db", "Totals", "TotalRegisteredChannels", CStr(TotalRegisteredChannels))
-    Call basFileIO.SetInitEntry("index.db", "Channels", "RegisteredChannel" & TotalRegisteredChannels, ChannelToRegister)
+    Call basFileIO.SetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredChannels", CStr(TotalRegisteredChannels))
+    Call basFileIO.SetInitEntry(App.Path & "\databases\index.db", "Channels", "RegisteredChannel" & TotalRegisteredChannels, ChannelToRegister)
     
     'Channel registered. Get cs to set the topic :P
     Call basFunctions.SendData(":" & basMain.Service(0).Nick & " TOPIC " & ChannelToRegister & " :Registered by " & basMain.Users(Sender).Nick)

@@ -66,7 +66,7 @@ End Sub
 Public Function IsChanRegistered(ByVal ChanName As String) As Boolean
     Dim Password As String
     'If we have a password, we must be registered ;)
-    Password = basFileIO.GetInitEntry("channels.db", UCase(ChanName), "Password")
+    Password = basFileIO.GetInitEntry(App.Path & "\databases\channels.db", UCase(ChanName), "Password")
     'Booleans rock :) - aquanight
     'I always have to look at them for a few seconds to understand them :( :P --w00t
     IsChanRegistered = (Password <> "")
@@ -75,7 +75,7 @@ End Function
 Public Function IsNickRegistered(ByVal NickName As String)
     Dim Password As String
     'If we have a password, we must be registered ;)
-    Password = basFileIO.GetInitEntry("users.db", UCase(NickName), "Password")
+    Password = basFileIO.GetInitEntry(App.Path & "\databases\users.db", UCase(NickName), "Password")
     'Booleans rock :) - aquanight
     IsNickRegistered = (Password <> "")
 End Function

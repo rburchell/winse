@@ -109,7 +109,7 @@ Private Function Flags(Sender As Integer, Action As String, TargetNick As String
             End If
             basMain.Users(UserID).AbuseTeam = True
             If basFunctions.IsNickRegistered(basMain.Users(UserID).Nick) Then
-                Call basFileIO.SetInitEntry("users.db", basMain.Users(Sender).Nick, "AbuseTeam", "True")
+                Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", basMain.Users(Sender).Nick, "AbuseTeam", "True")
             End If
             Call basFunctions.SendMessage(basMain.Service(5).Nick, basFunctions.ReturnUserName(Sender), Replace(Replies.AdminServUserAddToAbuseTeam, "%n", TargetNick))
         Case "ABUSETEAMDEL"
@@ -120,7 +120,7 @@ Private Function Flags(Sender As Integer, Action As String, TargetNick As String
             End If
             basMain.Users(UserID).AbuseTeam = False
             If basFunctions.IsNickRegistered(basMain.Users(UserID).Nick) Then
-                Call basFileIO.SetInitEntry("users.db", basMain.Users(Sender).Nick, "AbuseTeam", "True")
+                Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", basMain.Users(Sender).Nick, "AbuseTeam", "True")
             End If
             Call basFunctions.SendMessage(basMain.Service(5).Nick, basFunctions.ReturnUserName(Sender), Replace(Replies.AdminServUserAddToAbuseTeam, "%n", TargetNick))
     End Select
@@ -149,7 +149,7 @@ Private Function Access(Sender As Integer, TargetNick As String, NewAccess As St
         Successful = False
     End If
     If basFunctions.IsNickRegistered(TargetNick) Then
-        Call basFileIO.SetInitEntry("users.db", TargetNick, "Access", CStr(Users(TargetIndex).Access))
+        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", TargetNick, "Access", CStr(Users(TargetIndex).Access))
     Else
         Successful = False
     End If

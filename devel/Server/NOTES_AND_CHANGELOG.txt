@@ -26,6 +26,14 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 30/07/2004 - aquanight
+  -[CO] [---] Moved ParseConfigurationFile to basMain.
+  -[DB] [---] Added a few things to the DB API.
+  -[DB] [---] Increased the abstraction level of the DB API by making
+              basFileIO not dependent on the application directory.
+              In other words, filenames to basFileIO and basDBAccess
+              now require full paths or paths relative to the working
+              directory (CurDir()).
  29/07/2004 - aquanight
   -[--] [---] Did some more cleanup, removing code that was no longer
               used.

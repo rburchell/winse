@@ -1,6 +1,10 @@
 Attribute VB_Name = "basDBAccess"
 Option Explicit
 
+'Change this to True if you want to require explicit
+'creation of records or fields.
+#Const RequireCreate = True
+
 'Okay, I'm redoing this whole data access thing... I
 'hope it will make this easier to move to MySQL later
 'on :) .
@@ -62,27 +66,45 @@ Public Sub SaveDatabase(ByVal dbFile As String, ByRef dbIn As Database, Optional
     End With
 End Sub
 
-Public Sub AddRecordToDB(ByRef dbInOut As Database, ByVal RecordName As String)
+Public Function AddRecordToDB(ByRef dbInOut As Database, ByVal RecordName As String) As Long
     With dbInOut
-        ReDim Preserve .Records(UBound(.Records) + 1)
+        If CountRecords(dbInOut) = 0 Then
+            ReDim .Records(0)
+        Else
+            ReDim Preserve .Records(UBound(.Records) + 1)
+        End If
         .Records(UBound(.Records)).Name = RecordName
+        AddRecordToDB = UBound(.Records)
     End With
-End Sub
+End Function
 
-Public Sub AddFieldToRecord(ByRef dbInOut As Database, ByVal RecordName As String, ByVal FieldName As String, Optional ByVal InitialValue As Variant = Empty)
+Public Function AddFieldToRecord(ByRef dbInOut As Database, ByVal RecordName As String, ByVal FieldName As String, Optional ByVal InitialValue As Variant = Empty) As Long
     Dim i As Integer
     With dbInOut
         For i = 0 To UBound(.Records)
             If .Records(i).Name = RecordName Then
                 With .Records(i)
-                    ReDim Preserve .Fields(UBound(.Fields) + 1)
+                    If CountFields(dbInOut, i) = 0 Then
+                        ReDim .Fields(0)
+                    Else
+                        ReDim Preserve .Fields(UBound(.Fields) + 1)
+                    End If
                     .Fields(UBound(.Fields)).Name = FieldName
-                    .Fields(UBound(.Fields)).Value = InitialValue
+                    If IsObject(InitialValue) Then
+                        Set .Fields(UBound(.Fields)).Value = InitialValue
+                    Else
+                        Let .Fields(UBound(.Fields)).Value = InitialValue
+                    End If
+                    AddFieldToRecord = UBound(.Fields)
                 End With
+                'We found the record, so don't loop out,
+                'just break.
+                Exit Function
             End If
         Next i
+        Err.Raise 9, "Record '" + RecordName + "' couldn't be found."
     End With
-End Sub
+End Function
 
 Public Property Get RecordField(ByRef dbInOut As Database, ByVal RecordName As String, ByVal FieldName As String) As Variant
     With dbInOut
@@ -110,7 +132,7 @@ Public Property Get RecordField(ByRef dbInOut As Database, ByVal RecordName As S
             End If
         Next idx
         'No go.
-        Err.Raise 9, , "No such section '" + RecordName + "'."
+        Err.Raise 9, , "No such record '" + RecordName + "'."
     End With
 End Property
 
@@ -130,26 +152,22 @@ Public Property Let RecordField(ByRef dbInOut As Database, ByVal RecordName As S
                             Exit Property
                         End If
                     Next idx2
-                    'No such field, so create it.
-                    ReDim Preserve .Fields(UBound(.Fields) + 1)
-                    With .Fields(UBound(.Fields))
-                        .Name = FieldName
-                        .Value = NewValue
-                    End With
-                    Exit Property
+                    'No such field, so create it/error.
+#If RequireCreate Then
+                    Err.Raise 9, , "Field '" + FieldName + "' is not defined in Record '" + RecordName + "'."
+#Else
+                    AddFieldToRecord dbInOut, RecordName, FieldName, NewValue
+#End If
                 End With
             End If
         Next idx
-        'No such record, so create it.
-        ReDim Preserve .Records(UBound(.Records) + 1)
-        With .Records(UBound(.Records))
-            .Name = RecordName
-            ReDim .Fields(0)
-            With .Fields(0)
-                .Name = FieldName
-                .Value = NewValue
-            End With
-        End With
+        'No such record, so create it/error.
+#If RequireCreate Then
+        Err.Raise 9, , "No such record '" + RecordName + "'."
+#Else
+        AddRecordToDB dbInOut, RecordName
+        AddFieldToRecord dbInOut, RecordName, FieldName, NewValue
+#End If
     End With
 End Property
 
@@ -169,26 +187,22 @@ Public Property Set RecordField(ByRef dbInOut As Database, ByVal RecordName As S
                             Exit Property
                         End If
                     Next idx2
-                    'No such field, so create it.
-                    ReDim Preserve .Fields(UBound(.Fields) + 1)
-                    With .Fields(UBound(.Fields))
-                        .Name = FieldName
-                        Set .Value = NewValue
-                    End With
-                    Exit Property
+                    'No such field, so create it/error.
+#If RequireCreate Then
+                    Err.Raise 9, , "Field '" + FieldName + "' is not defined in Record '" + RecordName + "'."
+#Else
+                    AddFieldToRecord dbInOut, RecordName, FieldName, NewValue
+#End If
                 End With
             End If
         Next idx
         'No such record, so create it.
-        ReDim Preserve .Records(UBound(.Records) + 1)
-        With .Records(UBound(.Records))
-            .Name = RecordName
-            ReDim .Fields(0)
-            With .Fields(0)
-                .Name = FieldName
-                Set .Value = NewValue
-            End With
-        End With
+#If RequireCreate Then
+        Err.Raise 9, , "No such record '" + RecordName + "'."
+#Else
+        AddRecordToDB dbInOut, RecordName
+        AddFieldToRecord dbInOut, RecordName, FieldName, NewValue
+#End If
     End With
 End Property
 
@@ -246,3 +260,42 @@ Public Sub DeleteField(ByRef dbInOut As Database, ByVal RecordName As String, By
     End If
     'PHEW! :>
 End Sub
+
+Public Function CountRecords(ByRef dbIn As Database) As Long
+    On Error Resume Next
+    Dim lRet As Long
+    'If this errors, lRet should remain 0, and we can.
+    lRet = UBound(dbIn.Records) + 1
+    CountRecords = lRet
+End Function
+
+Public Function IndexOfRecord(ByRef dbIn As Database, ByVal Name As String) As Long
+    Dim idx As Long
+    For idx = 0 To CountRecords(dbIn) - 1
+        If dbIn.Records(idx).Name = Name Then
+            IndexOfRecord = idx
+            Exit Function
+        End If
+    Next idx
+    IndexOfRecord = -1
+End Function
+
+Public Function CountFields(ByRef dbIn As Database, ByVal RecordIndex As Long) As Long
+    Dim lRet As Long
+    If RecordIndex < 0 Then Error 5
+    On Error Resume Next
+    lRet = UBound(dbIn.Records(RecordIndex).Fields) + 1
+    CountFields = lRet
+End Function
+
+Public Function IndexOfField(ByRef dbIn As Database, ByVal RecordIndex As Long, ByVal FieldName As String) As Long
+    Dim idx As Long
+    If RecordIndex < 0 Then Error 5
+    For idx = 0 To CountFields(dbIn, RecordIndex) - 1
+        If dbIn.Records(RecordIndex).Fields(idx).Name = FieldName Then
+            IndexOfField = idx
+            Exit Function
+        End If
+    Next idx
+    IndexOfField = -1
+End Function

@@ -106,13 +106,13 @@ Private Sub Set_(Sender As Integer, Cmd)
                     basMain.Users(Sender).MsgStyle = False
                     Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.NickServCommunicationPrivmsg)
                     If basFunctions.IsNickRegistered(basMain.Users(Sender).Nick) Then
-                        Call basFileIO.SetInitEntry("users.db", basMain.Users(Sender).Nick, "MsgStyle", "False")
+                        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", basMain.Users(Sender).Nick, "MsgStyle", "False")
                     End If
                 Case "NOTICE"
                     basMain.Users(Sender).MsgStyle = True
                     Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.NickServCommunicationNotice)
                     If basFunctions.IsNickRegistered(basMain.Users(Sender).Nick) Then
-                        Call basFileIO.SetInitEntry("users.db", basMain.Users(Sender).Nick, "MsgStyle", "True")
+                        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", basMain.Users(Sender).Nick, "MsgStyle", "True")
                     End If
                 Case Else
                     Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.IncorrectParam)
@@ -122,7 +122,7 @@ End Sub
 
 Private Sub List(Sender As Integer)
     Dim TotalRegisteredNicks As Double
-    TotalRegisteredNicks = CDec(basFileIO.GetInitEntry("index.db", "Totals", "TotalRegisteredNicks", -1))
+    TotalRegisteredNicks = CDec(basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredNicks", -1))
     If TotalRegisteredNicks = -1 Then
         'No registered nicks
         Exit Sub
@@ -132,10 +132,10 @@ Private Sub List(Sender As Integer)
         Dim i As Integer
         For i = 0 To TotalRegisteredNicks
             'DO NOT SHOW ABUSE TEAM! ITS MEANT TO BE SECRET!
-            CurrentNick = basFileIO.GetInitEntry("index.db", "Nicks", "RegisteredNick" & i)
-            Access = basFileIO.GetInitEntry("users.db", CStr(CurrentNick), "Access")
-            HideEMail = basFileIO.GetInitEntry("users.db", CStr(CurrentNick), "HideEmail")
-            EMail = basFileIO.GetInitEntry("users.db", CStr(CurrentNick), "Email")
+            CurrentNick = basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Nicks", "RegisteredNick" & i)
+            Access = basFileIO.GetInitEntry(App.Path & "\databases\users.db", CStr(CurrentNick), "Access")
+            HideEMail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", CStr(CurrentNick), "HideEmail")
+            EMail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", CStr(CurrentNick), "Email")
             Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, CStr(CurrentNick))
             Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, " Access: " & Access)
             'need an access check here too...
@@ -164,37 +164,37 @@ Private Sub Register(Sender As Integer, NickToRegister As String, EMail As Strin
         Access = .Access
         HideEMail = .HideEMail
         MsgStyle = .MsgStyle
-        Call basFileIO.SetInitEntry("users.db", NickToRegister, "AbuseTeam", "False")
-        Call basFileIO.SetInitEntry("users.db", NickToRegister, "Access", Access)
-        Call basFileIO.SetInitEntry("users.db", NickToRegister, "Email", EMail)
-        Call basFileIO.SetInitEntry("users.db", NickToRegister, "HideEmail", HideEMail)
-        Call basFileIO.SetInitEntry("users.db", NickToRegister, "MsgStyle", MsgStyle)
-        Call basFileIO.SetInitEntry("users.db", NickToRegister, "Password", Password)
+        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "AbuseTeam", "False")
+        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "Access", Access)
+        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "Email", EMail)
+        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "HideEmail", HideEMail)
+        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "MsgStyle", MsgStyle)
+        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "Password", Password)
         Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replace(Replies.NickServRegisterOK, "%p", Password))
     End With
     Dim TotalRegisteredNicks As Variant
-    TotalRegisteredNicks = CDec(basFileIO.GetInitEntry("index.db", "Totals", "TotalRegisteredNicks", -1))
+    TotalRegisteredNicks = CDec(basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredNicks", -1))
     TotalRegisteredNicks = CStr(TotalRegisteredNicks + 1)
-    Call basFileIO.SetInitEntry("index.db", "Totals", "TotalRegisteredNicks", CStr(TotalRegisteredNicks))
-    Call basFileIO.SetInitEntry("index.db", "Nicks", "RegisteredNick" & TotalRegisteredNicks, NickToRegister)
+    Call basFileIO.SetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredNicks", CStr(TotalRegisteredNicks))
+    Call basFileIO.SetInitEntry(App.Path & "\databases\index.db", "Nicks", "RegisteredNick" & TotalRegisteredNicks, NickToRegister)
 End Sub
 
 Public Function Identify(Sender As Integer, NickToIdentify As String, Password As String)
     Dim PasswordonFile As String
-    PasswordonFile = basFileIO.GetInitEntry("users.db", NickToIdentify, "Password")
+    PasswordonFile = basFileIO.GetInitEntry(App.Path & "\databases\users.db", NickToIdentify, "Password")
     If PasswordonFile = "" Then
         Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationNotRegistered)
         Exit Function
     End If
     If Password = PasswordonFile Then
         With basMain.Users(Sender)
-            .AbuseTeam = basFileIO.GetInitEntry("users.db", .Nick, "AbuseTeam")
-            .Access = IIf(IsDeny(Sender), "", basFileIO.GetInitEntry("users.db", .Nick, "Access"))
+            .AbuseTeam = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "AbuseTeam")
+            .Access = IIf(IsDeny(Sender), "", basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "Access"))
             ' ^ IIf added to remove services access if the user has been agent DENYed
-            .EMail = basFileIO.GetInitEntry("users.db", .Nick, "Email")
-            .HideEMail = basFileIO.GetInitEntry("users.db", .Nick, "HideEmail")
-            .MsgStyle = basFileIO.GetInitEntry("users.db", .Nick, "MsgStyle")
-            .Password = basFileIO.GetInitEntry("users.db", .Nick, "Password")
+            .EMail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "Email")
+            .HideEMail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "HideEmail")
+            .MsgStyle = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "MsgStyle")
+            .Password = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "Password")
             'Check if they are a master, just in case their permissions got fiddled with.
             If UCase(.IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
                 SetFlags Sender, "+" & AccFlagMaster ' Not AccFullAccess, He might not want to recieve Services Notices (flag g)
