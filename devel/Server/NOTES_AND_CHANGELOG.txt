@@ -39,6 +39,15 @@ Services:
              All [AL]
 [-----------------------------------]
 
+25/07/2004 - aquanight
+ -[--] [---] I got enough complaints that COMSocket was difficult to
+             register (you have to use the .NET SDK's RegAsm tool
+             instead of the usual regsvr32), so I made an MSI installer
+             that will sort things out.
+             Location: COMSocket\COMSocketInstaller\Debug\Setup.exe
+             Also added is the Visual Studio .NET 2003 Project File
+             to generate the MSI. Naturally building this will need to
+             build the COMSocket DLL itself, which will register it ;p .
 25/07/2004
  -[AL] [Fix] Since SVS2MODE only works on Unreal, made checks for ServerType
 25/07/2004 - aquanight
