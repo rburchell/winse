@@ -28,6 +28,9 @@ Public Const LogTypeNotice = "NOTICE"
 Public Const LogTypeDebug = "DEBUG"
 
 Public Type ConfigVars
+    ServerType As String
+    '^Added this so we can use better ways of doing
+    ' things if we have the right IRCd.  - Jason
     UplinkHost As String
     UplinkName As String
     UplinkPort As String
@@ -36,7 +39,8 @@ Public Type ConfigVars
     ServerName As String
     'If it could be byte... I don't care, but NUMERICs
     'really should be... numeric. :P - aquanight
-    ServerNumeric As Integer 'Could be byte??
+    ServerNumeric As Byte
+    ' Changed to byte, 255 is the max, so there is no need for anything higher - Jason
     ServerDescription As String
     ServicesMaster  As String
     DefaultMessageType As Boolean

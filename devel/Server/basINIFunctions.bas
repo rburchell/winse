@@ -157,6 +157,7 @@ Public Sub ParseConfigurationFile(File As String)
     
     'Initialise directives.
     Directives.Add "CONFIGVER"
+    Directives.Add "SERVERTYPE"
     Directives.Add "UPLINKHOST"
     Directives.Add "UPLINKPORT"
     Directives.Add "UPLINKNAME"
@@ -207,6 +208,8 @@ NextLine:
                         If DirectiveVal <> "1.0.0.0" Then
                             Call basFunctions.LogEvent(basMain.LogTypeError, Replies.ConfigFileUnexpectedConfVersion)
                         End If
+                    Case "SERVERTYPE"
+                        basMain.Config.ServerType = DirectiveVal
                     Case "UPLINKHOST"
                         basMain.Config.UplinkHost = DirectiveVal
                     Case "UPLINKPORT"
