@@ -26,6 +26,9 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 7/08/2004 - Jason
+  -[AG] [---] Made DENY slightly more efficent, Added DENY ENFORCE
+  -[MsS][---] Added MKILL and CHANKILL, CHANGLINE is on my ToDo list
  03/08/2004 - aquanight / w00t
   -[CO] [---] IT'S A MIRACLE! Due to the benevolent wonders of CVS,
               COMSocket is back and cranking out bytes again. However,
@@ -70,6 +73,8 @@ Services:
   -[CO] [Fix] Added LOADS of replies, used them.
   -[CO] [Fix] Fixed loads of 438 errors on the command dispatcher.
   -[AG] [Fix] Fixed some braindead Jason stuff, like checking for locops, removing netadmin
+ 30/07/2004 - Jason
+  -[MsS][---] Finished MassServ (Except for AllBotJoin AllBotPart as botserv isnt done)
  30/07/2004 - aquanight
   -[CO] [---] Moved ParseConfigurationFile to basMain.
   -[DB] [---] Added a few things to the DB API.
