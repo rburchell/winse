@@ -97,6 +97,9 @@ Public Const NickServLastQuitFarKill = "Killed (%o (%r))"
 'RootServ
 Public Const RootServNeedPermissions = "You do not have sufficent access to use RootServ"
 Public Const RootServInjectNeedPermissions = "You do not have sufficent access to use RootServ Inject"
+Public Const RootServSuperInjectNeedPermissions = "You do not have sufficent access to use RootServ Inject to Oper Services"
+Public Const RootServSuperInjectDisabled = "RootServ Inject to Oper Services is disabled"
+Public Const RootServAbusiveInjectDisabled = "Agent and AdminServ cannot be Injected to because Agent is for AbuseTeam only, and AdminServ controls permissions"
 
 'AdminServ
 Public Const AdminServCantAddCoMaster = "Only Masters can add comasters!"

@@ -97,17 +97,32 @@ Select Case UCase(InjectData(1))
     Call sBotServ.BotservHandler(InjectData(3), TargetID)
 End Select
 If basMain.Config.InjectToOperServices Then
+  If basFunctions.HasFlag(Sender, AccFlagCanRootServSuperInject) Then
+    Select Case UCase(InjectData(1))
+      Case "OPERSERV"
+        Call sOperServ.OperservHandler(InjectData(3), TargetID)
+      Case "ROOTSERV"
+        Call sRootServ.RootservHandler(InjectData(3), TargetID)
+      Case "MASSSERV"
+        Call sMassServ.MassservHandler(InjectData(3), TargetID)
+      Case "HOSTSERV"
+        Call sHostServ.HostservHandler(InjectData(3), TargetID)
+    End Select
+  Else
+    Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServSuperInjectNeedPermissions)
+  End If
+Else
   Select Case UCase(InjectData(1))
-    Case "OPERSERV"
-      Call sOperServ.OperservHandler(InjectData(3), TargetID)
-    Case "ROOTSERV"
-      Call sRootServ.RootservHandler(InjectData(3), TargetID)
-    Case "MASSSERV"
-      Call sMassServ.MassservHandler(InjectData(3), TargetID)
-    Case "HOSTSERV"
-      Call sHostServ.HostservHandler(InjectData(3), TargetID)
+    Case "OPERSERV", "ROOTSERV", "MASSSERV", "HOSTSERV"
+      Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServSuperInjectDisabled)
+    Case "ADMINSERV", "AGENT"
+      Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServSuperInjectDisabled)
   End Select
 End If
+Select Case UCase(InjectData(1))
+  Case "ADMINSERV", "AGENT"
+    Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServAbusiveInjectDisabled)
+End Select
 ' None to AGENT or ADMINSERV for obvious reasons... (Not abuse team? Give yourself more access?)
 End Sub
 
