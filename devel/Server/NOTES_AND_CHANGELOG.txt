@@ -26,7 +26,14 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */\
-
+ 22/11/2004 - aquanight
+  -[CO] [Add] Added IRCdBahamut.cls - protocol class for Bahamut ircds. Of course, we aren't
+              using the protocols yet, but that'll be there soon.
+  -[CO] [Add] Added a few more things to the protocol interface. Until it's finalized, switching
+              to the protocol classes is out of the question :P .
+  -[BS] [Add] Starting work here. Not really much yet.
+  -[CO] [Fix] Fixed some collision yaynesses.
+  -[CO] [Fix] Fixed a few things in the User class.
  21/11/2004 - Jason
   -[HS] [New] Created HostServ.  No security yet, no errors, bad commands just fail, but the basics are there.
  07/11/2004 - aquanight

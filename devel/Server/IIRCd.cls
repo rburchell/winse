@@ -39,7 +39,7 @@ End Sub
 
 'Create a Client ID. This is only used for server-server protocol, and should be formatted how the target
 'IRCd expects it. For example, in IRCu, this would be a 5 character number in Base64. For Unreal, this will
-'be in ASCII format.
+'be in ASCII format. Use vbNullString if CIDs aren't used on the ircd.
 Public Function CreateCID() As String
 
 End Function
@@ -47,12 +47,13 @@ End Function
 'Create a Server ID. This is only used for server-server protocol, and should be formatted how the target
 'IRCd expects it. For example, in IRCu, this would be a 2 character base64 number. For Unreal, this will be
 'in ASCII format. It is preferred that services have a pool of SIDs they can use for servers.
+'Use vbNullString if SIDs aren't used on the ircd.
 Public Function CreateSID() As String
 
 End Function
 
 'Introduce a client on the given server.
-Public Sub IntroduceClient(ByVal Nick As String, ByVal UserName As String, ByVal HostName As String, ByVal RealName, ByVal VHost As String, ByVal UserModes As String, ByVal cid As String, ByVal Server As String)
+Public Sub IntroduceClient(ByVal Nick As String, ByVal UserName As String, ByVal HostName As String, ByVal RealName, ByVal VHost As String, ByVal UserModes As String, ByVal CID As String, ByVal Server As String)
 
 End Sub
 
@@ -76,58 +77,116 @@ End Sub
 'KILL a user.
 'SVSKillOK is True if the KILL reason was not determined by a user (with the sole
 'exception of Agent EXIT).
+'Returns:
+'KILL_NOSUPPORT - IRCd doesn't support KILL (or SVSKILL). If returned for SVSKILL, WinSE will fall back
+'                 to KILL from the server. If returned for KILL, WinSE will try a nick collide.
+'KILL_NODISPOSE - IRCd supports (SVS)KILL but will acknowledge the removal of the chosen client with an
+'                 appropriate message. WinSE will set a timer and if the user is not removed within that time
+'                 will, for SVSKILL, try a standard KILL, or if returned for KILL, a nick collision.
+'KILL_SUPPORTED - (SVS)KILL is supported and does not reply. WinSE will dispose the client.
 Public Function KillUser(ByVal Source As String, ByVal SVSKillOK As Boolean, ByVal User As String, ByVal Reason As String) As KillSupport
 
 End Function
 
 'Force a nickchange. If the protocol does not allow this to be done, the function
-'should return False. When this happens, Nick enforcement will proceed to try KillUser.
+'should return False. When this happens, Nick enforcement will fall back to KillUser.
 Public Function ForceNickChange(ByVal Source As String, ByVal Target As String, ByVal NewNick As String) As Boolean
 
 End Function
 
-'Set the user account name.
-Public Function SetAccount(ByVal Source As String, ByVal Target As String, ByVal Account As String) As Boolean
+'Set a hold on a NICK. IRCds that don't support special methods of holding a nick could just return False
+'and services will fall back to IntroduceUser.
+Public Function HoldNick(ByVal Source As String, ByVal Nick As String) As Boolean
 
 End Function
 
-'Change the user account name.
-Public Function ChangeAccount(ByVal Source As String, ByVal Target As String, ByVal Account As String) As Boolean
+'Release a hold on a NICK. This should return False only if HoldNick returns False. This should do whatever
+'will reverse HoldNick.
+Public Function ReleaseNick(ByVal Source As String, ByVal Nick As String) As Boolean
+
+End Function
+
+'Set a Virtual Host for a user. Return False if this isn't possible.
+Public Function SetVHost(ByVal Source As String, ByVal Nick As String, ByVal VHost As String) As Boolean
+
+End Function
+
+'Set a Virtual Ident (Username) for a user. Return False if this isn't possible.
+Public Function SetVIdent(ByVal Source As String, ByVal Nick As String, ByVal VIdent As String) As Boolean
+
+End Function
+
+'Forcefully change a user's modes. This should return false if it's not possible.
+Public Function SetUserModes(ByVal Source As String, ByVal Nick As String, ByVal Modes As String) As Boolean
+
+End Function
+
+'Set a hold on a channel. IRCds that don't support special methods of holding a channel could just make
+'the source join and lock down the channel. Protocol class may assume the channel is empty.
+Public Sub HoldChannel(ByVal Source As String, ByVal Channel As String)
+
+End Sub
+
+'Release a hold on a channel. Should just generally reverse HoldChannel.
+Public Sub ReleaseChannel(ByVal Source As String, ByVal Channel As String)
+
+End Sub
+
+'Set NOOP on the server. If the server doesn't support this return False and WinSE will fall back to
+'manually killing anyone who /oper's on that server.
+Public Function SetServerNoOpers(ByVal Source As String, ByVal Server As String) As Boolean
+
+End Function
+
+'Unset NOOP on the server. Return False only if SetServerNoOpers is False. If this is False, but Set* was
+'True, WinSE will fall back to RemoteRehash.
+Public Function UnsetServerNoOpers(ByVal Source As String, ByVal Server As String) As Boolean
+
+End Function
+
+'Set the user account name for the first time. Return False if this can't be done.
+Public Function SetAccount(ByVal Source As String, ByVal Target As String, ByVal account As String) As Boolean
+
+End Function
+
+'Change the user account name. Return False if this can't be done. WinSE will not allow users to change the
+'identified nick if this is False and SetAccount returned True.
+Public Function ChangeAccount(ByVal Source As String, ByVal Target As String, ByVal account As String) As Boolean
 
 End Function
 
 'Add a Network-Wide Temporary KLINE, also called a GLINE. Return False if the IRCd
-'doesn't allow this. Expiry is in seconds.
+'doesn't allow this. Expiry is in seconds. If False, WinSE will fall back to AddPErmNetworkUserhostBan.
 Public Function AddTempNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
 
 End Function
 
 'Add a Network-Wide Permanent KLINE, also called a GLINE. Return False if the IRCd
-'doesn't allow this.
+'doesn't allow this. If False, WinSE will fall back to manually KILLing matching users.
 Public Function AddPermNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
 
 End Function
 
 'Remove a Network-Wide KLINE, also called a GLINE. Return False if the IRCd doesn't
-'allow this.
+'allow this. Return False only if both Add* methods returned False.
 Public Function DeleteNetworkUserhostBan(ByVal Source As String, ByVal Mask As String) As Boolean
 
 End Function
 
 'Add a Network-Wide Temporary ZLINE, also called a GZLINE. Return False if the IRCd
-'doesn't allow this. Expiry is in seconds.
+'doesn't allow this. Expiry is in seconds. If False, WinSE will fall back to Perm.
 Public Function AddTempNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
 
 End Function
 
 'Add a Network-Wide Permanent ZLINE, also called a GZLINE. Return False if the IRCd
-'doesn't allow this.
+'doesn't allow this. If False, WinSE will try Userhost with User = * and Host = IP.
 Public Function AddPermNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
 
 End Function
 
 'Remove a Network-Wide ZLINE, also called a GZLINE. Return False if the IRCd doesn't
-'allow this.
+'allow this. Return False only if both Add* returned false.
 Public Function DeleteNetworkIPBan(ByVal Source As String, ByVal Mask As String) As Boolean
 
 End Function
@@ -249,7 +308,7 @@ Public Property Get HalfopChar() As String
 End Property
 
 'The MODE CHARACTER (NOT PREFIX) for ChanOp Status. There is probably only a few rare oddball IRCds that
-'don't support Voice or use a different character. Everyone else should just return 'o'.
+'don't support Ops or use a different character. Everyone else should just return 'o'.
 Public Property Get ChanOpChar() As String
 
 End Property
@@ -284,12 +343,17 @@ End Property
 
 'The MODE CHARACTER for Invite Exceptions. Stock IRCu, stock UnrealIRCd, and probably earlier versions of
 'bahamut do NOT have InvEx. (Unreal is developing InvEx, so we may see it in CVS soon :> .) In most cases,
-'this will be 'e'.
+'this will be 'I'.
 Public Property Get InvExChar() As String
 
 End Property
 
 'Well, sendings all good and everything, but I think we ought to have something to RECEIVE too.
+'Actual execution of commands could be done in two ways:
+' - WinSE currently uses CallByName to invoke a procedure with the given Command name. Use a prefix so that
+'   commands named the same as VB keywords can still be used.
+' - A big Select Case with all the commands and any synonyms (such as tokens in Unreal and P10 IRCds).
+'And of course come up with your own way if you so choose.
 Public Sub ParseCmd(ByVal Buffer As String)
 
 End Sub

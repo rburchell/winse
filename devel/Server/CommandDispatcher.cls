@@ -77,6 +77,7 @@ End Sub
 
 Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
     Dim sNick As String
+    Dim idx As Long
     sNick = ExtractNickFromNUH(Source)
     If sNick = "" Or InStr(sNick, ".") > 0 Then
         'NEW USER!
@@ -102,19 +103,20 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             basFunctions.PutQuick ":" + basMain.Config.ServerName + " KILL " + Args(0) + " :" + basMain.Config.ServerName + " (Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + "))"
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckServicesNickInUse + Args(0) + "!" + Args(2) + "@" + Args(3))
+            'We'll have to reintroduce the collided service.
+            For idx = 0 To UBound(Service)
+                If Service(idx).Nick Then
+                    IntroduceClient Service(idx).Nick, Service(idx).Hostmask, Service(idx).Name, False
+                    Exit For
+                End If
+            Next idx
             Exit Sub
         ElseIf Users.Exists(Args(0)) Then
             'COLLISION!!!!!!!!
-            'Now a real server would do a Timestamp
-            'check and remove the one with a more
-            'recent stamp, but as we have no directly
-            'connect users, and only one server, we
-            'simply allow it - the IRCd wins.
-            '(so theoretically, if we get here, we're fucked.)
-            Set u = Users(Args(0))
+            'Kill it.
+            Users(Args(0)).KillUser "Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + ")", basMain.Config.ServerName
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, "Collision: " + Args(0) + "!" + Args(2) + "@" + Args(3))
-            'Overwrite the remaining fields.
         End If
         'See if it's behind a valid server.
         If Not basMain.Servers.Exists(Args(5)) Then
@@ -123,12 +125,12 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'Delete the unknown server.
             basFunctions.PutQuick ":" + basMain.Config.ServerName + " SQUIT " + Args(5) + " :" + Args(5) + "(?) <- " + basMain.Config.UplinkName
             'Send out a warning...
-            Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckServicesNickInUse + Args(0) + "!" + Args(2) + "@" + Args(3))
+            Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckUnknownServer)
             Exit Sub
         End If
         With u
             .Nick = Args(0)
-            .TS = Args(2)
+            .ts = Args(2)
             .UserName = Args(3)
             .HostName = Args(4)
             .Server = Args(5)
@@ -137,7 +139,7 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             .AbuseTeam = False
             .Access = 0
             .EMail = ""
-            .HideEMail = False
+            .HideEmail = False
             .IdentifiedToNick = ""
             .MemoID = 0
             .Modes = ""
@@ -169,6 +171,13 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             Users(sNick).Dispose
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckServicesNickInUse + Args(0) + "!" + Args(2) + "@" + Args(3))
+            'We'll have to reintroduce the collided service.
+            For idx = 0 To UBound(Service)
+                If Service(idx).Nick Then
+                    IntroduceClient Service(idx).Nick, Service(idx).Hostmask, Service(idx).Name, False
+                    Exit For
+                End If
+            Next idx
             Exit Sub
         ElseIf Users.Exists(Args(0)) Then
             'COLLISION!!!!!!!!
@@ -177,7 +186,8 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'UPDATE: Also drop our old record for this user
             Users(sNick).KillUser "Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + ")", basMain.Config.ServerName
             'Double check this, becuase removing the old record might cause fun effects here.
-            If Users.Exists(Args(0)) Then Users(Args(0)).KillUser "Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + ")", basMain.Config.ServerName
+            'Actually, this used to send an extra KILL ... do we need that?
+            If Users.Exists(Args(0)) Then Users(Args(0)).Dispose
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckNickChangeCollision + Args(0) + "!" + Args(2) + "@" + Args(3))
             Exit Sub
@@ -260,7 +270,6 @@ Public Sub CmdPrivMsg(ByVal Source As String, ByRef Args() As String, ByVal RawC
             sMassServ.MassservHandler Args(1), basMain.Users(sNick)
         Case "ROOTSERV"
             sRootServ.RootservHandler Args(1), basMain.Users(sNick)
-        Case Else 'Bot/Channel?
     End Select
     'Now do flood crap.
     Call basMain.Users(sNick).CheckFloodLevel

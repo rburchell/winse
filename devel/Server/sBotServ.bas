@@ -22,3 +22,9 @@ Public Sub BotservHandler(ByVal Cmd As String, ByVal Sender As User)
 
 End Sub
 
+Public Sub HandleEvent(ByVal Source As String, ByVal EventName As String, Parameters() As Variant)
+    If EventName = basEvents.ChanMsg Then
+        'Channel Message!
+        Dim chptr As Channel, sptr As User, msg As String
+    End If
+End Sub

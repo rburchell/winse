@@ -36,6 +36,7 @@ Class=IIRCd; IIRCd.cls
 Class=Server; Server.cls
 Class=Servers; Servers.cls
 Class=Unreal32; Unreal32.cls
+Class=IRCdBahamut; IRCdBahamut.cls
 IconForm="frmServer"
 Startup="Sub Main"
 HelpFile=""

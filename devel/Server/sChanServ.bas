@@ -2707,11 +2707,20 @@ Public Sub InitChannel(ByVal Channel As Channel)
 End Sub
 
 Public Sub InitChUser(ByVal Channel As Channel, ByVal User As User)
-    Dim chptr As Long, cptr As Long
+    Dim chptr As Long, cptr As Long, nptr As Long
     chptr = DBIndexOf(Channel.Name)
     cptr = ACLIndexOf(chptr, User.IdentifiedToNick)
     If HasAnyFlagIdx(chptr, cptr, CHANSERV_SHOWGREET, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Or Channel.IdentifedUsers.Exists(User) Then
         'Show the greet message.
+        nptr = sNickServ.DBIndexOf(User.IdentifiedToNick)
+        If sNickServ.DB(nptr).Greet <> "" Then
+            If DB(chptr).BotGreet = "" Or Not IsServicesNick(DB(chptr).BotGreet) Then
+                'No greet.
+            Else
+                'The bot set (can be a *Serv) greets the user.
+                PrivMsg DB(chptr).BotGreet, Channel.Name, "[" + User.Nick + "] " + sNickServ.DB(nptr).Greet
+            End If
+        End If
     End If
     If DB(chptr).Give Then
         If HasAnyFlagIdx(chptr, cptr, CHANSERV_PERMFOUNDER) Then
