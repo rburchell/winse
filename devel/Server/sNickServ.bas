@@ -39,15 +39,16 @@ Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
             Call sNickServ.Register(Sender, SenderNick, Parameters(2), Parameters(1))
         Case "IDENTIFY"
             'P[0] - Cmd
-            'P[1] - Nick <- now password.
-            'P[2] - Password <- now not used
+            'P[1] - Nick OPTIONAL
+            'P[2] - Password
             If UBound(Parameters) < 1 Then
                 Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
             'We used to be able to ident to a nick that you werent called at the time.
             'Feature Removed... --w00t
-            Call sNickServ.Identify(Sender, SenderNick, Parameters(1))
+            If UBound(Parameters) = 1 Then Call sNickServ.Identify(Sender, SenderNick, Parameters(1))
+            If UBound(Parameters) = 2 Then Call sNickServ.Identify(Sender, Parameters(1), Parameters(2))
         Case "HELP"
             If UBound(Parameters) <> 0 Then
                 Call sNickServ.Help(Sender, Parameters(1))
@@ -66,7 +67,7 @@ Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
             End If
             Call sNickServ.Set_(Sender, Parameters(1) & " " & Parameters(2))
         Case "LIST"
-            'Really need to restrict this to access 10+
+            'Really need to restrict this to access 10+ (we no longer use # permissions --Jason)
             Call sNickServ.List(Sender)
         Case Else
             Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.UnknownCommand)
@@ -208,23 +209,23 @@ Public Function Identify(Sender As User, NickToIdentify As String, Password As S
 End Function
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
+Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 

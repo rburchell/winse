@@ -26,6 +26,8 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 26/09/2004 - Jason
+  -[NS] [Add] Ident to a nick you arent called
  22/09/2004 - aquanight
   -[CS] [Add] Added some MLOCK enforcement. Though right now the MLOCK is either +ntr if
               registered, or -r if not. Also implemented a floating +l system.
