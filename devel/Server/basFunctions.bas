@@ -75,7 +75,7 @@ Public Sub IntroduceClient(ByVal Nick As String, ByVal Host As String, ByVal Nam
     basFunctions.PutQuick "NICK " & Nick & " 1 " & MyTime & " " & Name & " " & Host & " " & basMain.Config.ServerName & " " & Nick & vbCrLf
     basFunctions.PutQuick "USER " & Nick & " " & Name & " " & basMain.Config.ServerName & " " & Name & vbCrLf
     basFunctions.SendData ":" & Nick & " MODE " & Nick & " +qS"
-    If Not IsBot Then basFunctions.SendData ":" & Nick & " MODE " & Nick & " +d"
+    basFunctions.SendData ":" & Nick & " MODE " & Nick & IIf(IsBot, " +d", " +B")
     If ExtraModes <> "" Then basFunctions.SendData ":" & Nick & " MODE " & Nick & " +" & ExtraModes
 End Sub
 
@@ -239,10 +239,10 @@ Public Sub SendMessage(ByVal Sender As String, ByVal Reciever As String, ByVal M
     'Wrapper for notice\privmsg. Checks which we should use, and uses it.
     On Error GoTo ForgetIt
     Select Case Users(Reciever).MsgStyle
-        Case True
+        Case 1
             'Notice
             Call basFunctions.Notice(Sender, Reciever, Message)
-        Case False
+        Case 0
             'msg
             Call basFunctions.PrivMsg(Sender, Reciever, Message)
     End Select
@@ -862,4 +862,65 @@ Public Function FMod(ByVal dividend As Double, ByVal divisor As Double) As Doubl
     'Floating modulus. When the Mod operator doesn't help.
     'Essentially, a % b == ((a / b) - iPart(a / b)) * b
     FMod = ((dividend / divisor) - Fix(dividend / divisor)) * divisor
+End Function
+
+Public Function Mask(ByVal NUH As String, ByVal MaskType As Long) As String
+    Dim n As String, u As String, h As String, d As String
+    If InStr(NUH, "!") = 0 Or InStr(NUH, "@") = 0 Or InStr(NUH, "!") >= InStr(NUH, "@") Then Error 5
+    n = Left(NUH, InStr(NUH, "!") - 1)
+    NUH = Mid(NUH, InStr(NUH, "!") + 1)
+    u = Left(NUH, InStr(NUH, "@") - 1)
+    h = Mid(NUH, InStr(NUH, "@") + 1)
+    If Left(u, 1) = "~" Then u = Mid(u, 2)
+    'Get the domain based on these rules:
+    'If the hostname is an Numeric IP Address, use the first 3 octets.
+    'If the hostname has 2 or less parts, use the entire hostname.
+    'If the hostname has 5 or more parts, use only the top 4.
+    'Otherwise, use all but the bottom domain.
+    Dim hs() As String
+    hs = Split(h, ".")
+    If UBound(hs) <= 2 Then
+        'Examples:
+        'localhost (not masked)
+        'mydomain.com (not masked)
+        d = h
+    ElseIf UBound(hs) = 3 Then
+        'Examples:
+        'mymachine.mydomain.com (masked as *.mydomain.com)
+        d = "*." + Split(h, ".", 2)(1)
+    ElseIf UBound(hs) = 4 And IsNumeric(hs(0)) And IsNumeric(hs(1)) And IsNumeric(hs(2)) And IsNumeric(hs(3)) Then
+        'IPv4 ADDRESS!!!
+        'Examples:
+        '127.0.0.1 (masked as 127.0.0.* - maybe soon it will be masked as 127.0.0.0/24)
+        d = hs(0) + "." + hs(1) + "." + hs(2) + ".*"
+    ElseIf UBound(hs) = 4 Then
+        'Examples:
+        'localhost.127.in-addr.arpa (masked as *.in-addr.arpa)
+        d = "*." + Split(h, ".", 2)(1)
+    ElseIf UBound(hs) >= 5 Then
+        'my.isp.gives.me.really.long.hosts.like.this (masked as *.long.hosts.like.this)
+        d = "*." + hs(UBound(hs) - 3) + "." + hs(UBound(hs) - 2) + "." + hs(UBound(hs) - 1) + "." + hs(UBound(hs))
+    End If
+    Select Case MaskType Mod 10
+        Case 0 '*!user@host.domain
+            Mask = "*!" + u + "@" + h
+        Case 1 '*!*user@host.domain
+            Mask = "*!*" + u + "@" + h
+        Case 2 '*!*@host.domain
+            Mask = "*!*@" + h
+        Case 3 '*!*user@*.domain
+            Mask = "*!*" + u + "@" + d
+        Case 4 '*!*@*.domain
+            Mask = "*!*@" + d
+        Case 5 'nick!user@host.domain
+            Mask = n + "!" + u + "@" + h
+        Case 6 'nick!*user@host.domain
+            Mask = n + "!*" + u + "@" + h
+        Case 7 'nick!*@host.domain
+            Mask = n + "!*@" + h
+        Case 8 'nick!*user@*.domain
+            Mask = n + "!*" + u + "@" + d
+        Case 9 'nick!*@*.domain
+            Mask = n + "!*@" + d
+    End Select
 End Function

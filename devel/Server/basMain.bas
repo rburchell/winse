@@ -37,7 +37,7 @@ Public Const MIRC_COLOR = "" 'mIRC Color Attribute
 Public Const MIRC_PLAIN = "" 'mIRC Plain (Reset All) Attribute
 
 '[ACCESS FLAGS]
-Public Const AccFullAccess As String = "MmgoriIak"
+Public Const AccFullAccess As String = "MmgoriIakN"
 Public Const AccFlagMaster As String * 1 = "M"
 Public Const AccFlagCoMaster As String * 1 = "m"
 Public Const AccFlagGetServNotices As String * 1 = "g"
@@ -47,6 +47,7 @@ Public Const AccFlagCanRootServInject As String * 1 = "i"
 Public Const AccFlagCanRootServSuperInject As String * 1 = "I"
 Public Const AccFlagCanMassServ As String * 1 = "a"
 Public Const AccFlagCanMassKill As String * 1 = "k"
+Public Const AccFlagNickAdmin As String * 1 = "N"
 '[/ACCESS FLAGS]
 
 Public Type ConfigVars
@@ -62,7 +63,7 @@ Public Type ConfigVars
     ServerNumeric As Byte
     ServerDescription As String
     ServicesMaster  As String
-    DefaultMessageType As Boolean
+    DefaultMessageType As Long
     GlobalTargets As String 'What Global sends to send something to everyone.
     InjectToOperServices As Boolean
     AbuseTeamPrivacy As Byte
@@ -292,12 +293,12 @@ NextLine:
                 'Defines the default for users().msgstyle True=notice false=privmsg
                 Select Case DirectiveVal
                     Case "P", "p"
-                        basMain.Config.DefaultMessageType = False
+                        basMain.Config.DefaultMessageType = 0
                     Case "N", "n"
-                        basMain.Config.DefaultMessageType = True
+                        basMain.Config.DefaultMessageType = 1
                     Case Else
                         Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
-                        basMain.Config.DefaultMessageType = True
+                        basMain.Config.DefaultMessageType = 1
                 End Select
             Case "INJECTTOOPERSERVICES"
                 'Defines the default for users().msgstyle True=notice false=privmsg

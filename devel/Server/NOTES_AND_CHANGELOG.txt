@@ -26,6 +26,10 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */\
+ 07/11/2004 - aquanight
+  -[NS] [Add] Added nick enforcement, RECOVER, RELEASE, and GHOST.
+  -[NS] [Add] Added a bunch more SET options.
+  -[NS] [Add] Now using the MDB. No more INI files \o/ .
  28/10/2004 - aquanight
   -[CS] [Add] Added CLEAR. :oops:
   -[CO] [Add] Added server tracking. Server.cls and Servers.cls added to CVS.

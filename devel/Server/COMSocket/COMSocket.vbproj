@@ -81,6 +81,11 @@
         <Files>
             <Include>
                 <File
+                    RelPath = "ADNSResolver.vb"
+                    SubType = "Code"
+                    BuildAction = "Compile"
+                />
+                <File
                     RelPath = "api.htm"
                     BuildAction = "Content"
                 />

@@ -24,13 +24,13 @@ Public Access As String                 'Services access.
 Public Requests As Byte                 'Flood level. Goes up by 1 on each request.
                                         'When it hits 5, a warning. 10, a kill. 20, a gline (unless >= services admin)
                                         'Flood level goes down by 1 every 2 seconds??
-Public MsgStyle As Boolean              'True=notice false=privmsg
+Public MsgStyle As Long                 'True=notice false=privmsg
 Public AbuseTeam As Boolean             'Abuse Team members can use services commands that otherwise, only the services master can use.
 Public IdentifiedToNick As String       'Holds nick that user has identified to. Blank if not identified.
 Private mChannels As Channels           'Channels this user is on.
 'Some extra stuff we might get from things like
 'Unreal IRCd :P .
-Public TS As Long                       'Time Stamp of the user.
+Public ts As Long                       'Time Stamp of the user.
 Public CID As String                    'Client ID. Coming from Unreal this is just the Service Stamp.
 Public UserName As String               'Ident (in USER or Identd reply).
 Public HostName As String               'User's real hostname.

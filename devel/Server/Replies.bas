@@ -152,6 +152,7 @@ Public Const NickServNickRecoverKill = "Ths user using your nick " + MIRC_BOLD +
 Public Const NickServRecoverRelease = "Your nick will be held unusable by services for 1 minute to prevent the user using it from retaking it immediately. To get it back sooner, type " + MIRC_BOLD + "/msg NickServ RELEASE %n " + MIRC_UNDERLINE + "password" + MIRC_UNDERLINE + MIRC_BOLD + "."
 Public Const NickServNickRelease = "Your nick " + MIRC_BOLD + "%n" + MIRC_BOLD + " has been released."
 Public Const NickServRelaseNotHeld = "Nick " + MIRC_BOLD + "%n" + MIRC_BOLD + " is not being held."
+Public Const NickServIdentifyCloneWarning = "WARNING: %s identified to your nick group."
 
 'AuthServ replies. I will try to reuse the NickServ replies where possible, but these are the ones for which
 'that is not possible.

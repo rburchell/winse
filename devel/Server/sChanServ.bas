@@ -1672,28 +1672,7 @@ Public Sub BootUser(ByVal Source As User, ByVal Channel As Channel, ByVal Target
             Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions)
         Else
             Dim Mask As String
-            Select Case BanType Mod 10
-                Case 0 '*!user@host.domain
-                    Mask = "*!" + Target.UserName + "@" + IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName)
-                Case 1 '*!*user@host.domain
-                    Mask = "*!*" + Target.UserName + "@" + IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName)
-                Case 2 '*!*@host.domain
-                    Mask = "*!*@" + IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName)
-                Case 3 '*!*user@*.domain
-                    Mask = "*!*" + Target.UserName + "@*." + Split(IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName), ".", 2)(1)
-                Case 4 '*!*@*.domain
-                    Mask = "*!*@*." + Split(IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName), ".", 2)(1)
-                Case 5 'nick!user@host.domain
-                    Mask = Target.Nick + "!" + Target.UserName + "@" + IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName)
-                Case 6 'nick!*user@host.domain
-                    Mask = Target.Nick + "!*" + Target.UserName + "@" + IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName)
-                Case 7 'nick!*@host.domain
-                    Mask = Target.Nick + "!*@" + IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName)
-                Case 8 'nick!*user@*.domain
-                    Mask = Target.Nick + "!*" + Target.UserName + "@*." + Split(IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName), ".", 2)(1)
-                Case 9 'nick!*@*.domain
-                    Mask = Target.Nick + "!*@*." + Split(IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName), ".", 2)(1)
-            End Select
+            Mask = basFunctions.Mask(Target.Nick + "!" + Target.UserName + "@" + IIf(Target.VirtHost <> "", Target.VirtHost, Target.HostName), BanType)
             BotMode Channel, False, "+b " + Mask
             BotKick Channel, False, Target, IIf(Not HasFlagIdx(chptr, saceptr, CHANSERV_NOSIGNKICK), Source.IdentifiedToNick + ":", "") + Message
         End If
@@ -2182,7 +2161,7 @@ Public Sub Clear(ByVal Source As User, ByVal Channel As Channel, ByVal What As S
             'Don't want people rejoining too quickly.
             Channel.SetChannelModes Service(SVSINDEX_CHANSERV).Nick, "+iKlb 1 *!*@*"
             While Channel.Members.Count > 0
-                Channel.KickUser Service(SVSINDEX_CHANSERV).Nick, Channel.Members(0).Member.Nick, "CLEAR USERS from " + Source.Nick
+                Channel.KickUser Service(SVSINDEX_CHANSERV).Nick, Channel.Members(0).Member, "CLEAR USERS from " + Source.Nick
             Wend
             Channel.SetChannelModes Service(SVSINDEX_CHANSERV).Nick, "-iKlb *!*@*"
             TermChannel Channel
@@ -2234,7 +2213,7 @@ Public Sub Clear(ByVal Source As User, ByVal Channel As Channel, ByVal What As S
                 Exit Sub
             End If
             Notice Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, "Clearing Binary Modes by request of " + Source.Nick
-            BotMode Channel.Name, False, "-l" + Split(basMain.ChannelModes2, ",")(3) + "+r"
+            BotMode Channel, False, "-l" + Split(basMain.ChannelModes2, ",")(3) + "+r"
     End Select
 End Sub
 

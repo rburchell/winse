@@ -28,7 +28,7 @@ Public Type NickServDataRecord
     LastSeenTime As Long        'TS of last quit.
     GroupedNicks() As String    'Grouped nicknames.
     Access As String            'Access flags.
-    Message As String           'This is in the database, but what is it for?
+    Message As Long             'This is in the database, but what is it for?
     Greet As String             'This is the Greet Message displayed by ChanServ.
     Private As Boolean          'Not in NICKSERV LIST.
     HideQuit As Boolean         'Don't show the quit message in INFO or !seen.
@@ -37,9 +37,12 @@ Public Type NickServDataRecord
     Secure As Boolean           'Settings/Channel access can only be used when IDENTIFYd.
     NoAutoOp As Boolean         'Don't obey +GIVE in channels.
     VHost As String             'HostServ VHOST assigned to this account.
+    AbuseTeam As Boolean        'If the user is on the abuse team.
 End Type
 
 Public DB() As NickServDataRecord
+Public Enforcers As New Collection
+Public NextGuest As Long
 
 Public Sub LoadData(ByVal conn As Connection)
     Dim mDB As Collection
@@ -75,6 +78,7 @@ Public Sub LoadData(ByVal conn As Connection)
             .Secure = subcol("secure")
             .NoAutoOp = subcol("no_auto_op")
             .VHost = subcol("hostserv_mask")
+            .AbuseTeam = subcol("abuse_team")
         End With
     Next idx
 End Sub
@@ -84,7 +88,7 @@ Public Sub SaveData(ByVal conn As Connection)
     Dim rs As Recordset
     Set rs = GetTable(conn, "ChanServ")
     'Prepare the fields array in advance.
-    Dim Fields(0 To 17) As String
+    Dim Fields(0 To 18) As String
     Fields(0) = "name"
     Fields(1) = "password"
     Fields(2) = "email"
@@ -103,7 +107,8 @@ Public Sub SaveData(ByVal conn As Connection)
     Fields(15) = "secure"
     Fields(16) = "no_auto_op"
     Fields(17) = "hostserv_mask"
-    Dim vals(0 To 17) As Variant
+    Fields(18) = "abuse_team"
+    Dim vals(0 To 18) As Variant
     'We can borrow one if the vals values to check if the DB has been initialized.
     On Local Error Resume Next
     vals(0) = UBound(DB)
@@ -130,18 +135,19 @@ Public Sub SaveData(ByVal conn As Connection)
             vals(15) = DB(idx).Secure
             vals(16) = DB(idx).NoAutoOp
             vals(17) = DB(idx).VHost
+            vals(18) = DB(idx).AbuseTeam
             .MoveFirst
             .Find "Name=" & DB(idx).Nick
             If .BOF Or .EOF Then
-                'Channel was registered since last update, so we need to create it.
+                'Nick was registered since last update, so we need to create it.
                 .AddNew Fields, vals
                 .Update
             Else
-                'Channel was previously registered, in which case we are pointing to a valid record.
+                'Nick was previously registered, in which case we are pointing to a valid record.
                 .Update Fields, vals
             End If
         Next idx
-        'Now we need to look for channels in the database that we don't have in the collection - these
+        'Now we need to look for nicks in the database that we don't have in the collection - these
         'were dropped between updates, so we need to remove them from the DB or they get mysteriously
         'reregistered :) .
         .MoveFirst
@@ -190,10 +196,29 @@ Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
                 Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
-            'We used to be able to ident to a nick that you werent called at the time.
-            'Feature Removed... --w00t
             If UBound(Parameters) = 1 Then Call sNickServ.Identify(Sender, SenderNick, Parameters(1))
             If UBound(Parameters) = 2 Then Call sNickServ.Identify(Sender, Parameters(1), Parameters(2))
+        Case "RECOVER"
+            If UBound(Parameters) < 1 Then
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.InsufficientParameters)
+                Exit Sub
+            End If
+            If UBound(Parameters) = 1 Then Call sNickServ.Recover(Sender, Parameters(1), "")
+            If UBound(Parameters) = 2 Then Call sNickServ.Recover(Sender, Parameters(1), Parameters(2))
+        Case "RELEASE"
+            If UBound(Parameters) < 1 Then
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.InsufficientParameters)
+                Exit Sub
+            End If
+            If UBound(Parameters) = 1 Then Call sNickServ.Release(Sender, Parameters(1), "")
+            If UBound(Parameters) = 2 Then Call sNickServ.Release(Sender, Parameters(1), Parameters(2))
+        Case "GHOST"
+            If UBound(Parameters) < 1 Then
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.InsufficientParameters)
+                Exit Sub
+            End If
+            If UBound(Parameters) = 1 Then Call sNickServ.Ghost(Sender, Parameters(1), "")
+            If UBound(Parameters) = 2 Then Call sNickServ.Ghost(Sender, Parameters(1), Parameters(2))
         Case "HELP"
             If UBound(Parameters) <> 0 Then
                 Call sNickServ.Help(Sender, Parameters(1))
@@ -210,7 +235,7 @@ Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
                 Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
-            Call sNickServ.Set_(Sender, Parameters(1) & " " & Parameters(2))
+            Call sNickServ.Set_(Sender, Parameters(1), Split(Cmd, " ", 3)(2))
         Case "LIST"
             'Really need to restrict this to access 10+ (we no longer use # permissions --Jason)
             Call sNickServ.List(Sender)
@@ -219,7 +244,7 @@ Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
     End Select
 End Sub
 
-Private Sub Help(Sender As User, Cmd)
+Private Sub Help(Sender As User, ByVal Cmd As String)
     Dim SenderNick As String
     SenderNick = Sender.Nick
     Select Case UCase(Cmd)
@@ -238,117 +263,207 @@ Private Sub Version(Sender As User)
     Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(SVSINDEX_NICKSERV).Nick & "[" & sNickServ.ModVersion & "]")
 End Sub
 
-Private Sub Set_(Sender As User, Cmd)
-    Dim SenderNick As String
-    SenderNick = Sender.Nick
-    Dim FirstSpace As String, Parameters As String
-    FirstSpace = InStr(Cmd, " ")
-    Parameters = Right(Cmd, Len(Cmd) - FirstSpace)
-    If FirstSpace <> 0 Then Cmd = Left(Cmd, FirstSpace - 1)
-    Select Case UCase(Cmd)
-        Case "COMMUNICATION"
+Private Sub Set_(ByVal Sender As User, ByVal Setting As String, ByVal Parameters As String)
+    Dim cptr As Long
+    If Sender.IdentifiedToNick <> "" Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServNotIdentified)
+        Exit Sub
+    End If
+    cptr = DBIndexOf(Sender.IdentifiedToNick)
+    If cptr < 0 Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationNotRegistered)
+        Exit Sub
+    End If
+    Select Case UCase(Setting)
+        Case "MESSAGE"
+            'We really want people to register their nick, so unless they do that, they get stuck with the
+            'default method :P .
             Select Case UCase(Parameters)
                 Case "PRIVMSG"
-                    basMain.Users(Sender).MsgStyle = False
-                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.NickServCommunicationPrivmsg)
-                    If basFunctions.IsNickRegistered(basMain.Users(Sender).Nick) Then
-                        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", basMain.Users(Sender).Nick, "MsgStyle", "False")
-                    End If
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServCommunicationPrivmsg)
+                    DB(cptr).Message = 0
                 Case "NOTICE"
-                    basMain.Users(Sender).MsgStyle = True
-                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.NickServCommunicationNotice)
-                    If basFunctions.IsNickRegistered(basMain.Users(Sender).Nick) Then
-                        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", basMain.Users(Sender).Nick, "MsgStyle", "True")
-                    End If
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServCommunicationNotice)
+                    DB(cptr).Message = 1
                 Case Else
-                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.IncorrectParam)
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.IncorrectParam)
             End Select
+        Case "GREET"
+            DB(cptr).Greet = Parameters
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, FormatString("[{0}] {1}", Sender.IdentifiedToNick, Parameters))
+        Case "PRIVATE"
+            Select Case UCase(Parameters)
+                Case "ON"
+                    DB(cptr).Private = False
+                Case "OFF"
+                    DB(cptr).Private = True
+                Case Else
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.IncorrectParam)
+            End Select
+        Case "HIDEQUIT"
+            Select Case UCase(Parameters)
+                Case "ON"
+                    DB(cptr).HideQuit = False
+                Case "OFF"
+                    DB(cptr).HideQuit = True
+                Case Else
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.IncorrectParam)
+            End Select
+        Case "HIDEEMAIL"
+            Select Case UCase(Parameters)
+                Case "ON"
+                    DB(cptr).HideEmail = False
+                Case "OFF"
+                    DB(cptr).HideEmail = True
+                Case Else
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.IncorrectParam)
+            End Select
+        Case "HIDEADDRESS"
+            Select Case UCase(Parameters)
+                Case "ON"
+                    DB(cptr).HideAddress = False
+                Case "OFF"
+                    DB(cptr).HideAddress = True
+                Case Else
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.IncorrectParam)
+            End Select
+        Case "SECURE"
+            Select Case UCase(Parameters)
+                Case "ON"
+                    DB(cptr).Secure = False
+                Case "OFF"
+                    DB(cptr).Secure = True
+                Case Else
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.IncorrectParam)
+            End Select
+        Case "NOAUTOOP"
+            Select Case UCase(Parameters)
+                Case "ON"
+                    DB(cptr).NoAutoOp = False
+                Case "OFF"
+                    DB(cptr).NoAutoOp = True
+                Case Else
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.IncorrectParam)
+            End Select
+        Case Else
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.IncorrectParam)
     End Select
 End Sub
 
-Private Sub List(Sender As User)
-    Dim TotalRegisteredNicks As Double
-    TotalRegisteredNicks = CDec(basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredNicks", -1))
-    If TotalRegisteredNicks = -1 Then
+Private Sub List(ByVal Sender As User)
+    Dim c As Long
+    On Local Error Resume Next
+    c = UBound(DB)
+    If Err = 9 Then
         'No registered nicks
         Exit Sub
-    Else
-        Dim CurrentNick As String, Access As String, HideEmail As String, EMail As String
-        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, "NickServ List:")
-        Dim i As Integer
-        For i = 0 To TotalRegisteredNicks
-            'DO NOT SHOW ABUSE TEAM! ITS MEANT TO BE SECRET!
-            CurrentNick = basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Nicks", "RegisteredNick" & i)
-            Access = basFileIO.GetInitEntry(App.Path & "\databases\users.db", CStr(CurrentNick), "Access")
-            HideEmail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", CStr(CurrentNick), "HideEmail")
-            EMail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", CStr(CurrentNick), "Email")
-            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, CStr(CurrentNick))
-            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, " Access: " & Access)
-            'need an access check here too...
-            If HideEmail = True Then
-                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, " Email: Hidden")
-            Else
-                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, " Email: " & EMail)
-            End If
-        Next
     End If
+    On Error GoTo 0
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, "NickServ List:")
+    Dim i As Integer, lines As Long
+    For i = 0 To c
+        'This is just a simple list. If someone wants more info, they'll use INFO :-P.
+        'A normal user should see these indicators:
+        '* = Service Oper
+        '% = Service CoMaster
+        '@ = Service Master
+        'Admins and abuse team should also see these indictators:
+        '? = User has PRIVATE setting
+        'Master should also see this indicator:
+        '! = Abuse Team
+        With DB(i)
+            If Sender.HasFlag(AccFlagCoMaster) Or Sender.HasFlag(AccFlagMaster) Then
+                If lines < 20 Then
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender, " " + IIf(InStr(.Access, AccFlagMaster) > 0, "@", IIf(InStr(.Access, AccFlagCoMaster) > 0, "%", IIf(.Access <> "", "*", ""))) + IIf(.Private, "?", "") + IIf(.AbuseTeam, "!", "") + " " + .Nick + " " + .EMail)
+                    lines = lines + 1
+                End If
+            ElseIf Sender.HasFlag(AccFlagNickAdmin) Then
+                If lines < 20 Then
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender, " " + IIf(InStr(.Access, AccFlagMaster) > 0, "@", IIf(InStr(.Access, AccFlagCoMaster) > 0, "%", IIf(.Access <> "", "*", ""))) + IIf(.Private, "?", "") + " " + .Nick + " " + .EMail)
+                    lines = lines + 1
+                End If
+            Else
+                'Don't show private nicks, and limit 20 lines else people get nice Max SendQ deals.
+                If Not .Private And lines < 20 Then
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender, " " + IIf(InStr(.Access, AccFlagMaster) > 0, "@", IIf(InStr(.Access, AccFlagCoMaster) > 0, "%", IIf(.Access <> "", "*", ""))) + " " + .Nick + " " + IIf(.HideEmail, "Hidden@EMail.Address", .EMail))
+                    lines = lines + 1
+                End If
+            End If
+        End With
+    Next
 End Sub
 
-Private Sub Register(Sender As User, NickToRegister As String, EMail As String, Password As String)
-    Dim Access As String
-    Dim HideEmail As String
-    Dim MsgStyle As String
+Private Sub Register(ByVal Sender As User, ByVal NickToRegister As String, ByVal EMail As String, ByVal Password As String)
     NickToRegister = UCase(NickToRegister)
-    If basFunctions.IsNickRegistered(NickToRegister) Then
+    If DBIndexOf(NickToRegister) Then
         'Nick already registered.
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replies.NickServNickAlreadyRegistered)
         Exit Sub
     End If
-    
+    Dim c As Long
     With basMain.Users(Sender)
-        If UCase(.Nick) = UCase(basMain.Config.ServicesMaster) Then .Access = AccFullAccess
-        Access = .Access
-        HideEmail = .HideEmail
-        MsgStyle = .MsgStyle
-        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "AbuseTeam", "False")
-        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "Access", Access)
-        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "Email", EMail)
-        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "HideEmail", HideEmail)
-        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "MsgStyle", MsgStyle)
-        Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "Password", Password)
-        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replace(Replies.NickServRegisterOK, "%p", Password))
+        On Local Error Resume Next
+        c = UBound(DB) + 1
+        If Err = 9 Then
+            ReDim DB(0)
+            c = 0
+        Else
+            ReDim Preserve DB(c)
+        End If
+        Dim ts As Long
+        ts = basUnixTime.GetTime
+        DB(c).AbuseTeam = False
+        DB(c).Access = IIf(NickToRegister = basMain.Config.ServicesMaster, AccFlagMaster, "")
+        ReDim DB(c).AccessList(0)
+        DB(c).AccessList(0) = Mask(Sender.Nick + "!" + Sender.UserName + "@" + Sender.HostName, 3)
+        DB(c).EMail = EMail
+        ReDim DB(c).GroupedNicks(0)
+        DB(c).GroupedNicks(0) = NickToRegister
+        DB(c).HideAddress = False
+        DB(c).HideEmail = False
+        DB(c).HideQuit = False
+        DB(c).LastAddress = Sender.UserName + "@" + IIf(Sender.VirtHost <> "", Sender.VirtHost, Sender.HostName)
+        DB(c).LastQuit = ""
+        DB(c).LastSeenTime = ts
+        DB(c).Message = basMain.Config.DefaultMessageType
+        DB(c).Nick = NickToRegister
+        DB(c).NoAutoOp = False
+        DB(c).Password = Password
+        DB(c).Private = False
+        DB(c).Secure = False
+        DB(c).VHost = ""
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, .Nick, Replace(Replies.NickServRegisterOK, "%p", Password))
     End With
-    Dim TotalRegisteredNicks As Variant
-    TotalRegisteredNicks = CDec(basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredNicks", -1))
-    TotalRegisteredNicks = CStr(TotalRegisteredNicks + 1)
-    Call basFileIO.SetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredNicks", CStr(TotalRegisteredNicks))
-    Call basFileIO.SetInitEntry(App.Path & "\databases\index.db", "Nicks", "RegisteredNick" & TotalRegisteredNicks, NickToRegister)
 End Sub
 
-Public Function Identify(Sender As User, NickToIdentify As String, Password As String)
-    Dim PasswordonFile As String
-    PasswordonFile = basFileIO.GetInitEntry(App.Path & "\databases\users.db", NickToIdentify, "Password")
-    If PasswordonFile = "" Then
+Public Sub Identify(Sender As User, NickToIdentify As String, Password As String)
+    Dim cptr As Long
+    cptr = DBIndexOf(NickToIdentify)
+    If cptr < 0 Then
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationNotRegistered)
-        Exit Function
+        Exit Sub
     End If
-    If Password = PasswordonFile Then
+    If Password = DB(cptr).Password Then
         With Sender
-            .AbuseTeam = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "AbuseTeam")
-            .Access = IIf(IsDeny(Sender), "", basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "Access"))
+            .AbuseTeam = DB(cptr).AbuseTeam
+            .Access = IIf(IsDeny(Sender), "", DB(cptr).Access)
             ' ^ IIf added to remove services access if the user has been agent DENYed
-            .EMail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "Email")
-            .HideEmail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "HideEmail")
-            .MsgStyle = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "MsgStyle")
-            .Password = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "Password")
+            .MsgStyle = DB(cptr).Message
+            .IdentifiedToNick = DB(cptr).Nick
             'Check if they are a master, just in case their permissions got fiddled with.
             If UCase(.IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
                 Sender.SetFlags "+" & AccFlagMaster ' Not AccFullAccess, He might not want to recieve Services Notices (flag g)
             End If
-            Sender.Custom.Remove "NickKillCountdown"
+            Sender.NickKillTimer = -1 'Cancel the enforce timer.
         End With
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationSuccessful)
-        Sender.IdentifiedToNick = NickToIdentify
+        Call basFunctions.SendData(FormatString(":{0} SVS{1}MODE {2} +r", basMain.Service(SVSINDEX_NICKSERV).Nick, IIf(UCase(basMain.Config.ServerType) = "UNREAL", "2", ""), Sender.Nick))
+        Dim u As User
+        For Each u In Users
+            If u.IdentifiedToNick = Sender.IdentifiedToNick And u.Nick <> Sender.Nick Then
+                SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServIdentifyCloneWarning
+            End If
+        Next u
     Else
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationBadPassword)
         If Sender.BadIdentifies <= 0 Then
@@ -362,7 +477,137 @@ Public Function Identify(Sender As User, NickToIdentify As String, Password As S
             Sender.SVSKillUser Replies.KillReasonPasswordLimit, Service(SVSINDEX_NICKSERV).Nick
         End If
     End If
-End Function
+End Sub
+
+Public Sub Recover(ByVal Sender As User, ByVal Nick As String, ByVal Password As String)
+    'How the access check works:
+    'Is the nick in the same group as the sender's?
+    'Is the password correct?
+    If NextGuest < 1000000 Or NextGuest > 9999999 Then NextGuest = Int(Rnd * 9000000) + 1000000
+    Dim cptr As Long, u As User, nicktmp As String
+    cptr = DBIndexOf(Nick)
+    If cptr < 0 Then
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationNotRegistered)
+        Exit Sub
+    End If
+    If Not Users.Exists(Nick) Then
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replies.UserDoesntExist)
+        Exit Sub
+    End If
+    Set u = Users(Nick)
+    If Sender.IdentifiedToNick = DB(cptr).Nick Then
+        'Screw the password.
+        SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceImmed
+        SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replace(Replies.NickServEnforcingNick, "%n", "Guest" & NextGuest)
+        nicktmp = u.Nick
+        u.ForceChangeNick "Guest" & NextGuest
+        'Let IRCops KILL it (as an implicit RELEASE).
+        basFunctions.IntroduceClient nicktmp, basMain.Config.ServerName, "enforcer", True, "-S"
+        Enforcers.Add Array(60!, nicktmp), nicktmp
+        SendMessage Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replace(Replace(Replies.NickServNickRecover, "%n", nicktmp), "%g", "Guest" + NextGuest)
+        SendMessage Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replace(Replies.NickServRecoverRelease, "%n", Nick)
+        NextGuest = NextGuest + 1
+    Else
+        If DB(cptr).Password = Password Then
+            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceImmed
+            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replace(Replies.NickServEnforcingNick, "%n", "Guest" & NextGuest)
+            nicktmp = u.Nick
+            u.ForceChangeNick "Guest" & NextGuest
+            'Let IRCops KILL it (as an implicit RELEASE).
+            basFunctions.IntroduceClient nicktmp, basMain.Config.ServerName, "enforcer", True, "-S"
+            Enforcers.Add Array(60!, nicktmp), nicktmp
+            SendMessage Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replace(Replace(Replies.NickServNickRecover, "%n", nicktmp), "%g", "Guest" + NextGuest)
+            SendMessage Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replace(Replies.NickServRecoverRelease, "%n", Nick)
+            NextGuest = NextGuest + 1
+        Else
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationBadPassword)
+            If Sender.BadIdentifies <= 0 Then
+                Sender.BadIdentifies = 1
+                Sender.BadIdentTimer = basMain.Config.BadPassTimeout
+            Else
+                Sender.BadIdentifies = Sender.BadIdentifies + 1
+            End If
+            If Sender.BadIdentifies >= IIf(basMain.Config.BadPassLimit > 0, basMain.Config.BadPassLimit, 1) Then
+                basFunctions.SendMessage Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServTooManyBadPasswords
+                Sender.SVSKillUser Replies.KillReasonPasswordLimit, Service(SVSINDEX_NICKSERV).Nick
+            End If
+        End If
+    End If
+End Sub
+
+Public Sub Release(ByVal Sender As User, ByVal Nick As String, ByVal Password As String)
+    'Release an enforcer using the nick.
+    Dim cptr As Long
+    cptr = DBIndexOf(Nick)
+    If cptr < 0 Then
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationNotRegistered)
+        Exit Sub
+    End If
+    On Local Error Resume Next
+    'Item is a function, so we can play this dirty trick.
+    Call Enforcers.Item(Nick)
+    If Err = 9 Then
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replace(Replies.NickServRelaseNotHeld, "%n", Nick))
+    End If
+    If Sender.IdentifiedToNick = DB(cptr).Nick Then
+        'Screw the password.
+        SendData FormatString(":{0} QUIT :Released by {1}", Nick, Sender.Nick)
+        Enforcers.Remove Nick
+    Else
+        If DB(cptr).Password = Password Then
+            SendData FormatString(":{0} QUIT :Released by {1}", Nick, Sender.Nick)
+            Enforcers.Remove Nick
+        Else
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationBadPassword)
+            If Sender.BadIdentifies <= 0 Then
+                Sender.BadIdentifies = 1
+                Sender.BadIdentTimer = basMain.Config.BadPassTimeout
+            Else
+                Sender.BadIdentifies = Sender.BadIdentifies + 1
+            End If
+            If Sender.BadIdentifies >= IIf(basMain.Config.BadPassLimit > 0, basMain.Config.BadPassLimit, 1) Then
+                basFunctions.SendMessage Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServTooManyBadPasswords
+                Sender.SVSKillUser Replies.KillReasonPasswordLimit, Service(SVSINDEX_NICKSERV).Nick
+            End If
+        End If
+    End If
+End Sub
+
+Public Sub Ghost(ByVal Sender As User, ByVal Nick As String, ByVal Password As String)
+    Dim cptr As Long, u As User, nicktmp As String
+    cptr = DBIndexOf(Nick)
+    If cptr < 0 Then
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationNotRegistered)
+        Exit Sub
+    End If
+    If Not Users.Exists(Nick) Then
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replies.UserDoesntExist)
+        Exit Sub
+    End If
+    Set u = Users(Nick)
+    If Sender.IdentifiedToNick = DB(cptr).Nick Then
+        'Screw the password.
+        u.SVSKillUser Replace(Replies.KillReasonGhostKill, "%n", Sender.Nick)
+        SendMessage Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replace(Replies.NickServNickGhosted, "%n", Nick)
+    Else
+        If DB(cptr).Password = Password Then
+            u.SVSKillUser Replace(Replies.KillReasonGhostKill, "%n", Sender.Nick)
+            SendMessage Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replace(Replies.NickServNickGhosted, "%n", Nick)
+        Else
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationBadPassword)
+            If Sender.BadIdentifies <= 0 Then
+                Sender.BadIdentifies = 1
+                Sender.BadIdentTimer = basMain.Config.BadPassTimeout
+            Else
+                Sender.BadIdentifies = Sender.BadIdentifies + 1
+            End If
+            If Sender.BadIdentifies >= IIf(basMain.Config.BadPassLimit > 0, basMain.Config.BadPassLimit, 1) Then
+                basFunctions.SendMessage Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServTooManyBadPasswords
+                Sender.SVSKillUser Replies.KillReasonPasswordLimit, Service(SVSINDEX_NICKSERV).Nick
+            End If
+        End If
+    End If
+End Sub
 
 'Callin subs for channel mode changes
 Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
@@ -394,28 +639,49 @@ Public Sub HandleUserMode(ByVal User As User, ByVal bSet As Boolean, ByVal Char 
 End Sub
 
 Public Sub HandleTick(ByVal Interval As Single)
-    Static NextGuest As Long
     If NextGuest < 1000000 Or NextGuest > 9999999 Then NextGuest = Int(Rnd * 9000000) + 1000000
-    Dim oldc As Single, u As User
+    Dim oldc As Single, u As User, nicktmp As String, idx As Long
     For Each u In Users
-        oldc = u.NickKillTimer
-        u.NickKillTimer = oldc - Interval
-        If u.NickKillTimer <= 40! And oldc > 40! Then
-            'Dropped below 40 seconds, send the 40 second warning.
-            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceIn40
-        ElseIf u.NickKillTimer <= 20! And oldc > 20! Then
-            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceIn20
-        ElseIf u.NickKillTimer <= 0! And oldc > 0! Then
-            'IDENTIFY TIMEOUT!
-            LogEventWithMessage LogTypeNotice, "User " + u.Nick + " did not identify."
-            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceImmed
-            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforcingNick
-            u.ForceChangeNick "Guest" & NextGuest
-            NextGuest = NextGuest + 1
+        'Decrement and/or remove enforcers.
+        For idx = 1 To Enforcers.Count
+            oldc = Enforcers(idx)(0)
+            oldc = oldc - Interval
+            nicktmp = Enforcers(idx)(1)
+            If oldc <= 0 Then
+                SendData FormatString(":{0} QUIT :My work here is done.", nicktmp)
+                Enforcers.Remove idx
+                idx = idx - 1
+            Else
+                Enforcers.Remove idx
+                Enforcers.Add Array(oldc, nicktmp), nicktmp, before:=idx
+            End If
+        Next idx
+        'Is there a kill timer active?
+        If u.NickKillTimer <= 0 Then
+            oldc = u.NickKillTimer
+            u.NickKillTimer = oldc - Interval
+            If u.NickKillTimer <= 40! And oldc > 40! Then
+                'Dropped below 40 seconds, send the 40 second warning.
+                SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceIn40
+            ElseIf u.NickKillTimer <= 20! And oldc > 20! Then
+                SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceIn20
+            ElseIf u.NickKillTimer <= 0! And oldc > 0! Then
+                'IDENTIFY TIMEOUT!
+                LogEventWithMessage LogTypeNotice, "User " + u.Nick + " did not identify."
+                SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceImmed
+                SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replace(Replies.NickServEnforcingNick, "%n", "Guest" & NextGuest)
+                nicktmp = u.Nick
+                u.ForceChangeNick "Guest" & NextGuest
+                'Let IRCops KILL it (as an implicit RELEASE).
+                basFunctions.IntroduceClient nicktmp, basMain.Config.ServerName, "enforcer", True, "-S"
+                Enforcers.Add Array(60!, nicktmp), nicktmp
+                NextGuest = NextGuest + 1
+            End If
         End If
-        oldc = u.BadIdentTimer
-        u.BadIdentTimer = oldc - Interval
-        If u.BadIdentTimer <= 0 Then u.BadIdentifies = 0
+        If u.BadIdentifies = 0 Then
+            u.BadIdentTimer = u.BadIdentTimer - Interval
+            If u.BadIdentTimer <= 0 Then u.BadIdentifies = 0
+        End If
     Next u
 End Sub
 
