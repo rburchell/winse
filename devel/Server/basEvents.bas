@@ -1,6 +1,7 @@
 Attribute VB_Name = "basEvents"
 Option Explicit
 
+'General IRC Events.
 'When the channel is created.
 'Parameters: Channel Joined (Channel), User Joined (User)
 Public Const ChanCreate As String = "ChannelCreated"
@@ -16,3 +17,7 @@ Public Const ChanDestroy As String = "ChannelDestroyed"
 'When a user changes a member mode on a service.
 'Parameters: Channel (Channel), Mode Change (+o, -a), Service Nick
 Public Const ServiceChanModeChanged As String = "ServiceMemberModeChanged"
+
+'NickServ/AuthServ Events.
+'User IDENTIFY. Parameters: User (User), Nick/Account Identified (String).
+Public Const NSEventIdentify = "NickAuth"

@@ -26,6 +26,23 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 13/10/2004 - aquanight
+  -[CS] [Add] Implemented ACCESS, AKICK, EXEMPTS, INVITES, and {V|H|A|S}OP and CFOUNDER.
+  -[CS] [Add] Implemented [DE]{VOICE|[HALF]OP|PROTECT|OWNER}.
+  -[CS] [Add] Implemented KICK and BAN.
+  -[CS] [Add] Added enforcement of AKICK, etc on join. FLOOD WARNING: Currently ChanServ
+              will not hold the channel open if the first joiner is AKICKed or otherwise not
+              allowed to join. I need to figure out how to store a timer object somewhere
+              where it won't get destroyed by something else and is also easy to keep track
+              of... *sigh*. Note that auto-op/etc and greet still don't work yet.
+  -[CS] [Add] Implemented UNBAN and INVITE. UNBAN works like this: if you have UNBAN access,
+              all +b bans against you are removed. If you have EXEMPT access, a +e is added on
+              your host. If you match an EXEMPTS list entry, that entry is pushed to the channel.
+              INVITE will invite you if you have access, and push any matching INVITES list
+              entries to the channel. (I'm jumping the gun here; Unreal doesn't support INVEX
+              (+I list) yet, but it's coming soon!)
+  -[CS] [Add] Implemented "Channel Initialization".
+  -[CO] [Add] Added some replies, as well as a few event names to be used later.
  06/10/2004 - aquanight
   -[--] [Add] COMSOCKET - Added RemoteHost, RemoteIP, and RemotePort to TCPSocket.
                           Added an api.html documentation.

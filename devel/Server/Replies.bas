@@ -61,6 +61,8 @@ Public Const UserKilledService = "User %n killed a service!"
 Public Const ServicesTerminatingNormally = "Services are shutting down normally :) Have a nice day!"
 Public Const ServicesTerminatingSplat = "Services have gone splat. Please restart them. :)"
 
+Public Const GeneralUnregedNick = "Nickname " + MIRC_BOLD + "%n" + MIRC_BOLD + " is not registered."
+
 'Config file errors.
 Public Const ConfigFileDoesntExist = "winse.conf doesnt exist! We need a configuration file to start."
 Public Const ConfigFileUnknownDirective = "Invalid directive in winse.conf: %n"
@@ -87,7 +89,7 @@ Public Const SanityCheckMODENonExistantEntity = "*SPLAT* Received MODE for non-e
 Public Const SanityCheckIRCdSentQuitForServer = "HEY YOU MR. IRCD! You send SQUIT for a server, not QUIT!"
 Public Const SanityCheckNickChangeCollision = "WTF? Nick Change Collision, are we desynced?: " 'stuff goes after ": "
 Public Const SanityCheckServicesNickInUse = "Nick collision with services nick! killing... "
-
+Public Const SanityCheckDBIndexInvalid = "EEEEEK! %f called with invalid index %i (%n)"
 
 'KILL Reasons
 Public Const KillReasonKilledService = "Do *NOT* /kill services!"
@@ -231,8 +233,6 @@ Public Const ChanServIdentifyBadPassLimit = "You have incorrectly identified too
 Public Const ChanServIdentifyAlreadyIDd = "You are already identified to %c, or already have +" & CHANSERV_COFOUNDER & " access."
 'I don't think banned lamers should be able to try and crack the password and get around it :) .
 Public Const ChanServIdentifyBanned = "You can't identify to %c because you are banned."
-'And just to give the ops a heads up that someone may be trying to crack the password.
-Public Const ChanServIdentifyWALLCHOPSFailed = "*** Notice -- Failed IDENTIFY from %n (%u): %r"
 'For RESTRICTED and MLOCK +AOz.
 Public Const ChanServIdentifyRestricted = "You can't identify to %c because you aren't permitted to use it."
 'Some more responses we could use.
@@ -245,18 +245,18 @@ Public Const ChanServBanRequested = "BANned: "
  'boot the user.
  'This one is for timed AKICKs. (Can we have timed
  'AKICKs?)
- '%c = Channel name. %n = AKICK setter. %r = Reason.
+ '%c = Channel name. %r = Reason.
  'Theoretically, we could send a 474 too :P
  ':services.* 474 Lamer #blah :Cannot join channel (+b)
-Public Const ChanServAKICKTemp = "User has been banned from %c. (%n: %r)"
+Public Const ChanServAKICKTemp = "User has been banned from %c. (%r)"
  'And for perm AKICKs.
-Public Const ChanServAKICKPerm = "User has been permanently banned from %c. (%n: %r)"
+Public Const ChanServAKICKPerm = "User has been permanently banned from %c. (%r)"
  'When a non-oper joins a channel MLOCK'd +O or a
  'non-admin joins a channel MLOCK'd +A.
  '(We could theoretically send a 481 too :P )
  ':services.* 481 Lamer :Permission denied - you are not an IRC Operator.
  'This will also be used for RESTRICTED.
-Public Const ChanServKickNotOper = "You are not permitted to enter this channel."
+Public Const ChanServKickNoJoin = "You are not permitted to enter this channel."
  'Whe a non-SSL joins an SSL channel (MLOCK'd +z).
  'We could probably also send whatever num Unreal/etc
  'uses for this.
@@ -286,6 +286,17 @@ Public Const ChanServACEFlagIgnored = "Flag %f ignored: %r"
 Public Const ChanServACEIgnorePFounder = "Only one permanent founder may exist. To transfer Permanent Founder control to someone else, use " + MIRC_BOLD + "/msg ChanServ SET %c FOUNDER %n" + MIRC_BOLD
 Public Const ChanServACEIgnoreAlreadySet = "The flag is already set."
 Public Const ChanServACEIgnoreAlreadyUnset = "The flag is already unset."
+
+'Now some verbosity messages.
+Public Const ChanServIdentifyWALLCHOPSFailed = "*** Notice -- Failed IDENTIFY from %n (%u): %r"
+Public Const ChanServVerboseACLChange = "*** Notice -- %n sets %c flags: %f [now %s]"
+Public Const ChanServVerboseInvite = "*** Notice -- %n invited %c into the channel."
+Public Const ChanServInvitation = "%n invites you to join %c"
+Public Const ChanServUnbanExemptEntry = "You match the EXEMPT entry " + MIRC_BOLD + "%e" + MIRC_BOLD + ". The exempt shall be activated."
+Public Const ChanServUnbanExemptFlag = "You have the +" + CHANSERV_EXEMPT + " flag. An exempt has been activated on your host."
+Public Const ChanServUnbanBansRemoved = "%n ban(s) have been removed."
+Public Const ChanServVerboseUnban = "*** Notice -- %n has unbanned %c."
+Public Const ChanServNowUnbanned = "You are no longer banned from %c."
 
 'Help System
 Public Const UnknownCommandOrHelpNotAvailable = "No help available."

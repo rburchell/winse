@@ -407,7 +407,13 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
                 Channels.Add c
                 u.Channels.Add c
                 RaiseCustomEvent c.Name, basEvents.ChanCreate, c, u
-                RaiseCustomEvent Channels(sChan).Name, basEvents.ChanJoin, Channels(sChan), u
+                'The User got removed by the event, probably ChanServ's AKICK.
+                If c.Members.Count > 0 Then
+                    RaiseCustomEvent Channels(sChan).Name, basEvents.ChanJoin, c, u
+                Else
+                    'Not sure what to do here. We should technically generate the channel destroy event.
+                    basFunctions.RaiseCustomEvent c, basEvents.ChanDestroy, c, u
+                End If
             Else
                 With Channels(sChan)
                     If .Members.Exists(u.Nick) Then Exit Sub 'Already on the channel.
