@@ -31,7 +31,7 @@ Public Sub OperservHandler(Cmd As String, Sender As Integer)
         Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, Replies.MustBeOpered)
         Exit Sub
     End If
-    If basFunctions.HasFlag(Sender, AccFlagCanOperServ) Then
+    If Not basFunctions.HasFlag(Sender, AccFlagCanOperServ) Then
         Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, Replies.InsufficientPermissions)
         Exit Sub
     End If

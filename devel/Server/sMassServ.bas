@@ -29,11 +29,7 @@ Public Sub MassservHandler(Cmd As String, Sender As Integer)
     FirstSpace = InStr(Cmd, " ")
     If FirstSpace <> 0 Then Cmd = Left(Cmd, FirstSpace - 1)
     
-    If Not basFunctions.IsServicesAdmin(Sender) Then
-        Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.MustBeAServiceAdmin)
-        Exit Sub
-    End If
-    If basFunctions.HasFlag(Sender, AccFlagCanMassServ) Then
+    If Not basFunctions.HasFlag(Sender, AccFlagCanMassServ) Then
         Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.InsufficientPermissions)
         Exit Sub
     End If

@@ -918,7 +918,7 @@ HasFlag = IIf(InStr(1, Users(UserID).Access, Flag), True, False)
 End Function
 Public Sub SetFlags(UserID As Integer, FlagMask As String)
 If Not Mid(FlagMask, 1, 1) = "+" And Not Mid(FlagMask, 1, 1) = "-" Then 'Absolute Flag String
-  Users(UserID).Flags = FlagMask
+  Users(UserID).Access = FlagMask
   Exit Sub
 End If
 ' Copied with few editions from my SetUserModes - Jason
@@ -927,7 +927,7 @@ End If
   Dim AddModes As Boolean
   Dim Result As String
   With basMain.Users(UserID)
-    Result = .Flags
+    Result = .Access
     AddModes = True
     For l = 1 To Len(FlagMask)
       ModeChar = Mid(FlagMask, l, 1)
@@ -946,6 +946,6 @@ End If
 ' End Validity Checked Code
       End If
       Next l
-      .Flags = Result
+      .Access = Result
   End With
 End Sub

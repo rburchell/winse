@@ -27,6 +27,13 @@ Services:
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
  28/07/2004 - Jason
+  -[CO] [Fix] Typos in SetFlags
+  -[AS] [Fix] Security fix in AdminServ ACCESS
+  -[AS] [Fix] Duplicate declarations in AdminServ ACCESS
+  -[AS] [Fix] Bugfix in AdminServ ACCESS
+  -[MsS][Fix] Security fix in MassServ (Missing NOT)
+  -[OS] [Fix] Security fix in OperServ (Missing NOT)
+  -[AG] [Fix] Help in agent had a duplicate DENY entry
   -[AG] [---] Agent KILL Improvement: * Quits: L4m3n00b (Ident@Host) (Killed (MrAnnoyed (Go away!)))
  26/07/2004 - w00t
   -[--] [---] Reformatted the changelog. Maybe it looks prettyful now. :P

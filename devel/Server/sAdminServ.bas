@@ -126,25 +126,25 @@ Private Function Flags(Sender As Integer, Action As String, TargetNick As String
     End Select
 End Function
 
-Private Function Access(Sender As Integer, TargetNick As String, Access As String)
+Private Function Access(Sender As Integer, TargetNick As String, NewAccess As String)
     Dim TargetIndex As Integer
     Dim Successful As Boolean
     'Dont need to check if sender is comaster since AdminServ checks will
     'do that for us (we hope)
-    If InStr(1, Access, AccFlagCoMaster) > 0 And Not basFunctions.HasFlag(basMain.Users(Sender), AccFlagMaster) Then
+    If (InStr(1, NewAccess, AccFlagCoMaster) > 0 Or InStr(1, NewAccess, AccFlagMaster) > 0) And Not basFunctions.HasFlag(Sender, AccFlagMaster) Then
         'That bastard is trying to add another comaster! He cant do that!
         Call basFunctions.SendMessage(basMain.Service(5).Nick, basMain.Users(Sender).Nick, Replies.AdminServCantAddCoMaster)
         Exit Function
     End If
     TargetIndex = basFunctions.ReturnUserIndex(TargetNick)
-    If HasFlag(TargetIndex, AccFlagCoMaster) And Not basFunctions.HasFlag(basMain.Users(Sender), AccFlagMaster) Then
+    If HasFlag(TargetIndex, AccFlagCoMaster) And Not basFunctions.HasFlag(Sender, AccFlagMaster) Then
         'That bastard is trying to change a comaster's access! He cant do that!
         Call basFunctions.SendMessage(basMain.Service(5).Nick, basMain.Users(Sender).Nick, Replies.AdminServCantModCoMaster)
         Exit Function
     End If
     Successful = True
     If TargetIndex <> -1 Then
-        basFunctions.SetFlags TargetIndex, Access
+        basFunctions.SetFlags TargetIndex, NewAccess
     Else
         Successful = False
     End If

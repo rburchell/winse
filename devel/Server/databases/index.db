@@ -1,11 +1,12 @@
 [Totals]
-TotalRegisteredNicks=3
+TotalRegisteredNicks=4
 TotalRegisteredChannels=3
 [Nicks]
 RegisteredNick0=W00T
 RegisteredNick1=MIKE
 RegisteredNick2=Z00T
 RegisteredNick3=THE_AVATAR
+RegisteredNick4=JASON
 [Channels]
 RegisteredChannel0=#THELOUNGE
 RegisteredChannel1=#TEST

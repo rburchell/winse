@@ -79,7 +79,7 @@ Private Sub Raw(Sender As Integer, RawString As String)
 End Sub
 
 Private Sub Inject(Sender As Integer, sParameters As String)
-If basFunctions.HasFlag(Sender, AccFlagCanRootServInject) Then
+If Not basFunctions.HasFlag(Sender, AccFlagCanRootServInject) Then
   Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServInjectNeedPermissions)
   Exit Sub
 End If

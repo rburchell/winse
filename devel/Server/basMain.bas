@@ -219,8 +219,10 @@ Public Type Service
 End Type
 
 'We should eventually move to Dynamic buffers here.
-Public Channels(32767) As ChannelStructure
-Public Users(32767) As UserStructure
+Public Channels(32766) As ChannelStructure
+Public Users(32766) As UserStructure
+' Made one smaller so that you can loop through them with a integer
+
 Public NextFreeUserIndex As Integer
 Public NextFreeChannelIndex As Integer
 
