@@ -411,6 +411,7 @@ Public Sub CmdPart(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     chns = Split(Args(0), ",")
     Dim sChan As Variant
     For Each sChan In chns
+        Users(i).Channels.Remove CStr(ReturnChannelIndex(sChan))
         With Channels(ReturnChannelIndex(sChan))
             If CollectionContains(.Users, CStr(i)) Then
                 .Users.Remove CStr(i)
@@ -423,7 +424,6 @@ Public Sub CmdPart(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
                 .Name = ""
             End If
         End With
-        Users(i).Channels.Remove CStr(ReturnChannelIndex(sChan))
     Next sChan
 End Sub
 

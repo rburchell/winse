@@ -26,6 +26,18 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 01/08/2004 - aquanight
+  -[CO] [---] R.I.P. COMSocket. It was a great component in it's day
+              but it had two very unfortunate negativities:
+              - It was slow to load when Winse starts (or the first time
+                it is started while in the IDE). This is an unfortunate
+                result of the required .NET Framework being loaded.
+              - MSI Installers suck, and writing my own was just too
+                convoluted. NSIS may have worked, but poop.
+              So Winse is officially "broken" as it no longer has socket
+              access anywhere, until further notice. We will have to
+              continue developing blindly until a new socket library
+              is put in. (BOO MSWinSock OCX FOREVER!)
  01/08/2004 - w00t
   Yes, I actually work occasionally :)
   --- A few notes and observations ---  
