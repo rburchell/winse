@@ -34,10 +34,17 @@ Public Sub Remove(ByVal idx As Variant)
             Error 13
         End If
     ElseIf IsNumeric(idx) Then
+        On Error GoTo RemErr
+        'something really gets screwed about here... esp when they dont have any memos
+        ';)
         mData.Remove idx
+        On Error GoTo 0
     Else
         Error 13
     End If
+    Exit Sub
+RemErr:
+    'Just ignore for now...
 End Sub
 
 Public Function Item(ByVal idx As Variant) As Memo

@@ -26,6 +26,20 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 10/09/2004 - aquanight
+  -[DB] [Fix] Added winse.mdb to the repository. Also adjusted constraints and field types.
+              I noticed that some of the names were not what I planned to use. I guess
+              we will need to update WinSE with the actual field names...
+              The database itself is Access 200 Format. Please make sure you have this
+              or a later version.
+              SPECIAL NOTE: If directly modifying the database is necessary (such as
+              adjusting field properties), be SURE to Compact the database so that it takes
+              as little room as possible; that way we don't go uploading 394542MB files to
+              SourceForge's CVS servers...
+ 07/09/2004 - w00t
+  -[MS] [Fix] Fixed DEL old index crap
+  -[MS] [Fix] Re-wrote DEL so it works :p
+  -[MS] [Fix] DEL ALL also works now! :p
  06/09/2004 - aquanight
   -[MS] [Fix] Squashed some old index stuffs.
   -[CO] [Fix] Added IndexOf to the collections.

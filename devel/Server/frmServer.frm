@@ -63,6 +63,7 @@ Begin VB.Form frmServer
       _ExtentY        =   4048
       _Version        =   393217
       BackColor       =   49152
+      Enabled         =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmServer.frx":0000
       BeginProperty Font {0BE35203-8F91-11CE-9DE3-00AA004BB851} 
@@ -127,7 +128,17 @@ Option Explicit
 Public tcpServer As New TCPSocket
 
 Private Sub Form_Initialize()
+    On Error Resume Next
     Set tcpServer = New TCPSocket
+    If Err.Number = 429 Then 'Can't create object.
+        If MsgBox("Oh dear. We couldn't start up the socket engine. It could be because you  haven't installed COMSocket yet. Press OK for more information.", vbCritical + vbOKCancel, "Error!") = vbOK Then
+            'I hate doing this. But Shell()'s stupidities leave me no choice.
+            ShellExecuteA 0, vbNullString, "http://www.phpbbhost.biz/jason/phpbb/viewtopic.php?t=18", vbNullString, CurDir(), SW_SHOWMAXIMIZED
+        End If
+        'No connection, so trying to message won't work.
+        LogEvent LogTypeError, "Unable to initialize socket engine. For more information, see http://www.phpbbhost.biz/jason/phpbb/viewtopic.php?t=18"
+        End 'Die.
+    End If
 End Sub
 
 Private Sub Form_Load()

@@ -21,10 +21,72 @@ Option Explicit
 Public Const AccFlagCanMemoServAdmin As String * 1 = "e"
 'Public Const AccFullAccess As String = "MmgoriIae"
 Public Const MS_TOTALMEMOS = 19 'max of 20. (0-19) Should make user configurable?
-'Memos(MS_TOTALMEMOS) As Memo           'Each user can have a max of 20 memos. (in userstructure)
 
-'I put the memo type here for some reason...
-Public Const ModVersion = "0.0.0.0"
+Public DB As Collection
+Public Const ModVersion = "0.2.0.0"
+
+
+Public Sub LoadData(ByVal conn As Connection)
+    Set DB = ReadTableIntoCollection(conn, "MemoServ")
+    Dim idx As Long, subcol As Collection
+    'Key each subcollection under it's RECIEVER index. (guess this is a good idea lol)
+    For idx = 1 To DB.Count
+        Set subcol = DB(idx)
+        DB.Remove idx
+        DB.Add subcol, subcol("to"), idx
+    Next idx
+End Sub
+
+Public Sub SaveData(ByVal conn As Connection)
+    'Great. Now we're writing to the database. This aint as easy :| .
+    Dim cn As Connection 'To enable direct SQL execution for w00t :p
+    Dim rs As Recordset
+    Dim rs2 As Recordset
+    Call basFunctions.LogEvent(basMain.LogTypeDebug, "sMemoServ: SaveData: Entering, acquiring connection...")
+    Set cn = basDBAccess.OpenDB(basMain.Config.ConnectString)
+    Set rs = GetTable(conn, "MemoServ")
+    Call basFunctions.LogEvent(basMain.LogTypeDebug, "sMemoServ: SaveData: Connection acquired, Updating...")
+    
+    Dim subcol As Collection
+    For Each subcol In DB
+        Set rs2 = cn.Execute("SELECT * FROM `memoserv` WHERE `memo_id` = " & subcol("memo_id"))
+        'You know, the above probably isn't the most efficient way to do things...
+        If Not rs2 Then
+            'New memo.
+            Debug.Print "new memo not in db"
+            cn.Execute "INSERT INTO `MemoServ` (`from`,`read`,`text`,`to`,`memo_id`) VALUES ('" & subcol("from") & "','" & CInt(subcol("read")) & "','" & subcol("text") & "','" & subcol("to") & "','" & subcol("memo_id") & "')"
+        Else
+            'Memo exists in db, ignore.
+            Debug.Print "existing memo already in db"
+        End If
+    Next subcol
+    'Now we need to look for memos in the database that we don't have in the collection - these
+    'were dropped between updates, so we need to remove them from the DB or they get mysteriously
+    'resent :) .
+    With rs
+        On Error Resume Next
+        .MoveFirst
+        On Error GoTo 0
+        While Not .EOF
+            'Now see if the current record is in our memory cache.
+            On Error Resume Next
+            Set subcol = DB(.Fields("memo_id"))
+            If Err.Number = 9 Then
+                'Not found.
+                Err.Clear
+                .Delete 'Delete this record. Note that this doesn't move the record-pointer, which means
+                        'any read or write operation will fail. We have to use Move*/Seek/Find/Close/etc
+                        'before we can safely do stuff again. Thankfully we don't need to do anything else
+                        'but just think of this as a warning in case you need to .Delete in other code.
+            End If
+            .MoveNext 'A deleted record is fully released here :) . This means that MovePrevious won't put
+                    'us back on strange-deleted-record-land. Example: if we .MoveFirst then .Delete,
+                    'MoveNext and MoveFirst would have the same result. Thus, we could theoretically
+                    'clear a table by looping around .MoveFirst and .Delete :) .
+        Wend
+    End With
+    Call basFunctions.LogEvent(basMain.LogTypeDebug, "sMemoServ: SaveData: Finished.")
+End Sub
 
 Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
     'moo, memoserv yay.
@@ -176,7 +238,7 @@ Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "All your memos have been deleted.")
                     Exit Sub
                 End If
-                With basMain.Users(Sender)
+                With Sender
                     If .Memos(CByte(Parameters(2))).strSenderNick <> "" Then
                         Call sMemoServ.DelMemo(Sender, CInt(Parameters(2)))
                         Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo " & Parameters(1) & " has been deleted.")
@@ -192,13 +254,14 @@ Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "All your memos have been deleted.")
                     Exit Sub
                 End If
+                
                 With basMain.Users(Sender)
-                    If .Memos(CByte(Parameters(1))).strSenderNick <> "" Then
-                        Call sMemoServ.DelMemo(Sender, CByte(Parameters(1)))
-                        Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo " & Parameters(1) & " has been deleted.")
-                    Else
+                    If Not .Memos.Exists(CByte(Parameters(1))) Then
                         Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo " & Parameters(1) & " does not exist.")
+                        Exit Sub
                     End If
+                    Call sMemoServ.DelMemo(Sender, CByte(Parameters(1)))
+                    Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo " & Parameters(1) & " has been deleted.")
                 End With
             End If
     End Select
@@ -221,6 +284,21 @@ Public Function AddMemo(ByVal UserID As User, ByVal SenderNick As String, ByVal 
         'If we get here, they have no free memos. Bummer.
         Set AddMemo = Nothing
     Else
+        Dim newcol As Collection
+        Dim Rand As Double '...
+        Set newcol = New Collection
+        Randomize Timer
+        Rand = Int((900000000 * Rnd) + 1)
+        'we SHOULD check for duplicates in the future!
+        '(unless someone can think of a better way of doing this?)
+        '(remember, rand is ment to be unique.. admittedly, the chance
+        'of duplicates is low, but 1/1000000000000 is too high odds for me...)
+        newcol.Add SenderNick, "from"
+        newcol.Add False, "read"
+        newcol.Add MemoBody, "text"
+        newcol.Add UserID.Nick, "to"
+        newcol.Add Rand, "memo_id"
+        DB.Add newcol
         UserID.Memos.Add m
     End If
 End Function
@@ -235,7 +313,12 @@ Public Function DelMemo(ByVal UserID As User, ByVal MemoID As Variant) As Intege
     If MemoID <> -1 Then
         UserID.Memos.Remove MemoID
     Else
-        While UserID.Memos.Count > 0: UserID.Memos.Remove 1: Wend
+        'While UserID.Memos.Count <> 1
+        'remove "1" 255 times... I guess this works
+        For i = 0 To 253
+            UserID.Memos.Remove 1
+        Next i
+        'Wend
     End If
     'Yay!
     DelMemo = 1

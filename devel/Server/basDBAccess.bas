@@ -22,7 +22,10 @@ Option Explicit
 Public Function OpenDB(ByVal ConnectString As String) As Connection
     Dim conn As Connection
     Set conn = New Connection
-    conn.Open ConnectString
+    'ConnectString is ignored for now... hardwired.
+    conn.ConnectionString = "DATA SOURCE=" & App.Path & "\winse.mdb"
+    conn.Provider = "Microsoft.JET.OleDB.4.0"
+    conn.Open 'ConnectString
     Set OpenDB = conn
 End Function
 

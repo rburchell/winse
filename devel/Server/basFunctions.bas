@@ -17,6 +17,9 @@ Attribute VB_Name = "basFunctions"
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Option Explicit
 
+Public Declare Function ShellExecuteA Lib "shell32" (ByVal hWnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
+Public Const SW_SHOWMAXIMIZED = 3
+
 Public Function ParseBuffer(ByVal Buffer As String) As Variant
     'Splits a sentance or whatever into an array of words.
     ParseBuffer = Split(Buffer, " ")
@@ -58,7 +61,7 @@ Public Function IsChanRegistered(ByVal ChanName As String) As Boolean
     Dim Password As String
     'If we have a password, we must be registered ;)
     On Error Resume Next
-    Password = DB(ChanName)("Password")
+    Password = sChanServ.DB(ChanName)("Password")
     IsChanRegistered = (Password <> "")
 End Function
 

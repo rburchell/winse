@@ -17,3 +17,4 @@ Public strSenderNick As String
 Public dblTimeSent As Double       'who knows, this may be useful... Probably not ;p
 Public strMemoText As String
 Public bllRead As Boolean
+Public MemoIdentifier As String    'unique identifier for each memo, used to store in db.
