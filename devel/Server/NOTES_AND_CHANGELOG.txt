@@ -39,6 +39,8 @@ Services:
              All [AL]
 [-----------------------------------]
 
+25/07/2004
+ -[AG] [Fix] Numerous bugfixes, I tested it well, then fixed everything that was broken
 25/07/2004 - aquanight
  -[--] [---] I got enough complaints that COMSocket was difficult to
              register (you have to use the .NET SDK's RegAsm tool
