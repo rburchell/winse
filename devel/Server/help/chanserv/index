@@ -2,11 +2,39 @@ ChanServ Commands:
   ChanServ is used to register and control channels. With this, you can ensure that a
   channel remains yours, so you can do what you wish with it. It is not intended to be
   a method of facilitating channel takeovers, or being overtly hostile towards others.
+  Abuse of ChanServ can result in, at a minimum, loss of registered channels.
  
   ChanServ is publically available.
  
   Commands:
-   REGISTER
-   ACCESS
+   REGISTER                  Register a channel under your nick.
+   IDENTIFY                  Identify as a co-founder for a channel.
+   ACCESS                    Modify the access flags for a user.
+   AKICK                     Manage the list of banned users.
+   EXEMPTS                   Manage the list of users permitted to join, regardless of bans.
+   INVITES                   Manage the list of users permitted to invite themselves.
+   INVITE                    Request ChanServ invite you or someone to the channel.
+   UNBAN                     Remove all bans from a channel affecting you or someone else.
+   VOICE / DEVOICE           Give or take Voice Privilege (+) on a channel.
+   HALFOP / DEHALFOP         If supported, give or take Halfop Privilege (%) on a channel.
+   OP / DEOP                 Give or take Op Privilege (@) on a channel.
+   PROTECT / DEPROTECT       If supported, give or take Protected Status (+a) on a channel.
+   OWNER / DEOWNER           If supported, give or take Owner Status (+q) on a channel.
+   VOP / HOP / AOP / SOP     Manage channel access using traditional settings.
+   CFOUNDER                  Quickly add a cofounder for your channel.
+   KICK / BAN                Kick or ban and kick someone from the channel.
+   TOPIC                     Change the topic on the channel.
+   MODE                      Change modes on the channel.
+   SET                       Change channel settings.
+   LOCK                      Lock individual settings to prevent others from changing them.
+   UNLOCK                    Permit privileged users to change a setting again.
+   DROP                      Cancel a channel registration.
+   HELP                      I think you already know what this does ;-) .
+   VERSION                   (Also available as /ctcp ChanServ VERSION.) See the WinSE Version.
+
+The following commands are limited to SERVICES OPERATORS:
+   FORBID                    Deny use of a channel.
+   SUSPEND                   Freeze a channel.
+   UNSUSPEND                 Unfreeze a channel.
  
    Notice: For more Information type /msg ChanServ HELP <command>

@@ -1,2 +1,15 @@
-Syntax: ACCESS <#channelname> <ADD|DEL> <nick> <level>
-Access is not yet fully implemented.
+Syntax: ACCESS <#channelname> {ADD|SET} <nick> <flags>
+        ACCESS <#channelname> DEL <nick>
+        ACCESS <#channelname> LIST
+
+The ADD and SET commands have the same effect:
+- If the user is not on the access list, that user is added with the given flags.
+- If the user is on the access list, his flags are modified according to the flags parameter.
+The flags parameter is a set of characters indicating what flags to add or remove. It uses the
+same syntax as the IRC /MODE command, meaning that flags to be added are placed after a +, and
+flags to be removed are placed after a -. For example: +kc-i+za-l means to add kc, remove i, add
+za, remove l. For a list of character flags and their effect, type /msg ChanServ HELP FLAGS.
+
+DEL deletes a user from the access list.
+
+LIST shows all access list entries.

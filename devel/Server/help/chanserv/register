@@ -1,3 +1,10 @@
 Syntax: REGISTER <#channelname> <password> <description>
 This registers a channel with the password and description given,
 and adds your name as the channel founder.
+
+It is strongly recommended that you add a successor for your channel.
+Should your nick expire before the channel does, the successor will
+become the founder of your channel. If you did not set a successor
+however, the channel will be dropped, and all settings will be lost,
+and anyone with Channel Operator status on the channel (@) will be
+permitted to REGISTER the channel again.
