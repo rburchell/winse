@@ -17,7 +17,7 @@ Attribute VB_Name = "sAgent"
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Option Explicit
 Public Const ModVersion = "0.0.2.4"
-Private DenyMasks As Collection
+Public DenyMasks As New Collection
 
 Public Sub AgentHandler(Cmd As String, Sender As Integer)
     'You need not be opered, or have services access to use Agent. All you
@@ -81,7 +81,7 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
                 Exit Sub
             End If
             For i = 2 To Elements
-                Message = Message & " " & Parameters(i)
+                Message = Message & IIf(i = 2, "", " ") & Parameters(i)
             Next
             Call sAgent.Exit_(Sender, Parameters(1), Message)
         Case "FJOIN"
@@ -111,7 +111,7 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
                 Exit Sub
             End If
             For i = 2 To Elements
-                Message = Message & " " & Parameters(i)
+                Message = Message & IIf(i = 2, "", " ") & Parameters(i)
             Next
             Call sAgent.Kill(Sender, Parameters(1), Message)
         Case "KICK"
@@ -124,7 +124,7 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
                 Exit Sub
             End If
             For i = 3 To Elements
-                Message = Message & " " & Parameters(i)
+                Message = Message & IIf(i = 3, "", " ") & Parameters(i)
             Next
             Call sAgent.Kick(Sender, Parameters(1), Parameters(2), Message)
         Case "NICK"
@@ -207,7 +207,7 @@ End Sub
 'damn not letting me use a keyword >:(
 Private Sub Exit_(Sender As Integer, Nick As String, Message As String)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT EXIT " & Nick & " with message " & Message)
-    basFunctions.SendData ("SVSKILL " & Nick & " :" & LTrim(Message))
+    basFunctions.SendData ("SVSKILL " & Nick & " :" & Message)
 End Sub
 
 Private Sub UMode(Sender As Integer, Nick As String, Modes As String)
@@ -231,12 +231,12 @@ End Sub
 
 Private Sub Kill(Sender As Integer, Nick As String, Message As String)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KILL " & Nick & " with reason " & Message)
-    Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KILL " & Nick & " :" & LTrim(Message) & " (" & basFunctions.ReturnUserName(Sender) & ")")
+    Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KILL " & Nick & " :" & Message & " (" & basFunctions.ReturnUserName(Sender) & ")")
 End Sub
 
 Private Sub Kick(Sender As Integer, Nick As String, Channel As String, Message As String)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KICK " & Nick & " from " & Channel & " with reason " & Message)
-    Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KICK " & Nick & " " & Channel & " :" & Message & " (" & basFunctions.ReturnUserName(Sender) & ")")
+    Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KICK " & Channel & " " & Nick & " :" & Message & " (" & basFunctions.ReturnUserName(Sender) & ")")
 End Sub
 
 Private Sub UnIdentify(Sender As Integer, Nick As String)
@@ -425,7 +425,7 @@ Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal 
 If bSet And InStr("oOCAaN" & IIf(basMain.Config.ServerType = "UNREAL", "vg", ""), Char) Then
   If IsDeny(UserID) And Not UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master can OPER
     If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
-      If Char = "o" Then Call basFunctions.SendData("SVSO " & Users(UserID).Nick & " -")
+      If Char = "O" Then Call basFunctions.SendData("SVSO " & Users(UserID).Nick & " -")
       ' ^ If verifys that only one SVSO is sent
       If Char = "v" Or Char = "g" Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Users(UserID).Nick & " -" & Char)
       ' These two flags arent cleared by svso for some reason:
@@ -444,7 +444,8 @@ Public Function IsDeny(UserID As Integer) As Boolean
 Dim UserHost As String, Denied As Boolean, l As Integer ' Change it to byte?
 UserHost = Users(UserID).Nick & "!" & Users(UserID).UserName & "@" & Users(UserID).HostName
 Denied = False
-For l = 1 To DenyMasks.Count
+'if not denymasks.Count
+For l = 1 To sAgent.DenyMasks.Count
   If UserHost Like CStr(Replace(Replace(DenyMasks(l), "[", "[[]"), "#", "[#]")) Then
     Denied = True
     Exit For
