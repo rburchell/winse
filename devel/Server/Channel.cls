@@ -18,7 +18,7 @@ Public Topic As String
 Public TopicSetBy As String
 Public TopicSetOn As Long                   'Not sure if this is really needed... --w00t
 Public Modes As String
-Public TS As Long                           'We should track this for the sake of being marginally TS capable.
+Public ts As Long                           'We should track this for the sake of being marginally TS capable.
 Private mMembers As Members
 'Now for the extended modes that require parameters (+flL etc)
 Private mBans As Collection
@@ -71,6 +71,11 @@ Public Sub KickUser(ByVal Source As String, ByVal Victim As User, ByVal Reason A
 End Sub
 
 Public Sub SendChannelModes(ByVal Source As String, ByVal Modes As String, ParamArray Parameters() As Variant)
+    Call basFunctions.SendData(":" & Source & " MODE " & Me.Name & " " & Modes & " " & Join(Parameters, " "))
+    SetChannelModes Source, Trim(Modes & " " & Join(Parameters, " "))
+End Sub
+
+Public Sub SendChannelModes2(ByVal Source As String, ByVal Modes As String, Parameters() As Variant)
     Call basFunctions.SendData(":" & Source & " MODE " & Me.Name & " " & Modes & " " & Join(Parameters, " "))
     SetChannelModes Source, Trim(Modes & " " & Join(Parameters, " "))
 End Sub

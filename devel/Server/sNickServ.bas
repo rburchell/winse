@@ -374,18 +374,18 @@ Private Sub List(ByVal Sender As User)
         With DB(i)
             If Sender.HasFlag(AccFlagCoMaster) Or Sender.HasFlag(AccFlagMaster) Then
                 If lines < 20 Then
-                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender, " " + IIf(InStr(.Access, AccFlagMaster) > 0, "@", IIf(InStr(.Access, AccFlagCoMaster) > 0, "%", IIf(.Access <> "", "*", ""))) + IIf(.Private, "?", "") + IIf(.AbuseTeam, "!", "") + " " + .Nick + " " + .EMail)
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, " " + IIf(InStr(.Access, AccFlagMaster) > 0, "@", IIf(InStr(.Access, AccFlagCoMaster) > 0, "%", IIf(.Access <> "", "*", ""))) + IIf(.Private, "?", "") + IIf(.AbuseTeam, "!", "") + " " + .Nick + " " + .EMail)
                     lines = lines + 1
                 End If
             ElseIf Sender.HasFlag(AccFlagNickAdmin) Then
                 If lines < 20 Then
-                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender, " " + IIf(InStr(.Access, AccFlagMaster) > 0, "@", IIf(InStr(.Access, AccFlagCoMaster) > 0, "%", IIf(.Access <> "", "*", ""))) + IIf(.Private, "?", "") + " " + .Nick + " " + .EMail)
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, " " + IIf(InStr(.Access, AccFlagMaster) > 0, "@", IIf(InStr(.Access, AccFlagCoMaster) > 0, "%", IIf(.Access <> "", "*", ""))) + IIf(.Private, "?", "") + " " + .Nick + " " + .EMail)
                     lines = lines + 1
                 End If
             Else
                 'Don't show private nicks, and limit 20 lines else people get nice Max SendQ deals.
                 If Not .Private And lines < 20 Then
-                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender, " " + IIf(InStr(.Access, AccFlagMaster) > 0, "@", IIf(InStr(.Access, AccFlagCoMaster) > 0, "%", IIf(.Access <> "", "*", ""))) + " " + .Nick + " " + IIf(.HideEmail, "Hidden@EMail.Address", .EMail))
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, " " + IIf(InStr(.Access, AccFlagMaster) > 0, "@", IIf(InStr(.Access, AccFlagCoMaster) > 0, "%", IIf(.Access <> "", "*", ""))) + " " + .Nick + " " + IIf(.HideEmail, "Hidden@EMail.Address", .EMail))
                     lines = lines + 1
                 End If
             End If
@@ -395,13 +395,13 @@ End Sub
 
 Private Sub Register(ByVal Sender As User, ByVal NickToRegister As String, ByVal EMail As String, ByVal Password As String)
     NickToRegister = UCase(NickToRegister)
-    If DBIndexOf(NickToRegister) Then
+    If DBIndexOf(NickToRegister) >= 0 Then
         'Nick already registered.
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replies.NickServNickAlreadyRegistered)
         Exit Sub
     End If
     Dim c As Long
-    With basMain.Users(Sender)
+    With Sender
         On Local Error Resume Next
         c = UBound(DB) + 1
         If Err = 9 Then
@@ -716,7 +716,7 @@ Public Function DBIndexOf(ByVal Nick As String) As Long
     On Error GoTo 0
     For idx = 0 To UBound(DB)
         With DB(idx)
-            If Nick = .Nick Then
+            If UCase(Nick) = UCase(.Nick) Then
                 DBIndexOf = idx
                 Exit Function
             Else

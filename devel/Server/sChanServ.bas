@@ -814,21 +814,28 @@ Public Sub Register(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
     ElseIf InStr(Channel.Members(Source.Nick).Modes, "o") = 0 And InStr(Channel.Members(Source.Nick).Modes, "a") = 0 And InStr(Channel.Members(Source.Nick).Modes, "q") = 0 Then
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServRegNeedOps, "%c", Channel.Name))
         Call basFunctions.SendNumeric(Source.Nick, 482, Channel.Name & " :You're not channel operator.")
-    ElseIf Not Source.IdentifiedToNick = "" Then
+    ElseIf Source.IdentifiedToNick = "" Then
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.ChanServYouArentRegistered)
     Else
         'Otherwise, we're okay to register.
         Dim nTime As Double
+        On Local Error Resume Next
+        nTime = UBound(DB)
+        If Err <> 0 Then
+            ReDim DB(0)
+        Else
+            ReDim Preserve DB(UBound(DB) + 1)
+        End If
+        On Error GoTo 0
         nTime = basUnixTime.GetTime()
-        ReDim Preserve DB(UBound(DB) + 1)
         With DB(UBound(DB))
             .Name = Channel.Name
             .Password = Password
             .Description = Description
             ReDim .AccessList(0)
             .AccessList(0).Lock = LOCK_FOUNDER
-            .AccessList(1).Nick = Source.IdentifiedToNick
-            .AccessList(2).Flags = "F"
+            .AccessList(0).Nick = Source.IdentifiedToNick
+            .AccessList(0).Flags = "F"
             ReDim .Bots(0)
             .Bots(0) = "!" + Service(SVSINDEX_CHANSERV).Nick
             Erase .AKicks
@@ -844,7 +851,7 @@ Public Sub Register(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
             .Give = False
             .KickBadWords = -1
             .KickBold = -1
-            .KickBWList = Array()
+            Erase .KickBWList
             .KickCaps = -1
             .KickCapsMinimum = 10
             .KickCapsTrigger = 25
@@ -957,7 +964,7 @@ Public Sub Access(ByVal Source As User, ByVal Channel As Channel, ByVal Subcomma
                 'Prepare to dump the list on this guy.
                 For idx = 0 To UBound(DB(chptr).AccessList)
                     With DB(chptr).AccessList(idx)
-                        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, FormatString("{0} {1} {2}", .Nick, .Flags, IIf(.Lock > LOCK_NONE, "LOCKED: " + Choose(.Lock, "Normal", "Co-Founder", "Founder"), "")))
+                        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, FormatString("{0} {1} {2} {3}", .Nick, .Flags, .CanFlags, IIf(.Lock > LOCK_NONE, "LOCKED: " + Choose(.Lock, "Normal", "Co-Founder", "Founder"), "")))
                     End With
                 Next idx
             Else
@@ -1062,7 +1069,7 @@ Public Sub Access(ByVal Source As User, ByVal Channel As Channel, ByVal Subcomma
                 SetCanFlag Channel.Name, NickName, CanFlags
             End If
             'Let the channel know.
-            Call basFunctions.Notice(Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, Replace(Replace(Replace(Replace(Replies.ChanServVerboseACLChange, "%n", Source.Nick), "%c", NickName), "%f", Flags & IIf(CanFlags <> "", " " + CanFlags)), "%s", DB(chptr).AccessList(daceptr).Flags & IIf(DB(chptr).AccessList(daceptr).CanFlags <> "", " " & DB(chptr).AccessList(daceptr).CanFlags)))
+            Call basFunctions.Notice(Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, Replace(Replace(Replace(Replace(Replies.ChanServVerboseACLChange, "%n", Source.Nick), "%c", NickName), "%f", Flags & IIf(CanFlags <> "", " " + CanFlags, "")), "%s", DB(chptr).AccessList(daceptr).Flags & IIf(DB(chptr).AccessList(daceptr).CanFlags <> "", " " & DB(chptr).AccessList(daceptr).CanFlags, "")))
         Case "DEL"
     End Select
 End Sub
@@ -2940,7 +2947,9 @@ Public Sub JoinBot(ByVal Channel As Channel, ByVal Bot As String)
     If LCase(basMain.Config.ServerType = "UNREAL") Then
         'This is a bit misleading, but oh well:
         '* = Owner, ~ = Admin, @ = Op, % = Voice, + = Voice
-        Call basFunctions.SendData(FormatString("SJOIN {0} {1} :*@{2}", DB(DBIndexOf(Channel)).TimeRegistered, Channel.Name, Bot))
+        'Call basFunctions.SendData(FormatString("SJOIN {0} {1} :*@{2}", DB(DBIndexOf(Channel.Name)).TimeRegistered, Channel.Name, Bot))
+        Call basFunctions.SendData(":" + Bot & " JOIN " & Channel.Name)
+        Call basFunctions.SendData(":" + Bot & " MODE " & Channel.Name & " +ao " & Bot & " " & Bot)
     Else
         Call basFunctions.SendData(":" + Bot & " JOIN " & Channel.Name)
         Call basFunctions.SendData(":" + Bot & " MODE " & Channel.Name & " +ao " & Bot & " " & Bot)
@@ -2958,7 +2967,9 @@ Public Sub BotMode(ByVal Channel As Channel, ByVal Auto As Boolean, ByVal Modes 
     Dim vBot As String
     vBot = IIf(Auto, DB(DBIndexOf(Channel.Name)).BotAutoMode, DB(DBIndexOf(Channel.Name)).BotMode)
     If vBot = "" Then vBot = Service(SVSINDEX_CHANSERV).Nick
-    Channel.SendChannelModes vBot, Modes, Args
+    Dim vArgs() As Variant
+    vArgs = Args
+    Channel.SendChannelModes2 vBot, Modes, vArgs
 End Sub
 
 Public Sub BotTopic(ByVal Channel As Channel, ByVal Topic As String, ByVal SetBy As String, ByVal SetOn As Long)
@@ -3285,7 +3296,7 @@ Public Function DBIndexOf(ByVal Name As String) As Long
     Dim idx As Long
     On Local Error Resume Next
     idx = UBound(DB)
-    If Err = 0 Then
+    If Err <> 0 Then
         DBIndexOf = -1
         Exit Function
     End If

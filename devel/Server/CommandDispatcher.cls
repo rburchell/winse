@@ -569,18 +569,18 @@ Public Sub CmdMotd(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Does exist, sending.")
             'Just in case lame mIRC/other clients think the random MOTD is from the server it is connected
             'to:
-            basFunctions.Notice basMain.Config.ServerName, Users(i).Nick, "*** - Message of the day, " + basMain.Config.ServerName
-            basFunctions.SendData (":" & basMain.Config.ServerName & " 375 " & basMain.Users(i).Nick & " :- " & basMain.Config.ServerName & " Message of the Day")
+            basFunctions.Notice basMain.Config.ServerName, u.Nick, "*** - Message of the day, " + basMain.Config.ServerName
+            basFunctions.SendData (":" & basMain.Config.ServerName & " 375 " & u.Nick & " :- " & basMain.Config.ServerName & " Message of the Day")
             Do While Not EOF(j)
                 'This should really be cached, and refreshed on rehash, but I'll leave such things
                 'for when aqua unw00ts this :) Hey, at least I'm coding something...
                 Line Input #j, MOTDLine
                 'make our nice cool stuff :P go replace!
                 MOTDLine = Replace(MOTDLine, "%WINSEVER", basMain.AppVersion)
-                basFunctions.SendData (":" & basMain.Config.ServerName & " 372 " & basMain.Users(i).Nick & " :- " & MOTDLine)
+                basFunctions.SendData (":" & basMain.Config.ServerName & " 372 " & u.Nick & " :- " & MOTDLine)
                 DoEvents 'lala, I'm naughty :P
             Loop
-            basFunctions.SendData (":" & basMain.Config.ServerName & " 376 " & basMain.Users(i).Nick & " :End of /MOTD command.")
+            basFunctions.SendData (":" & basMain.Config.ServerName & " 376 " & u.Nick & " :End of /MOTD command.")
             Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Finished sending.")
         End If
     Close #j

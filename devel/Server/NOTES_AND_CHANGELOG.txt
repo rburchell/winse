@@ -26,7 +26,14 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */\
- 28/11/2004 - aquanight
+ 04/01/2005 - aquanight
+  -[--] [---] Finally I get around to testing WinSE :) . So this update is going to have some
+              bugfixes for sure :) .
+  -[CS] [Fix] Fixed registration issues.
+  -[CS] [Fix] Temporarily disabled SJOIN support that I was trying to do built-in :x .
+  -[NS] [Fix] Fixed some old use of Users().
+  -[CO] [Fix] Fixed an issue where the state info wasn't wiped when reconnecting.
+ 28/12/2004 - aquanight
   -[--] [---] Ok, we're getting close to '05 when release is scheduled. I'd hate to release
               incomplete software and we might have to delay it to later in that year if we keep
               up with the pace things are going right now >< . So if we want any chance of
