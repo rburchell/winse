@@ -26,6 +26,26 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */\
+ 28/11/2004 - aquanight
+  -[--] [---] Ok, we're getting close to '05 when release is scheduled. I'd hate to release
+              incomplete software and we might have to delay it to later in that year if we keep
+              up with the pace things are going right now >< . So if we want any chance of
+              getting a good release on time, we need to pick up the pace here. When it comes
+              time for release there are a few files that need to be excluded from the release
+              (and removed from the .vbp) namely the protocol .cls files I've been trying to get
+              working. Don't worry about those, after this release we're going to jump on the
+              .NET port and do it with protocols from the get-go :) . As for release number,
+              0.1 sounds good to me... :) .
+  -[CS] [Add] Implemented a second part of access flags: so-called "canflags" - a set of flags
+              describing what a user is allowed to set with ACCESS ADD/SET. Obviously it's only
+              relevent when one has +A...
+  -[CS] [Add] Implemented Channel FORBID, SUSPEND, and UNSUSPEND and added a service admin DROP.
+  -[CO] [Add] Hopefully fixed nick introduction. I'm hoping we will get better linkaging with
+              Unreal now.
+  -[CO] [Add] Added some fields for the user class, but I don't know if they're going to get
+              used... I think one of them is AWAY message... If we implement AWAY handling we
+              could have MemoServ report any new memos not only on identify but on unset /away
+              as well... Also an "SALINE" (Awaymsg ban enforced by services) could be added...
  25/11/2004 - aquanight
   -[CO] [Add] Eheh. I could've sworn I added it >_<. IRCdBahamut.cls added for real now.
               Silly CVS :/ .

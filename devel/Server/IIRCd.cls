@@ -13,11 +13,39 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
-'Constants for the KillUser return value.
-Public Enum KillSupport
-    KILL_NOSUPPORT = 0 'Not supported.
-    KILL_SUPPORTED = 1 'Supported. User.KillUser should dispose the user object.
-    KILL_NODISPOSE = 2 'Supported. User.KillUser should NOT dispose the user object.
+'Support flags. I suppose they are better than having the action routines return values...
+'The flag is passed as an argument...
+'A function corresponding to a feature that isn't supported should do nothing. However, it is acceptable for
+'said program to raise the E_NOTIMPL (&H80004001) Automation error.
+Public Enum IRCdSupport
+    SUPPORT_ISIRCD = 0      'Must always be True. If a False is returned, the ircd type will be invalid. Useful if we need to disable a protocol temporarily.
+    SUPPORT_HASKILL         'IRCd has KILL command (what doesn't?).
+    SUPPORT_HASSVSKILL      'IRCd has a SuperKill (SVSKILL).
+    SUPPORT_SVSKILLACK      'Require IRCd acknowledgement of SVSKILLs.
+    SUPPORT_HASNICKHACK     'Has user nickname hacking (SVSNICK).
+    SUPPORT_HASNICKJUPE     'Has special method for juping a nick (like SVSHOLD or TKL + Q H nick etc).
+    SUPPORT_HASVHOST        'IRCd has Vhost support (not bahamut hostmasking!).
+    SUPPORT_HASVIDENT       'IRCd has VIdent support (NOT bahamut hostmasking!).
+    SUPPORT_HASUMODEHACK    'Has Usermode hacking (SVSMODE).
+    SUPPORT_CHANJUPEKICK    'Channel jupe method will cause servers to boot everyone out.
+    SUPPORT_HASSERVERJUPE   'Has speical method for juping a server (IRCu will need to use this).
+    SUPPORT_HASNOOPERS      'Has server-wide oper disable (SVSNOOP).
+    SUPPORT_HASACCOUNT      'Has method of setting the account (nick group).
+    SUPPORT_CHANGEACCOUNT   'Has method of changing the account (nick group) (IRCu: Don't use this.)
+    SUPPORT_USERHOSTBAN     'Has method for setting a network-wide user@host ban (netwide K:Line) (AKILL).
+    SUPPORT_NICKBAN         'Has method for setting a nickname ban (SQLINE).
+    SUPPORT_GCOSBAN         'Has method for setting a realname ban (SGLINE).
+    SUPPORT_IPADDRBAN       'Has method for setting an IP ban (SZLINE, AKILL *@ip).
+    SUPPORT_TEMPAKILL       'Supports timed user@host bans.
+    SUPPORT_TEMPNICKBAN     'Supports timed nickname bans.
+    SUPPORT_TEMPGCOSBAN     'Supports timed realname bans.
+    SUPPORT_TEMPIPADDRBAN   'Supports timed IP bans.
+    SUPPORT_DELAKILL        'Supports removing user@host bans before they expire.
+    SUPPORT_DELNICKBAN      'Supports removing nickname bans before they expire.
+    SUPPORT_DELGCOSBAN      'Supports removing realname bans before they expire.
+    SUPPORT_DELIPBAN        'Supports removing IP bans before they exipre.
+    SUPPORT_USESSERVID      'Uses Server Identifiers (numerics)
+    SUPPORT_USESCLIENTID    'Uses Client Identifiers (numerics)
 End Enum
 
 'The base interface for IRCd protocol classes.
@@ -29,6 +57,14 @@ End Enum
 'of received commands, shall protocol modules interfere with the internal state of
 'services, and this processing should only modify that state which the IRCd indicates
 'should be changed.
+
+'Therefore the only exception is the modification of the Users, Channels, or Servers array which must be
+'done only inside the ParseCmd()
+
+'Support functions...
+Public Function HasSupport(ByVal SupportType As IRCdSupport) As Boolean
+
+End Function
 
 'Introduction Functions
 
@@ -77,49 +113,39 @@ End Sub
 'KILL a user.
 'SVSKillOK is True if the KILL reason was not determined by a user (with the sole
 'exception of Agent EXIT).
-'Returns:
-'KILL_NOSUPPORT - IRCd doesn't support KILL (or SVSKILL). If returned for SVSKILL, WinSE will fall back
-'                 to KILL from the server. If returned for KILL, WinSE will try a nick collide.
-'KILL_NODISPOSE - IRCd supports (SVS)KILL but will acknowledge the removal of the chosen client with an
-'                 appropriate message. WinSE will set a timer and if the user is not removed within that time
-'                 will, for SVSKILL, try a standard KILL, or if returned for KILL, a nick collision.
-'KILL_SUPPORTED - (SVS)KILL is supported and does not reply. WinSE will dispose the client.
-Public Function KillUser(ByVal Source As String, ByVal SVSKillOK As Boolean, ByVal User As String, ByVal Reason As String) As KillSupport
+Public Sub KillUser(ByVal Source As String, ByVal SVSKillOK As Boolean, ByVal User As String, ByVal Reason As String)
 
-End Function
+End Sub
 
-'Force a nickchange. If the protocol does not allow this to be done, the function
-'should return False. When this happens, Nick enforcement will fall back to KillUser.
-Public Function ForceNickChange(ByVal Source As String, ByVal Target As String, ByVal NewNick As String) As Boolean
+'Force a nickchange.
+Public Sub ForceNickChange(ByVal Source As String, ByVal Target As String, ByVal NewNick As String)
 
-End Function
+End Sub
 
-'Set a hold on a NICK. IRCds that don't support special methods of holding a nick could just return False
-'and services will fall back to IntroduceUser.
-Public Function HoldNick(ByVal Source As String, ByVal Nick As String) As Boolean
+'Set a hold on a NICK.
+Public Sub HoldNick(ByVal Source As String, ByVal Nick As String)
 
-End Function
+End Sub
 
-'Release a hold on a NICK. This should return False only if HoldNick returns False. This should do whatever
-'will reverse HoldNick.
-Public Function ReleaseNick(ByVal Source As String, ByVal Nick As String) As Boolean
+'Release a hold on a NICK.
+Public Sub ReleaseNick(ByVal Source As String, ByVal Nick As String)
 
-End Function
+End Sub
 
-'Set a Virtual Host for a user. Return False if this isn't possible.
-Public Function SetVHost(ByVal Source As String, ByVal Nick As String, ByVal VHost As String) As Boolean
+'Set a Virtual Host for a user.
+Public Sub SetVHost(ByVal Source As String, ByVal Nick As String, ByVal VHost As String)
 
-End Function
+End Sub
 
-'Set a Virtual Ident (Username) for a user. Return False if this isn't possible.
-Public Function SetVIdent(ByVal Source As String, ByVal Nick As String, ByVal VIdent As String) As Boolean
+'Set a Virtual Ident (Username) for a user.
+Public Sub SetVIdent(ByVal Source As String, ByVal Nick As String, ByVal VIdent As String)
 
-End Function
+End Sub
 
-'Forcefully change a user's modes. This should return false if it's not possible.
-Public Function SetUserModes(ByVal Source As String, ByVal Nick As String, ByVal Modes As String) As Boolean
+'Forcefully change a user's modes.
+Public Sub SetUserModes(ByVal Source As String, ByVal Nick As String, ByVal Modes As String)
 
-End Function
+End Sub
 
 'Set a hold on a channel. IRCds that don't support special methods of holding a channel could just make
 'the source join and lock down the channel. Protocol class may assume the channel is empty.
@@ -132,99 +158,97 @@ Public Sub ReleaseChannel(ByVal Source As String, ByVal Channel As String)
 
 End Sub
 
-'Set NOOP on the server. If the server doesn't support this return False and WinSE will fall back to
-'manually killing anyone who /oper's on that server.
-Public Function SetServerNoOpers(ByVal Source As String, ByVal Server As String) As Boolean
+'Set a hold on a server (more formally called a JUPE).
+Public Sub HoldServer(ByVal Source As String, ByVal Server As String)
 
-End Function
+End Sub
 
-'Unset NOOP on the server. Return False only if SetServerNoOpers is False. If this is False, but Set* was
-'True, WinSE will fall back to RemoteRehash.
-Public Function UnsetServerNoOpers(ByVal Source As String, ByVal Server As String) As Boolean
+'Release or UNJUPE a server.
+Public Sub ReleaseServer(ByVal Source As String, ByVal Server As String)
 
-End Function
+End Sub
 
-'Set the user account name for the first time. Return False if this can't be done.
-Public Function SetAccount(ByVal Source As String, ByVal Target As String, ByVal account As String) As Boolean
+'Set NOOP on the server.
+Public Sub SetServerNoOpers(ByVal Source As String, ByVal Server As String)
 
-End Function
+End Sub
 
-'Change the user account name. Return False if this can't be done. WinSE will not allow users to change the
-'identified nick if this is False and SetAccount returned True.
-Public Function ChangeAccount(ByVal Source As String, ByVal Target As String, ByVal account As String) As Boolean
+'Unset NOOP on the server.
+Public Sub UnsetServerNoOpers(ByVal Source As String, ByVal Server As String)
 
-End Function
+End Sub
 
-'Add a Network-Wide Temporary KLINE, also called a GLINE. Return False if the IRCd
-'doesn't allow this. Expiry is in seconds. If False, WinSE will fall back to AddPErmNetworkUserhostBan.
-Public Function AddTempNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
+'Set the user account name for the first time.
+'Note that "account" is just a fancy name for Nick Group.
+Public Sub SetAccount(ByVal Source As String, ByVal Target As String, ByVal account As String)
 
-End Function
+End Sub
 
-'Add a Network-Wide Permanent KLINE, also called a GLINE. Return False if the IRCd
-'doesn't allow this. If False, WinSE will fall back to manually KILLing matching users.
-Public Function AddPermNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
+'Change the user account name.
+'Note that "account" is just a fancy name for Nick Group.
+Public Sub ChangeAccount(ByVal Source As String, ByVal Target As String, ByVal account As String)
 
-End Function
+End Sub
 
-'Remove a Network-Wide KLINE, also called a GLINE. Return False if the IRCd doesn't
-'allow this. Return False only if both Add* methods returned False.
-Public Function DeleteNetworkUserhostBan(ByVal Source As String, ByVal Mask As String) As Boolean
+'Add a Network-Wide Temporary KLINE, also called a GLINE.
+Public Sub AddTempNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String)
 
-End Function
+End Sub
 
-'Add a Network-Wide Temporary ZLINE, also called a GZLINE. Return False if the IRCd
-'doesn't allow this. Expiry is in seconds. If False, WinSE will fall back to Perm.
-Public Function AddTempNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
+'Add a Network-Wide Permanent KLINE, also called a GLINE.
+Public Sub AddPermNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String)
 
-End Function
+End Sub
 
-'Add a Network-Wide Permanent ZLINE, also called a GZLINE. Return False if the IRCd
-'doesn't allow this. If False, WinSE will try Userhost with User = * and Host = IP.
-Public Function AddPermNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
+'Remove a Network-Wide KLINE, also called a GLINE.
+Public Sub DeleteNetworkUserhostBan(ByVal Source As String, ByVal Mask As String)
 
-End Function
+End Sub
 
-'Remove a Network-Wide ZLINE, also called a GZLINE. Return False if the IRCd doesn't
-'allow this. Return False only if both Add* returned false.
-Public Function DeleteNetworkIPBan(ByVal Source As String, ByVal Mask As String) As Boolean
+'Add a Network-Wide Temporary ZLINE, also called a GZLINE.
+Public Sub AddTempNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String)
 
-End Function
+End Sub
 
-'Add a Network-Wide Temporary QLINE, also called a SQLINE. Return False if the IRCd
-'doesn't allow this. Expiry is in seconds.
-Public Function AddTempNetworkNickBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
+'Add a Network-Wide Permanent ZLINE, also called a GZLINE.
+Public Sub AddPermNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String)
 
-End Function
+End Sub
 
-'Add a Network-Wide Permanent QLINE, also called a SQLINE. Return False if the IRCd
-'doesn't allow this.
-Public Function AddPermNetworkNickBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
+'Remove a Network-Wide ZLINE, also called a GZLINE.
+Public Sub DeleteNetworkIPBan(ByVal Source As String, ByVal Mask As String)
 
-End Function
+End Sub
 
-'Remove a Network-Wide QLINE, also called a SQLINE. Return False if the IRCd doesn't
-'allow this.
-Public Function DeleteNetworkNickBan(ByVal Source As String, ByVal Mask As String) As Boolean
+'Add a Network-Wide Temporary QLINE, also called a SQLINE.
+Public Sub AddTempNetworkNickBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String)
 
-End Function
+End Sub
 
-'Add a Network-Wide Temporary Realname Ban. Return False if the IRCd doesn't allow
-'this. Expiry is in seconds.
-Public Function AddTempNetworkRealnameBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
+'Add a Network-Wide Permanent QLINE, also called a SQLINE.
+Public Sub AddPermNetworkNickBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String)
 
-End Function
+End Sub
 
-'Add a Network-Wide Permanent Realname Ban. Return False if the IRCd doesn't allow
-'this.
-Public Function AddPermNetworkRealnameBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
+'Remove a Network-Wide QLINE, also called a SQLINE.
+Public Sub DeleteNetworkNickBan(ByVal Source As String, ByVal Mask As String)
 
-End Function
+End Sub
 
-'Remove a Network-Wide Realname Ban. Return False if the IRCd doesn't allow this.
-Public Function DeleteNetworkRealnameBan(ByVal Source As String, ByVal Mask As String) As Boolean
+'Add a Network-Wide Temporary Realname Ban.
+Public Sub AddTempNetworkRealnameBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String)
 
-End Function
+End Sub
+
+'Add a Network-Wide Permanent Realname Ban.
+Public Sub AddPermNetworkRealnameBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String)
+
+End Sub
+
+'Remove a Network-Wide Realname Ban.
+Public Sub DeleteNetworkRealnameBan(ByVal Source As String, ByVal Mask As String)
+
+End Sub
 
 'Valid Usermodes
 Public Property Get UserModes() As String

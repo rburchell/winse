@@ -37,7 +37,7 @@ Public Const MIRC_COLOR = "" 'mIRC Color Attribute
 Public Const MIRC_PLAIN = "" 'mIRC Plain (Reset All) Attribute
 
 '[ACCESS FLAGS]
-Public Const AccFullAccess As String = "MmgoriIakN"
+Public Const AccFullAccess As String = "MmgoriIakNC"
 Public Const AccFlagMaster As String * 1 = "M"
 Public Const AccFlagCoMaster As String * 1 = "m"
 Public Const AccFlagGetServNotices As String * 1 = "g"
@@ -48,6 +48,7 @@ Public Const AccFlagCanRootServSuperInject As String * 1 = "I"
 Public Const AccFlagCanMassServ As String * 1 = "a"
 Public Const AccFlagCanMassKill As String * 1 = "k"
 Public Const AccFlagNickAdmin As String * 1 = "N"
+Public Const AccFlagChanAdmin As String * 1 = "C"
 '[/ACCESS FLAGS]
 
 Public Type ConfigVars
@@ -103,6 +104,8 @@ Public Type Service
     Nick As String
     Hostmask As String
     Name As String
+    UserModes As String
+    Info As String
 End Type
 
 Public Const TotalServices = 12
@@ -128,6 +131,9 @@ Public Const SVSINDEX_GLOBAL = 8
 Public Const SVSINDEX_MASSSERV = 9
 Public Const SVSINDEX_MEMOSERV = 10
 Public Const SVSINDEX_DEBUGSERV = 11
+
+'This will be used in some places...
+Public Const E_NOTIMPL = &H80004001
 
 Public Buffer(32767) As String
 Public BufferElements As Integer
@@ -158,50 +164,74 @@ Sub Main()
     Service(SVSINDEX_CHANSERV).Nick = "ChanServ"
     Service(SVSINDEX_CHANSERV).Hostmask = Config.ServerName '"channel-services." & DomainName
     Service(SVSINDEX_CHANSERV).Name = "channel"
+    Service(SVSINDEX_CHANSERV).UserModes = "+Sqrp"
+    Service(SVSINDEX_CHANSERV).Info = "Channel Registration Services"
     
     Service(SVSINDEX_NICKSERV).Nick = "NickServ" 'aka "the service that unreal loves to kill for no reason"
     Service(SVSINDEX_NICKSERV).Hostmask = Config.ServerName '"nick-services." & DomainName
     Service(SVSINDEX_NICKSERV).Name = "nickname"
+    Service(SVSINDEX_NICKSERV).UserModes = "+Sqrp"
+    Service(SVSINDEX_NICKSERV).Info = "Nickname Registration Services"
     
     Service(SVSINDEX_HOSTSERV).Nick = "HostServ"
     Service(SVSINDEX_HOSTSERV).Hostmask = Config.ServerName '"hostmask-services." & DomainName
     Service(SVSINDEX_HOSTSERV).Name = "hostmask"
+    Service(SVSINDEX_HOSTSERV).UserModes = "+Sqrp"
+    Service(SVSINDEX_HOSTSERV).Info = "Virtual Host Services"
     
     Service(SVSINDEX_BOTSERV).Nick = "BotServ"
     Service(SVSINDEX_BOTSERV).Hostmask = Config.ServerName '"automation-services." & DomainName
     Service(SVSINDEX_BOTSERV).Name = "automation"
+    Service(SVSINDEX_BOTSERV).UserModes = "+Sqrp"
+    Service(SVSINDEX_BOTSERV).Info = "Bot Control Services"
     
     Service(SVSINDEX_OPERSERV).Nick = "OperServ"
     Service(SVSINDEX_OPERSERV).Hostmask = Config.ServerName '"operator-services." & DomainName
     Service(SVSINDEX_OPERSERV).Name = "dictator"
+    Service(SVSINDEX_OPERSERV).UserModes = "+ioSqrp"
+    Service(SVSINDEX_OPERSERV).Info = "Operator Services"
     
     Service(SVSINDEX_ADMINSERV).Nick = "AdminServ"
     Service(SVSINDEX_ADMINSERV).Hostmask = Config.ServerName '"administrator-services." & DomainName
     Service(SVSINDEX_ADMINSERV).Name = "overlord"
+    Service(SVSINDEX_ADMINSERV).UserModes = "+ioASqrp"
+    Service(SVSINDEX_ADMINSERV).Info = "Network Administration Services"
     
     Service(SVSINDEX_ROOTSERV).Nick = "RootServ"
     Service(SVSINDEX_ROOTSERV).Hostmask = Config.ServerName '"master-services." & DomainName
     Service(SVSINDEX_ROOTSERV).Name = "master"
+    Service(SVSINDEX_ROOTSERV).UserModes = "+ioaSqrp"
+    Service(SVSINDEX_ROOTSERV).Info = "Services Control"
     
     Service(SVSINDEX_AGENT).Nick = "Agent"
     Service(SVSINDEX_AGENT).Hostmask = Config.ServerName '"blackglasses." & DomainName
     Service(SVSINDEX_AGENT).Name = "smith"
+    Service(SVSINDEX_AGENT).UserModes = "+ioaSqrp"
+    Service(SVSINDEX_AGENT).Info = "Secret Agent Man"
     
     Service(SVSINDEX_GLOBAL).Nick = "Global"
     Service(SVSINDEX_GLOBAL).Hostmask = Config.ServerName '"noticer." & DomainName
     Service(SVSINDEX_GLOBAL).Name = "noticer"
+    Service(SVSINDEX_GLOBAL).UserModes = "+ioSqrp"
+    Service(SVSINDEX_GLOBAL).Info = "Global Noticer"
     
     Service(SVSINDEX_MASSSERV).Nick = "MassServ"
     Service(SVSINDEX_MASSSERV).Hostmask = Config.ServerName '"mass-services." & DomainName
     Service(SVSINDEX_MASSSERV).Name = "wmd"
+    Service(SVSINDEX_MASSSERV).UserModes = "+ioaSqrp"
+    Service(SVSINDEX_MASSSERV).Info = "Mass Operation Services"
     
     Service(SVSINDEX_MEMOSERV).Nick = "MemoServ"
     Service(SVSINDEX_MEMOSERV).Hostmask = Config.ServerName '"memo-services." & DomainName
     Service(SVSINDEX_MEMOSERV).Name = "mailman"
+    Service(SVSINDEX_MEMOSERV).UserModes = "+Sqrp"
+    Service(SVSINDEX_MEMOSERV).Info = "Memorandum Services"
     
     Service(SVSINDEX_DEBUGSERV).Nick = "DebugServ"
     Service(SVSINDEX_DEBUGSERV).Hostmask = Config.ServerName '"services." & DomainName
     Service(SVSINDEX_DEBUGSERV).Name = "INVISIBLE"
+    Service(SVSINDEX_DEBUGSERV).UserModes = "+iSqrp"
+    Service(SVSINDEX_DEBUGSERV).Info = "Debugging Services"
     frmServer.Show
 End Sub
 
@@ -214,7 +244,7 @@ Public Sub IntroduceUsers()
         Nick = basMain.Service(i).Nick
         Host = basMain.Service(i).Hostmask
         Name = basMain.Service(i).Name
-        Call basFunctions.IntroduceClient(Nick, Host, Name)
+        Call basFunctions.IntroduceClient(Nick, Host, Name, False, Service(i).UserModes)
     Next i
 End Sub
 

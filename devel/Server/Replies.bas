@@ -243,9 +243,9 @@ Public Const ChanServIdentifyRestricted = "You can't identify to %c because you 
 'Some more responses we could use.
  'For ChanServ KICKs. This is prefixed to the reason
  '(and possibly nickname).
-Public Const ChanServKickRequested = "KICKed: "
+Public Const ChanServKickRequested = "KICK by %s: "
  'For ChanServ BANs. Same as KICK.
-Public Const ChanServBanRequested = "BANned: "
+Public Const ChanServBanRequested = "BAN by %s: "
  'For ChanServ AKICK. This is the KICK comment used to
  'boot the user.
  'This one is for timed AKICKs. (Can we have timed

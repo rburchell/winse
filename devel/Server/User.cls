@@ -28,6 +28,8 @@ Public MsgStyle As Long                 'True=notice false=privmsg
 Public AbuseTeam As Boolean             'Abuse Team members can use services commands that otherwise, only the services master can use.
 Public IdentifiedToNick As String       'Holds nick that user has identified to. Blank if not identified.
 Private mChannels As Channels           'Channels this user is on.
+Public AwayMessage As String
+Public IsService As Boolean             'Our own Service client. If this is set many stuff are ignored...
 'Some extra stuff we might get from things like
 'Unreal IRCd :P .
 Public ts As Long                       'Time Stamp of the user.
@@ -37,6 +39,8 @@ Public HostName As String               'User's real hostname.
 Public RealName As String               '"Real Name" of this user
 Public VirtHost As String               'Virtual Host, from stuff like GETHOST or NICKv2
 Public Server As String                 'Server this user is on.
+Public SWhois As String                 'Extra Whois info.
+'Extra data.
 Public BadIdentifies As Long            'Number of bad IDENTIFYs. When this hit configured limit, we KILL.
 Public BadIdentTimer As Single          'Number of seconds until the user is obsolved of his mistakes.
 Public NickKillTimer As Single          'Number of seconds until the user is smote by the mighty NickServ.

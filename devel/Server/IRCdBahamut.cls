@@ -21,69 +21,160 @@ Option Explicit
 
 'WinSE will only support 1.8 versions of bahamut. Always use the latest version of the IRCd!
 
+'Uberstrict TS things for bahamut (like Client SJOINs).
+#Const TS_STRICT = True
+Const TS_STRICT As Boolean = True
+
 Implements IIRCd
 
-Private Function IIRCd_AddPermNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
-    IIRCd_AddPermNetworkIPBan = False
-End Function
+Private Sub IIRCd_AddPermNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
-Private Function IIRCd_AddPermNetworkNickBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
+Private Sub IIRCd_AddPermNetworkNickBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String)
     SendData FormatString(":{0} SQLINE {1} :{2}", Source, Mask, Reason)
-    IIRCd_AddPermNetworkNickBan = True
-End Function
+End Sub
 
-Private Function IIRCd_AddPermNetworkRealnameBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
+Private Sub IIRCd_AddPermNetworkRealnameBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String)
     SendData FormatString(":{0} SGLINE {1} :{2}", Source, Mask, Reason)
-    IIRCd_AddPermNetworkRealnameBan = True
-End Function
+End Sub
 
-Private Function IIRCd_AddPermNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String) As Boolean
+Private Sub IIRCd_AddPermNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Reason As String)
     'Bahamut's weird AKILL syntax:
     'AKILL host user expiry source ts :reason
     Dim ts As Long
     ts = basUnixTime.GetTime
     SendData FormatString("AKILL {1} {2} 0 {3} {4} :{5}", Source, Split(Mask, "@")(1), Split(Mask, "@")(0), Source, ts, Reason)
-    IIRCd_AddPermNetworkUserhostBan = True
-End Function
+End Sub
 
-Private Function IIRCd_AddTempNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
-    IIRCd_AddTempNetworkIPBan = False
-End Function
+Private Sub IIRCd_AddTempNetworkIPBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
-Private Function IIRCd_AddTempNetworkNickBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
-    IIRCd_AddTempNetworkNickBan = False
-End Function
+Private Sub IIRCd_AddTempNetworkNickBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
-Private Function IIRCd_AddTempNetworkRealnameBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
-    IIRCd_AddTempNetworkRealnameBan = False
-End Function
+Private Sub IIRCd_AddTempNetworkRealnameBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
-Private Function IIRCd_AddTempNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String) As Boolean
+Private Sub IIRCd_AddTempNetworkUserhostBan(ByVal Source As String, ByVal Mask As String, ByVal Expiry As Long, ByVal Reason As String)
     Dim ts As Long
     ts = basUnixTime.GetTime
     SendData FormatString("AKILL {1} {2} {3} {4} {5} :{6}", Source, Split(Mask, "@")(1), Split(Mask, "@")(0), Expiry, Source, ts, Reason)
-    IIRCd_AddTempNetworkUserhostBan = True
-End Function
+End Sub
 
 Private Property Get IIRCd_BanChar() As String
     IIRCd_BanChar = "b"
 End Property
 
 Private Sub IIRCd_BurstChannel(ByVal Source As String, ByVal Channel As String, ByVal ts As Long, ByVal Modes As String, ByVal ModeParams As String, Users() As String, WantModes() As String, Bans() As String, Exempts() As String, Invites() As String)
-    '
+    'Bahamut has SJOIN :D
+    'SJOIN Format:
+    ':server.name SJOIN ts channel modes [modeparam] :[[[@][+]member]]
+    'If for some dumb reason we have a lot of members to sjoin and/or a really long key/whatever
+    'we may need to break up the SJOIN.
+    Dim sjoinstr As String
+    sjoinstr = FormatString(":{0} SJOIN {1} {2} {3} {4} :", Source, ts, Channel, Modes, ModeParams)
+    Dim uidx As Long, bidx As Long, eidx As Long, iidx As Long, sTmp As String
+    uidx = 0: bidx = 0: eidx = 0: iidx = 0
+    For uidx = 0 To UBound(Users)
+        sTmp = ""
+        If InStr(WantModes(uidx), "o") Then sTmp = sTmp + "@"
+        If InStr(WantModes(uidx), "v") Then sTmp = sTmp + "+"
+        sTmp = sTmp + Users(uidx)
+        uidx = uidx + 1
+        If sjoinstr = "" Then
+            sjoinstr = FormatString(":{0} SJOIN {1} {2} + <none> :{3} ", Source, ts, Channel, sTmp)
+        ElseIf Len(sjoinstr + sTmp) > 510 Then
+            SendData RTrim(sjoinstr)
+            sjoinstr = FormatString(":{0} SJOIN {1} {2} + * :{3} ", Source, ts, Channel, sTmp)
+        Else
+            sjoinstr = sjoinstr & sTmp & " "
+        End If
+    Next
+    If sjoinstr <> "" Then SendData sjoinstr
+    'Now send the bans, exempts, and invites.
+    For bidx = 0 To UBound(Bans) Step 6
+        'We can send up to 6 modes.
+        Select Case UBound(Bans) - bidx
+            Case Is >= 5 'Pull 6
+                SendData FormatString(":{0} MODE {1} +bbbbbb {2} {3} {4} {5} {6} {7} {8}", Source, Channel, Bans(bidx), Bans(bidx + 1), Bans(bidx + 2), Bans(bidx + 3), Bans(bidx + 4), Bans(bidx + 5), ts)
+            Case 4 'Pull 5
+                SendData FormatString(":{0} MODE {1} +bbbbb {2} {3} {4} {5} {6} {7}", Source, Channel, Bans(bidx), Bans(bidx + 1), Bans(bidx + 2), Bans(bidx + 3), Bans(bidx + 4), ts)
+            Case 3 'Pull 4
+                SendData FormatString(":{0} MODE {1} +bbbb {2} {3} {4} {5} {6}", Source, Channel, Bans(bidx), Bans(bidx + 1), Bans(bidx + 2), Bans(bidx + 3), ts)
+            Case 2 'Pull 3
+                SendData FormatString(":{0} MODE {1} +bbb {2} {3} {4} {5}", Source, Channel, Bans(bidx), Bans(bidx + 1), Bans(bidx + 2), ts)
+            Case 1 'Pull 2
+                SendData FormatString(":{0} MODE {1} +bb {2} {3} {4}", Source, Channel, Bans(bidx), Bans(bidx + 1), ts)
+            Case 0 'Pull 1
+                SendData FormatString(":{0} MODE {1} +b {2} {3}", Source, Channel, Bans(bidx), ts)
+            Case Else: Exit For
+        End Select
+    Next bidx
+    For eidx = 0 To UBound(Exempts) Step 6
+        'We can send up to 6 modes.
+        Select Case UBound(Exempts) - eidx
+            Case Is >= 5 'Pull 6
+                SendData FormatString(":{0} MODE {1} +eeeeee {2} {3} {4} {5} {6} {7} {8}", Source, Channel, Exempts(eidx), Exempts(eidx + 1), Exempts(eidx + 2), Exempts(eidx + 3), Exempts(eidx + 4), Exempts(eidx + 5), ts)
+            Case 4 'Pull 5
+                SendData FormatString(":{0} MODE {1} +eeeee {2} {3} {4} {5} {6} {7}", Source, Channel, Exempts(eidx), Exempts(eidx + 1), Exempts(eidx + 2), Exempts(eidx + 3), Exempts(eidx + 4), ts)
+            Case 3 'Pull 4
+                SendData FormatString(":{0} MODE {1} +eeee {2} {3} {4} {5} {6}", Source, Channel, Exempts(eidx), Exempts(eidx + 1), Exempts(eidx + 2), Exempts(eidx + 3), ts)
+            Case 2 'Pull 3
+                SendData FormatString(":{0} MODE {1} +eee {2} {3} {4} {5}", Source, Channel, Exempts(eidx), Exempts(eidx + 1), Exempts(eidx + 2), ts)
+            Case 1 'Pull 2
+                SendData FormatString(":{0} MODE {1} +ee {2} {3} {4}", Source, Channel, Exempts(eidx), Exempts(eidx + 1), ts)
+            Case 0 'Pull 1
+                SendData FormatString(":{0} MODE {1} +e {2} {3}", Source, Channel, Exempts(eidx), ts)
+            Case Else: Exit For
+        End Select
+    Next eidx
+    For iidx = 0 To UBound(Invites) Step 6
+        'We can send up to 6 modes.
+        Select Case UBound(Invites) - iidx
+            Case Is >= 5 'Pull 6
+                SendData FormatString(":{0} MODE {1} +IIIIII {2} {3} {4} {5} {6} {7} {8}", Source, Channel, Invites(iidx), Invites(iidx + 1), Invites(iidx + 2), Invites(iidx + 3), Invites(iidx + 4), Invites(iidx + 5), ts)
+            Case 4 'Pull 5
+                SendData FormatString(":{0} MODE {1} +IIIII {2} {3} {4} {5} {6} {7}", Source, Channel, Invites(iidx), Invites(iidx + 1), Invites(iidx + 2), Invites(iidx + 3), Invites(iidx + 4), ts)
+            Case 3 'Pull 4
+                SendData FormatString(":{0} MODE {1} +IIII {2} {3} {4} {5} {6}", Source, Channel, Invites(iidx), Invites(iidx + 1), Invites(iidx + 2), Invites(iidx + 3), ts)
+            Case 2 'Pull 3
+                SendData FormatString(":{0} MODE {1} +III {2} {3} {4} {5}", Source, Channel, Invites(iidx), Invites(iidx + 1), Invites(iidx + 2), ts)
+            Case 1 'Pull 2
+                SendData FormatString(":{0} MODE {1} +II {2} {3} {4}", Source, Channel, Invites(iidx), Invites(iidx + 1), ts)
+            Case 0 'Pull 1
+                SendData FormatString(":{0} MODE {1} +I {2} {3}", Source, Channel, Invites(iidx), ts)
+            Case Else: Exit For
+        End Select
+    Next iidx
 End Sub
 
-Private Function IIRCd_ChangeAccount(ByVal Source As String, ByVal Target As String, ByVal account As String) As Boolean
-    SendData FormatString(":{0} SVSMODE {1} +r", Source, Target)
-    IIRCd_ChangeAccount = True
-End Function
+Private Sub IIRCd_ChangeAccount(ByVal Source As String, ByVal Target As String, ByVal account As String)
+    If account = "" Then
+        SendData FormatString(":{0} SVSMODE {1} -r", Source, Target)
+    Else
+        SendData FormatString(":{0} SVSMODE {1} +r", Source, Target)
+    End If
+End Sub
 
 Private Property Get IIRCd_ChanModes() As String
     IIRCd_ChanModes = "beI,k,jl,cimMnOprRst"
 End Property
 
 Private Sub IIRCd_ChannelMode(ByVal Source As String, ByVal Channel As String, ByVal Modes As String)
+#If TS_STRICT Then
+    'Send the current TS if we know the channel. Else, send the current time.
+    Dim ts As Long
+    If Channels.Exists(Channel) Then ts = Channels(Channel).ts Else ts = basUnixTime.GetTime()
+    SendData FormatString(":{0} MODE {1} {2} {3}", Source, Channel, Modes, ts)
+#Else
+    'In all technicality we're supposed to send the TS, but as services we don't have to, thus we can
+    '"blast TS".
     SendData FormatString(":{0} MODE {1} {2}", Source, Channel, Modes)
+#End If
 End Sub
 
 Private Sub IIRCd_ChannelTopic(ByVal Source As String, ByVal Channel As String, ByVal Topic As String, ByVal SetBy As String, ByVal SetOn As Long)
@@ -97,8 +188,12 @@ End Property
 Private Sub IIRCd_CreateChannel(ByVal Source As String, ByVal Channel As String)
     Dim ts As Long
     ts = basUnixTime.GetTime
+#If TS_STRICT Then
+    SendData FormatString(":{0} SJOIN {1} {2} +  :@{3}", basMain.Config.ServerName, ts, Channel, Source)
+#Else
     SendData FormatString(":{0} JOIN {1}", Source, Channel)
     SendData FormatString(":{0} MODE {1} +o {2} {3}", basMain.Config.ServerName, Channel, Source, ts)
+#End If
 End Sub
 
 Private Function IIRCd_CreateCID() As String
@@ -109,49 +204,62 @@ Private Function IIRCd_CreateSID() As String
     IIRCd_CreateSID = vbNullString
 End Function
 
-Private Function IIRCd_DeleteNetworkIPBan(ByVal Source As String, ByVal Mask As String) As Boolean
-    IIRCd_DeleteNetworkIPBan = False
-End Function
+Private Sub IIRCd_DeleteNetworkIPBan(ByVal Source As String, ByVal Mask As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
-Private Function IIRCd_DeleteNetworkNickBan(ByVal Source As String, ByVal Mask As String) As Boolean
+Private Sub IIRCd_DeleteNetworkNickBan(ByVal Source As String, ByVal Mask As String)
     SendData FormatString(":{0} UNSQLINE 0 {1}", Source, Mask)
-    IIRCd_DeleteNetworkNickBan = True
-End Function
+End Sub
 
-Private Function IIRCd_DeleteNetworkRealnameBan(ByVal Source As String, ByVal Mask As String) As Boolean
+Private Sub IIRCd_DeleteNetworkRealnameBan(ByVal Source As String, ByVal Mask As String)
     SendData FormatString(":{0} UNSGLINE 0 {1}", Source, Mask)
-    IIRCd_DeleteNetworkRealnameBan = True
-End Function
+End Sub
 
-Private Function IIRCd_DeleteNetworkUserhostBan(ByVal Source As String, ByVal Mask As String) As Boolean
+Private Sub IIRCd_DeleteNetworkUserhostBan(ByVal Source As String, ByVal Mask As String)
     SendData FormatString(":{0} RAKILL {1} {2}", Source, Split(Mask, "@")(1), Split(Mask, "@")(0))
-End Function
+End Sub
 
 Private Property Get IIRCd_ExemptChar() As String
     IIRCd_ExemptChar = "e"
 End Property
 
-Private Function IIRCd_ForceNickChange(ByVal Source As String, ByVal Target As String, ByVal NewNick As String) As Boolean
+Private Sub IIRCd_ForceNickChange(ByVal Source As String, ByVal Target As String, ByVal NewNick As String)
     Dim ts As Long
     ts = basUnixTime.GetTime
     SendData FormatString(":{0} SVSNICK {1} {2} :{3}", Source, Target, NewNick, ts)
-End Function
+End Sub
 
 Private Property Get IIRCd_HalfopChar() As String
     IIRCd_HalfopChar = vbNullString
 End Property
 
+Private Function IIRCd_HasSupport(ByVal SupportType As IRCdSupport) As Boolean
+    Select Case SupportType
+        Case SUPPORT_ISIRCD, SUPPORT_HASKILL, SUPPORT_HASSVSKILL, SUPPORT_SVSKILLACK, SUPPORT_HASNICKHACK, _
+            SUPPORT_HASNICKJUPE, SUPPORT_HASUMODEHACK, SUPPORT_HASACCOUNT, SUPPORT_CHANGEACCOUNT, _
+            SUPPORT_USERHOSTBAN, SUPPORT_NICKBAN, SUPPORT_GCOSBAN, SUPPORT_TEMPAKILL, SUPPORT_DELAKILL, _
+            SUPPORT_DELNICKBAN, SUPPORT_DELGCOSBAN: IIRCd_HasSupport = True
+        Case Else: IIRCd_HasSupport = False
+    End Select
+End Function
+
 Private Sub IIRCd_HoldChannel(ByVal Source As String, ByVal Channel As String)
     SendData FormatString(":{0} SQLINE {1} :Held by services", Source, Channel)
 End Sub
 
-Private Function IIRCd_HoldNick(ByVal Source As String, ByVal Nick As String) As Boolean
+Private Sub IIRCd_HoldNick(ByVal Source As String, ByVal Nick As String)
     SendData FormatString(":{0} SVSHOLD {1} 60 :Held by services", Source, Nick)
-End Function
+End Sub
+
+Private Sub IIRCd_HoldServer(ByVal Source As String, ByVal Server As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
 Private Sub IIRCd_IntroduceClient(ByVal Nick As String, ByVal UserName As String, ByVal HostName As String, ByVal RealName As Variant, ByVal VHost As String, ByVal UserModes As String, ByVal CID As String, ByVal Server As String)
     'Format is:
     ':server NICK nick ts umodes user host server 0 0 :realname
+    If Servers.Exists(Server) Then Err.Raise 9, , "Introduce server " + Server + " first."
     SendData FormatString(":{0} NICK {1} {2} {3} {4} {5} {0} 0 0 :{6}", Server, Nick, basUnixTime.GetTime, UserModes, UserName, IIf(VHost <> "", VHost, HostName), RealName)
 End Sub
 
@@ -173,29 +281,37 @@ Private Property Get IIRCd_InvExChar() As String
 End Property
 
 Private Sub IIRCd_JoinChannel(ByVal Source As String, ByVal Channel As String)
+#If TS_STRICT Then
+    'Bahamut has this weird thing called "Client SJOIN". It's essentially SJOIN, but coming from a client.
+    'In this form, the SJOIN is essentially just a JOIN with a TS before the channel... In theory we could
+    'do "TS Update" forcing with this method.
+    'Technically however, we are to use the existing TS for the channel if we know it exists.
+    Dim ts As Long
+    If Channels.Exists(Channel) Then ts = Channels(Channel).ts Else ts = basUnixTime.GetTime()
+    SendData FormatString(":{0} SJOIN {1} {2}", Source, ts, Channel)
+#Else
     SendData FormatString(":{0} JOIN {1}", Source, Channel)
+#End If
 End Sub
 
 Private Sub IIRCd_KickUser(ByVal Source As String, ByVal Channel As String, ByVal Victim As String, ByVal Reason As String)
     SendData FormatString(":{0} KICK {1} {2} :{3}", Source, Channel, Victim, Reason)
 End Sub
 
-Private Function IIRCd_KillUser(ByVal Source As String, ByVal SVSKillOK As Boolean, ByVal User As String, ByVal Reason As String) As KillSupport
+Private Sub IIRCd_KillUser(ByVal Source As String, ByVal SVSKillOK As Boolean, ByVal User As String, ByVal Reason As String)
     If SVSKillOK Then
         SendData FormatString(":{0} SVSKILL {1} :{2}", Source, User, Reason)
-        IIRCd_KillUser = KILL_NODISPOSE
     Else
         SendData FormatString(":{0} KILL {1} :{0} ({2})", Source, User, Reason)
-        IIRCd_KillUser = KILL_SUPPORTED
     End If
-End Function
+End Sub
 
 Private Property Get IIRCd_OwnerChar() As String
     IIRCd_OwnerChar = vbNullString
 End Property
 
 Private Sub IIRCd_ParseCmd(ByVal Buffer As String)
-
+'
 End Sub
 
 Private Sub IIRCd_PartChannel(ByVal Source As String, ByVal Channel As String, ByVal Reason As String)
@@ -214,10 +330,13 @@ Private Sub IIRCd_ReleaseChannel(ByVal Source As String, ByVal Channel As String
     SendData FormatString(":{0} UNSQLINE 0 {1}", Source, Channel)
 End Sub
 
-Private Function IIRCd_ReleaseNick(ByVal Source As String, ByVal Nick As String) As Boolean
+Private Sub IIRCd_ReleaseNick(ByVal Source As String, ByVal Nick As String)
     SendData FormatString(":{0} SVSHOLD {1} 0", Source, Nick)
-    IIRCd_ReleaseNick = True
-End Function
+End Sub
+
+Private Sub IIRCd_ReleaseServer(ByVal Source As String, ByVal Server As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
 Private Sub IIRCd_RemoveClient(ByVal Nick As String, ByVal Reason As String)
     SendData FormatString(":{0} QUIT :{1}", Nick, Reason)
@@ -244,31 +363,29 @@ Private Sub IIRCd_SendToUMode(ByVal Source As String, ByVal UMode As String, ByV
     Next u
 End Sub
 
-Private Function IIRCd_SetAccount(ByVal Source As String, ByVal Target As String, ByVal account As String) As Boolean
+Private Sub IIRCd_SetAccount(ByVal Source As String, ByVal Target As String, ByVal account As String)
     SendData FormatString(":{0} SVSMODE {1} +r", Source, Target)
-    IIRCd_SetAccount = True
-End Function
+End Sub
 
-Private Function IIRCd_SetServerNoOpers(ByVal Source As String, ByVal Server As String) As Boolean
-'
-End Function
+Private Sub IIRCd_SetServerNoOpers(ByVal Source As String, ByVal Server As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
-Private Function IIRCd_SetUserModes(ByVal Source As String, ByVal Nick As String, ByVal Modes As String) As Boolean
+Private Sub IIRCd_SetUserModes(ByVal Source As String, ByVal Nick As String, ByVal Modes As String)
     SendData FormatString(":{0} SVSMODE {1} {2}", Source, Nick, Modes)
-    IIRCd_SetUserModes = True
-End Function
+End Sub
 
-Private Function IIRCd_SetVHost(ByVal Source As String, ByVal Nick As String, ByVal VHost As String) As Boolean
-'
-End Function
+Private Sub IIRCd_SetVHost(ByVal Source As String, ByVal Nick As String, ByVal VHost As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
-Private Function IIRCd_SetVIdent(ByVal Source As String, ByVal Nick As String, ByVal VIdent As String) As Boolean
-'
-End Function
+Private Sub IIRCd_SetVIdent(ByVal Source As String, ByVal Nick As String, ByVal VIdent As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
-Private Function IIRCd_UnsetServerNoOpers(ByVal Source As String, ByVal Server As String) As Boolean
-'
-End Function
+Private Sub IIRCd_UnsetServerNoOpers(ByVal Source As String, ByVal Server As String)
+    Err.Raise E_NOTIMPL
+End Sub
 
 Private Property Get IIRCd_UserModes() As String
     IIRCd_UserModes = "aAbcdefFghiIjkKmnoOrRswxXy"

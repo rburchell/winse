@@ -72,10 +72,13 @@ Public Sub IntroduceClient(ByVal Nick As String, ByVal Host As String, ByVal Nam
     Dim MyTime As String
     MyTime = basUnixTime.GetTime
     'we directly send the nick and user commands, as buffering stuffs things up. --w00t
-    basFunctions.PutQuick "NICK " & Nick & " 1 " & MyTime & " " & Name & " " & Host & " " & basMain.Config.ServerName & " " & Nick & vbCrLf
-    basFunctions.PutQuick "USER " & Nick & " " & Name & " " & basMain.Config.ServerName & " " & Name & vbCrLf
-    basFunctions.SendData ":" & Nick & " MODE " & Nick & " +qS"
-    basFunctions.SendData ":" & Nick & " MODE " & Nick & IIf(IsBot, " +d", " +B")
+    'NICK nickname hopcount ts username hostname servername svsstamp :info
+    'basFunctions.PutQuick "NICK " & Nick & " 1 " & MyTime & " " & Name & " " & Host & " " & basMain.Config.ServerName & " " & Nick & vbCrLf
+    'basFunctions.PutQuick "USER " & Nick & " " & Name & " " & basMain.Config.ServerName & " " & Name & vbCrLf
+    'Let's see if this works better ;) .
+    basFunctions.PutQuick FormatString(":{0} NICK {1} 1 {2} {3} {4} {0} {2} :{3}", basMain.Config.ServerName, Nick, Name, Host, MyTime)
+'    basFunctions.SendData ":" & Nick & " MODE " & Nick & " +qS"
+'    basFunctions.SendData ":" & Nick & " MODE " & Nick & IIf(IsBot, " +d", " +B")
     If ExtraModes <> "" Then basFunctions.SendData ":" & Nick & " MODE " & Nick & " +" & ExtraModes
 End Sub
 
@@ -114,7 +117,7 @@ Public Function FormatString(ByVal s As String, ParamArray Args() As Variant)
     Dim nIndex As Integer, nWidth As Integer, sFormat As String
     Dim sIndexTemp As String, sWidthTemp As String
     Dim cState As String * 1 'Current state: " " normal, "{" reading index, "," reading width, ":" reading format
-    Dim sTmp As String
+    Dim stmp As String
     Dim ch As String * 1
     cState = " "
     For iPos = 1 To Len(s)
@@ -124,12 +127,12 @@ Public Function FormatString(ByVal s As String, ParamArray Args() As Variant)
                 If ch = "{" Then
                     If Mid(s, iPos + 1, 1) = "{" Then
                         iPos = iPos + 1
-                        sTmp = sTmp & "{"
+                        stmp = stmp & "{"
                     Else
                         cState = "{"
                     End If
                 Else
-                    sTmp = sTmp & ch
+                    stmp = stmp & ch
                 End If
             Case "{" 'Index
                 Select Case ch
@@ -185,7 +188,7 @@ Public Function FormatString(ByVal s As String, ParamArray Args() As Variant)
             'End Case
         End Select
     Next iPos
-    FormatString = sTmp
+    FormatString = stmp
     Exit Function
 DoFormat:
     On Error GoTo BadFormat
@@ -199,7 +202,7 @@ DoFormat:
             If Len(sWork) < Abs(nWidth) Then sWork = sWork & String(Abs(Len(sWork) - Abs(nWidth)), 32)
         'End Case
     End Select
-    sTmp = sTmp & sWork
+    stmp = stmp & sWork
     sIndexTemp = ""
     sWidthTemp = ""
     sFormat = ""
@@ -338,8 +341,8 @@ End Sub
 
 Public Sub ParseCmd(ByVal Incoming As String)
     If Incoming = "" Then Exit Sub
-    Dim sTmp As String
-    sTmp = Incoming 'Make a copy of the incoming text.
+    Dim stmp As String
+    stmp = Incoming 'Make a copy of the incoming text.
     'Hopefully this will replace all the stuff in
     '*_DataArrival :P . I'm hoping this will make us
     'less dependent on the form.
@@ -350,35 +353,35 @@ Public Sub ParseCmd(ByVal Incoming As String)
     'Asc() returns the ASCII code of the first char
     'of a string, so we can use that to check for a
     'source :) .
-    If Asc(sTmp) = Asc(":") Then
-        sSource = Mid(sTmp, 2)
+    If Asc(stmp) = Asc(":") Then
+        sSource = Mid(stmp, 2)
         sSource = Left(sSource, InStr(sSource, " ") - 1)
-        sTmp = Mid(sTmp, InStr(sTmp, " ") + 1)
+        stmp = Mid(stmp, InStr(stmp, " ") + 1)
     End If
     'Now pull the command.
-    If sTmp = "" Then Exit Sub
-    If InStr(sTmp, " ") = 0 Then
-        sCmd = sTmp
-        sTmp = ""
+    If stmp = "" Then Exit Sub
+    If InStr(stmp, " ") = 0 Then
+        sCmd = stmp
+        stmp = ""
     Else
-        sCmd = Left(sTmp, InStr(sTmp, " ") - 1)
-        sTmp = Mid(sTmp, InStr(sTmp, " ") + 1)
+        sCmd = Left(stmp, InStr(stmp, " ") - 1)
+        stmp = Mid(stmp, InStr(stmp, " ") + 1)
     End If
     'Now, do we have any arguments?
-    If sTmp <> "" Then
+    If stmp <> "" Then
         'Pull the long argument.
-        If Asc(sTmp) = Asc(":") Then
+        If Asc(stmp) = Asc(":") Then
             'The whole list is the long arg.
-            sLongArg = Mid(sTmp, 2)
-            sTmp = ""
-        ElseIf InStr(sTmp, " :") > 0 Then
+            sLongArg = Mid(stmp, 2)
+            stmp = ""
+        ElseIf InStr(stmp, " :") > 0 Then
             'The long arg comes later.
-            sLongArg = Mid(sTmp, InStr(sTmp, " :") + 2)
-            sTmp = Left(sTmp, InStr(sTmp, " :") - 1)
+            sLongArg = Mid(stmp, InStr(stmp, " :") + 2)
+            stmp = Left(stmp, InStr(stmp, " :") - 1)
         End If
         'Now parse the remaining arguments.
-        If sTmp <> "" Then
-            vArgs = Split(sTmp, " ")
+        If stmp <> "" Then
+            vArgs = Split(stmp, " ")
             'If we have a long arg, append it to the
             'end.
             ReDim Preserve vArgs(UBound(vArgs) + 1)
@@ -865,4 +868,50 @@ Public Function Mask(ByVal NUH As String, ByVal MaskType As Long) As String
         Case 9 'nick!*@*.domain
             Mask = n + "!*@" + d
     End Select
+End Function
+
+Public Function Duration(ByVal dur As String) As Long
+    'Takes a string like this: 1d2h3m4s and returns the number of seconds.
+    'The exact format could be described with a regular expression:
+    '([0-9]+([dD]|[hH]|[mM]|[sS]))+
+    Dim secs As Long, stmp As String
+    Dim idx As Long, ch As String * 1
+    For idx = 1 To Len(dur)
+        ch = Mid(dur, idx, 1)
+        Select Case ch
+            Case "0" To "9"
+                stmp = stmp & ch
+            Case "d", "D"
+                If stmp = "" Then Err.Raise 5, , "Not a valid duration string (period specifier without quantity)."
+                secs = secs + CLng(stmp) * 86400
+                stmp = ""
+            Case "h", "H"
+                If stmp = "" Then Err.Raise 5, , "Not a valid duration string (period specifier without quantity)."
+                secs = secs + CLng(stmp) * 3600
+                stmp = ""
+            Case "m", "M"
+                If stmp = "" Then Err.Raise 5, , "Not a valid duration string (period specifier without quantity)."
+                secs = secs + CLng(stmp) * 60
+                stmp = ""
+            Case "s", "S"
+                If stmp = "" Then Err.Raise 5, , "Not a valid duration string (period specifier without quantity)."
+                secs = secs + CLng(stmp)
+                stmp = ""
+            Case Else
+                Err.Raise 5, , "Not a valid duration string (invalid character '" + ch + "')."
+        End Select
+    Next idx
+    If stmp <> "" Then secs = secs + CLng(stmp)
+    Duration = secs
+End Function
+
+Public Function UnDuration(ByVal dur As Long) As String
+    'Take Duration's output and converts into a string.
+    Dim days As Long, hours As Long, mins As Long, secs As Long
+    If dur < 0 Then Err.Raise 5, , "Invalid time specifier (negative)."
+    days = (dur \ 86400)
+    hours = (dur \ 3600) Mod 24
+    mins = (dur \ 60) Mod 60
+    secs = dur Mod 60
+    UnDuration = IIf(days > 0, CStr(days) & "d", "") & IIf(hours > 0, CStr(hours) & "h", "") & IIf(mins > 0, CStr(mins) & "m", "") & IIf(secs > 0, CStr(secs) & "s", "")
 End Function
