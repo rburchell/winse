@@ -28,7 +28,7 @@ Public Const LogTypeNotice = "NOTICE"
 Public Const LogTypeDebug = "DEBUG"
 
 '[ACCESS FLAGS]
-Public Const AccFullAccess As String = "MmgoriIa"
+Public Const AccFullAccess As String = "MmgoriIak"
 Public Const AccFlagMaster As String * 1 = "M"
 Public Const AccFlagCoMaster As String * 1 = "m"
 Public Const AccFlagGetServNotices As String * 1 = "g"
@@ -37,6 +37,7 @@ Public Const AccFlagCanRootServ As String * 1 = "r"
 Public Const AccFlagCanRootServInject As String * 1 = "i"
 Public Const AccFlagCanRootServSuperInject As String * 1 = "I"
 Public Const AccFlagCanMassServ As String * 1 = "a"
+Public Const AccFlagCanMassKill As String * 1 = "k"
 '[/ACCESS FLAGS]
 
 Public Type ConfigVars
