@@ -12,10 +12,15 @@ Tags:
 [**] = ALL
 
 -- WinSE .NET 0.1 --
-02/12/2005 - aquanight
+06/03/2005 - aquanight
+-[CO] [Add] Some API additions, and lots of them including the Channel and User mode parser, and permission flags are back.
+-[PR] [Add] Unreal - Finished up most of the sending stuff, now working on receiving. Heck, this thing might be able to link if not for
+            the fact that config and module loading don't exist yet... :P
+
+12/02/2005 - aquanight
 -[**] [Add] Filled in AssemblyInfo.vb in everything, so that everything has proper version numbers, exe/dll info, etc.
 -[DS] [Add] DebugServ not automatically built in the Release configuration.
 -A few other things I don't remember...
 
-02/10/2005 - aquanight
+10/02/2005 - aquanight
 - Initial import of .NET CVS!
