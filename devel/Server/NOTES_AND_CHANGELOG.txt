@@ -39,6 +39,8 @@ Services:
              All [AL]
 [-----------------------------------]
 
+23/07/2004 - Jason
+ -[CO] [---] Added a ServerType config directive, to allow for more efficent server-specific ways of doing things.
 23/07/2004 - aquanight
  -[DB] [Fix] Squashed a few compilation errors.
  -[CO] [Fix] Also fixed a potential crash in the new mode parser in
@@ -46,6 +48,8 @@ Services:
              waiting in the receive buffer.
  -[CO] [---] Retired the old mode parser. SetChannelModes is now the
              new mode parser.
+22/07/2004 - Jason
+ -[CO] [---] Replaced the Usermodes Parser
 19/07/2004 - aquanight
  -[CO] [---] It's been a while, and I bring you an improved DB routine! Yay!
 04/07/2004 - aquanight
@@ -71,7 +75,7 @@ Services:
  -[AS] [---] Added some new subs to handle mode changes coming in from the IRCd.
  -[RS] [---] Added some new subs to handle mode changes coming in from the IRCd.
  -[AG] [---] Added some new subs to handle mode changes coming in from the IRCd.
- -[MsS] [---] Added some new subs to handle mode changes coming in from the IRCd.
+ -[MS] [---] Added some new subs to handle mode changes coming in from the IRCd.
 27/06/2004 - w00t
  -[CO] [Fix] Added config file support, needs EXTENSIVE testing. (this was fun! :D)
  -[CO] [---] Changed a lot of references to fully qualified names, eg ServerName -> basMain.Config.ServerName
