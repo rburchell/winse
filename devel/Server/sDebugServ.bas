@@ -65,3 +65,11 @@ Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal
 
 End Sub
 
+Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args() As String)
+
+End Sub
+
+Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+
+End Sub
+

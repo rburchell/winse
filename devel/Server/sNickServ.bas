@@ -186,7 +186,7 @@ Public Function Identify(Sender As Integer, NickToIdentify As String, Password A
         Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationNotRegistered)
         Exit Function
     End If
-    Dim UserId As Integer
+    Dim UserID As Integer
     If Password = PasswordonFile Then
         With basMain.Users(Sender)
             .AbuseTeam = basFileIO.GetInitEntry("users.db", .Nick, "AbuseTeam")
@@ -196,7 +196,7 @@ Public Function Identify(Sender As Integer, NickToIdentify As String, Password A
             .MsgStyle = basFileIO.GetInitEntry("users.db", .Nick, "MsgStyle")
             .Password = basFileIO.GetInitEntry("users.db", .Nick, "Password")
             'Check if they are a master, just in case their permissions got fiddled with.
-            If UCase(basMain.Users(UserId).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
+            If UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
                 .Access = 100
             End If
         End With
@@ -225,6 +225,14 @@ Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal
 End Sub
 
 Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+
+End Sub
+
+Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args() As String)
+
+End Sub
+
+Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 

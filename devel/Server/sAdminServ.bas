@@ -102,27 +102,27 @@ Private Sub Version(Sender As Integer)
 End Sub
 
 Private Function Flags(Sender As Integer, Action As String, TargetNick As String)
-    Dim UserId As Integer
+    Dim UserID As Integer
     Select Case UCase(Action)
         Case "ABUSETEAMADD"
-            UserId = basFunctions.ReturnUserIndex(TargetNick)
-            If UserId = -1 Then
+            UserID = basFunctions.ReturnUserIndex(TargetNick)
+            If UserID = -1 Then
                 Call basFunctions.SendMessage(basMain.Service(5).Nick, basFunctions.ReturnUserName(Sender), Replies.UserDoesntExist)
                 Exit Function
             End If
-            basMain.Users(UserId).AbuseTeam = True
-            If basFunctions.IsNickRegistered(basMain.Users(UserId).Nick) Then
+            basMain.Users(UserID).AbuseTeam = True
+            If basFunctions.IsNickRegistered(basMain.Users(UserID).Nick) Then
                 Call basFileIO.SetInitEntry("users.db", basMain.Users(Sender).Nick, "AbuseTeam", "True")
             End If
             Call basFunctions.SendMessage(basMain.Service(5).Nick, basFunctions.ReturnUserName(Sender), Replace(Replies.AdminServUserAddToAbuseTeam, "%n", TargetNick))
         Case "ABUSETEAMDEL"
-            UserId = basFunctions.ReturnUserIndex(TargetNick)
-            If UserId = -1 Then
+            UserID = basFunctions.ReturnUserIndex(TargetNick)
+            If UserID = -1 Then
                 Call basFunctions.SendMessage(basMain.Service(5).Nick, basFunctions.ReturnUserName(Sender), Replies.UserDoesntExist)
                 Exit Function
             End If
-            basMain.Users(UserId).AbuseTeam = False
-            If basFunctions.IsNickRegistered(basMain.Users(UserId).Nick) Then
+            basMain.Users(UserID).AbuseTeam = False
+            If basFunctions.IsNickRegistered(basMain.Users(UserID).Nick) Then
                 Call basFileIO.SetInitEntry("users.db", basMain.Users(Sender).Nick, "AbuseTeam", "True")
             End If
             Call basFunctions.SendMessage(basMain.Service(5).Nick, basFunctions.ReturnUserName(Sender), Replace(Replies.AdminServUserAddToAbuseTeam, "%n", TargetNick))
@@ -207,3 +207,12 @@ End Sub
 Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
+
+Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args() As String)
+
+End Sub
+
+Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+
+End Sub
+

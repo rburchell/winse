@@ -39,6 +39,22 @@ Services:
              All [AL]
 [-----------------------------------]
 
+23/07/2004 - aquanight
+ -[--] [---] So many updates on one day! :)
+ -[CS] [---] Added some new subs to handle usermode changes coming in from the IRCd.
+             Added some new subs to handle commands coming in from the IRCd.
+ -[NS] [---] Added some new subs to handle usermode changes coming in from the IRCd.
+             Added some new subs to handle commands coming in from the IRCd.
+ -[OS] [---] Added some new subs to handle usermode changes coming in from the IRCd.
+             Added some new subs to handle commands coming in from the IRCd.
+ -[AS] [---] Added some new subs to handle usermode changes coming in from the IRCd.
+       [---] Added some new subs to handle commands coming in from the IRCd.
+ -[RS] [---] Added some new subs to handle usermode changes coming in from the IRCd.
+       [---] Added some new subs to handle commands coming in from the IRCd.
+ -[AG] [---] Added some new subs to handle usermode changes coming in from the IRCd.
+             Added some new subs to handle commands coming in from the IRCd.
+ -[MsS][---] Added some new subs to handle usermode changes coming in from the IRCd.
+ -[MsS][---] Added some new subs to handle commands coming in from the IRCd.
 23/07/2004 - Jason
  -[AG] [---] Modified deoper to use "SVSO Nick -" on unreal servers (designed specificly to clear oper flags on those servers)
  -[CO] [---] Added a ServerType config directive, to allow for more efficent server-specific ways of doing things.
@@ -76,7 +92,7 @@ Services:
  -[AS] [---] Added some new subs to handle mode changes coming in from the IRCd.
  -[RS] [---] Added some new subs to handle mode changes coming in from the IRCd.
  -[AG] [---] Added some new subs to handle mode changes coming in from the IRCd.
- -[MS] [---] Added some new subs to handle mode changes coming in from the IRCd.
+ -[MsS][---] Added some new subs to handle mode changes coming in from the IRCd.
 27/06/2004 - w00t
  -[CO] [Fix] Added config file support, needs EXTENSIVE testing. (this was fun! :D)
  -[CO] [---] Changed a lot of references to fully qualified names, eg ServerName -> basMain.Config.ServerName

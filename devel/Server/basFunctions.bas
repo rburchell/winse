@@ -136,37 +136,37 @@ Public Sub PartServicesFromChannel(Sender As Integer, Channel As String)
     Next i
 End Sub
 
-Public Function ReturnUserServicesPermissions(UserId As Integer) As Byte
+Public Function ReturnUserServicesPermissions(UserID As Integer) As Byte
     'Determines services permissions through a number of different factors.
     
     'If the userindex given doesnt exist, tell them that.
-    If basMain.Users(UserId).Nick = "" Then
+    If basMain.Users(UserID).Nick = "" Then
         ReturnUserServicesPermissions = -1
         Exit Function
     End If
     'If they are identified to services master nick, access=100
-    If UCase(basMain.Users(UserId).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
+    If UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
         ReturnUserServicesPermissions = 100
         Exit Function
     End If
     'else return their given permissions.
-    ReturnUserServicesPermissions = basMain.Users(UserId).Access
+    ReturnUserServicesPermissions = basMain.Users(UserID).Access
 End Function
 
-Public Function IsAbuseTeamMember(UserId As Integer) As Boolean
+Public Function IsAbuseTeamMember(UserID As Integer) As Boolean
     'Don't you love Booleans? :D - aquanight
     'God, what was I on!!! duh... it's already boolean... so why did I check? --w00t
-    IsAbuseTeamMember = basMain.Users(UserId).AbuseTeam
+    IsAbuseTeamMember = basMain.Users(UserID).AbuseTeam
 End Function
 
-Public Function IsServicesAdmin(UserId As Integer) As Boolean
+Public Function IsServicesAdmin(UserID As Integer) As Boolean
     'ick. I have to think when I see things like that :( :P
     'Go the booleans aquanight! --w00t
-    IsServicesAdmin = (InStr(basMain.Users(UserId).Modes, "a") <> 0)
+    IsServicesAdmin = (InStr(basMain.Users(UserID).Modes, "a") <> 0)
 End Function
 
-Public Function IsOper(UserId As Integer) As Boolean
-    IsOper = (InStr(basMain.Users(UserId).Modes, "o") <> 0)
+Public Function IsOper(UserID As Integer) As Boolean
+    IsOper = (InStr(basMain.Users(UserID).Modes, "o") <> 0)
 End Function
 
 Public Function GetTarget(Buffer As String) As String
@@ -225,11 +225,11 @@ Public Sub Notice(Sender As String, Reciever As String, Message As String)
 End Sub
 
 Public Sub SendMessage(Sender As String, Reciever As String, Message As String)
-    Dim UserId As Integer
+    Dim UserID As Integer
     'Wrapper for notice\privmsg. Checks which we should use, and uses it.
-    UserId = basFunctions.ReturnUserIndex(Reciever)
-    If UserId = -1 Then Exit Sub
-    Select Case basMain.Users(UserId).MsgStyle
+    UserID = basFunctions.ReturnUserIndex(Reciever)
+    If UserID = -1 Then Exit Sub
+    Select Case basMain.Users(UserID).MsgStyle
         Case True
             'Notice
             Call basFunctions.Notice(Sender, Reciever, Message)
@@ -241,14 +241,14 @@ End Sub
 
 'Changing Message to ByVal because we need to
 'do some multiliation to it to send KILLs properly. -aquanight
-Public Sub KillUser(UserId As Integer, ByVal Message As String, Optional Killer As String = "Agent")
-    If UserId >= 0 Then
+Public Sub KillUser(UserID As Integer, ByVal Message As String, Optional Killer As String = "Agent")
+    If UserID >= 0 Then
         'I think some kind of validation should be put
         'here... because we could theoretically call
         'KillUser with a positive UserId that is still
         'invalid. It shouldn't happen, but it'd be
         'good to know :) . -aquanight
-        If basMain.Users(UserId).Nick = "" Then
+        If basMain.Users(UserID).Nick = "" Then
             'For now, I'm throwing a Bad Call Error
             'Yes it's old fashioned, but if it where
             'my way, it'd be Throw New... you get the
@@ -267,8 +267,8 @@ Public Sub KillUser(UserId As Integer, ByVal Message As String, Optional Killer 
         If Not Killer = "" Then
             Message = Killer & " (" & Message & ")"
         End If
-        basFunctions.SendData (":" + Killer + " KILL " & basMain.Users(UserId).Nick & " :" & Message)
-        With basMain.Users(UserId)
+        basFunctions.SendData (":" + Killer + " KILL " & basMain.Users(UserID).Nick & " :" & Message)
+        With basMain.Users(UserID)
             'Blank their record
             .Access = 0
             .Modes = ""
@@ -276,7 +276,7 @@ Public Sub KillUser(UserId As Integer, ByVal Message As String, Optional Killer 
             .Requests = 0
             .MsgStyle = False
         End With
-        If UserId = basMain.TotalUsers - 1 Then basMain.TotalUsers = basMain.TotalUsers - 1
+        If UserID = basMain.TotalUsers - 1 Then basMain.TotalUsers = basMain.TotalUsers - 1
     Else
         'Services dont know them :| Shouldnt happen!!!!!! --w00t
             'In that case, let's throw an error. -aquanight
@@ -287,10 +287,10 @@ Public Sub KillUser(UserId As Integer, ByVal Message As String, Optional Killer 
     End If
 End Sub
 
-Public Function ReturnUserName(UserId As Integer) As String
+Public Function ReturnUserName(UserID As Integer) As String
     'If return "" then user doesnt exist.
-    If UserId = -1 Then Exit Function
-    ReturnUserName = basMain.Users(UserId).Nick
+    If UserID = -1 Then Exit Function
+    ReturnUserName = basMain.Users(UserID).Nick
 End Function
 
 Public Sub GlobalMessage(Message As String)
@@ -312,7 +312,7 @@ Public Sub GlobalMessage(Message As String)
 '    Next i
 End Sub
 
-Public Sub CheckFloodLevel(UserId As Integer)
+Public Sub CheckFloodLevel(UserID As Integer)
     'Flood level. Goes up by 1 on each request.
     'When it hits 5, a warning. 10, a kill. 20, a gline (unless >= services admin)
     'Flood level goes down by 1 every 5 seconds?? --w00t
@@ -321,10 +321,10 @@ Public Sub CheckFloodLevel(UserId As Integer)
     'get to the GLINE stage, but I don't see this
     'implemented anywhere, so that's ok :) --aquanight
     'Ahem. I realised that after I tried to implement it once :P --w00t
-    With basMain.Users(UserId)
+    With basMain.Users(UserID)
         If .Requests >= 8 Then
             'kill, dont specify killer so it will default to "Agent"
-            Call basFunctions.KillUser(UserId, Replies.ServiceFloodKill)
+            Call basFunctions.KillUser(UserID, Replies.ServiceFloodKill)
         End If
         If .Requests = 4 Then
             'warn
@@ -332,7 +332,7 @@ Public Sub CheckFloodLevel(UserId As Integer)
         End If
     End With
     'Increase flood requests
-    basMain.Users(UserId).Requests = basMain.Users(UserId).Requests + 1
+    basMain.Users(UserID).Requests = basMain.Users(UserID).Requests + 1
 End Sub
 
 Public Function ReturnUserIndex(NickName As String) As Integer
@@ -397,12 +397,12 @@ Public Sub NotifyAllUsersWithServicesAccess(Message As String)
     Next i
 End Sub
 
-Public Sub SetUserModes(UserId As Integer, Modes As String)
+Public Sub SetUserModes(UserID As Integer, Modes As String)
   Dim l As Integer ' I use l or i for loops usually
   Dim ModeChar As String * 1
   Dim AddModes As Boolean
   Dim Result As String
-  With basMain.Users(UserId)
+  With basMain.Users(UserID)
     Result = .Modes
     AddModes = True
     For l = 1 To Len(Modes)
@@ -418,6 +418,15 @@ Public Sub SetUserModes(UserId As Integer, Modes As String)
         Else
           Result = Replace(Result, ModeChar, "")
           If AddModes Then Result = Result & ModeChar
+          'Now for some callback time! -aquanight
+          sAdminServ.HandleUserMode UserID, AddModes, ModeChar
+          sAgent.HandleUserMode UserID, AddModes, ModeChar
+          sChanServ.HandleUserMode UserID, AddModes, ModeChar
+          sDebugServ.HandleUserMode UserID, AddModes, ModeChar
+          sMassServ.HandleUserMode UserID, AddModes, ModeChar
+          sNickServ.HandleUserMode UserID, AddModes, ModeChar
+          sOperServ.HandleUserMode UserID, AddModes, ModeChar
+          sRootServ.HandleUserMode UserID, AddModes, ModeChar
         End If
 ' End Validity Checked Code
       End If
@@ -550,7 +559,23 @@ Public Sub ParseCmd(ByVal Incoming As String)
     'correct procedure.
     On Error Resume Next
     Call CallByName(cd, sCmd, VbMethod, Array(sSource, vArgs, Incoming))
-    If Err.Number <> 0 Then Debug.Print Err.Number, Err.Description
+    If Err.Number <> 0 Then
+        Debug.Print Err.Number, Err.Description
+        Exit Sub
+    End If
+    'OK so now we need to send it on it's merry way to
+    'the service modules... hm
+    'NOTE: These could theoretically handle PRIVMSG,
+    'NOTICE and MODE, but that isn't really a good idea
+    'as we have seperate subs for those purposes ;p .
+    sAdminServ.HandleCommand sSource, sCmd, vArgs
+    sAgent.HandleCommand sSource, sCmd, vArgs
+    sChanServ.HandleCommand sSource, sCmd, vArgs
+    sDebugServ.HandleCommand sSource, sCmd, vArgs
+    sMassServ.HandleCommand sSource, sCmd, vArgs
+    sNickServ.HandleCommand sSource, sCmd, vArgs
+    sOperServ.HandleCommand sSource, sCmd, vArgs
+    sRootServ.HandleCommand sSource, sCmd, vArgs
 End Sub
 
 'BEHOLD! The NEW AND IMPROVED Channel Mode Parser! :D
