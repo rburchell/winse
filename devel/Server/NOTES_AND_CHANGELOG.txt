@@ -26,6 +26,9 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */\
+
+ 21/11/2004 - Jason
+  -[HS] [New] Created HostServ.  No security yet, no errors, bad commands just fail, but the basics are there.
  07/11/2004 - aquanight
   -[NS] [Add] Added nick enforcement, RECOVER, RELEASE, and GHOST.
   -[NS] [Add] Added a bunch more SET options.
