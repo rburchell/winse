@@ -231,7 +231,9 @@ End Sub
 
 Private Sub Kill(Sender As Integer, Nick As String, Message As String)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KILL " & Nick & " with reason " & Message)
-    Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KILL " & Nick & " :" & Message & " (" & basFunctions.ReturnUserName(Sender) & ")")
+    'Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KILL " & Nick & " :" & Message & " (" & basFunctions.ReturnUserName(Sender) & ")")
+    'Make KILL show as Quits: Nick (Ident@Host) (Killed (KillingUser (Die!)))
+    Call basFunctions.SendData("KILL " & Nick & " :" & basMain.Service(7).Nick & "!" & basFunctions.ReturnUserName(Sender) & " (" & Message & ")")
 End Sub
 
 Private Sub Kick(Sender As Integer, Nick As String, Channel As String, Message As String)

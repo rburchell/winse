@@ -26,6 +26,8 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 28/07/2004 - Jason
+  -[AG] [---] Agent KILL Improvement: * Quits: L4m3n00b (Ident@Host) (Killed (MrAnnoyed (Go away!)))
  26/07/2004 - w00t
   -[--] [---] Reformatted the changelog. Maybe it looks prettyful now. :P
  26/07/2004 - Jason
