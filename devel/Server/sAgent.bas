@@ -215,7 +215,7 @@ Private Sub UMode(Sender As Integer, Nick As String, Modes As String)
     Target = basFunctions.ReturnUserIndex(Nick)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " set modes " & Modes & " on " & Nick)
     Call basFunctions.SetUserModes(Target, Modes)
-    Call basFunctions.SendData("SVS2MODE " & Nick & " " & Modes)
+    Call basFunctions.SendData(IIf(basMain.Config.ServerType = "Unreal", "SVS2MODE ", "SVSMODE ") & Nick & " " & Modes)
 End Sub
 
 Private Sub Nick(Sender As Integer, OldNick As String, NewNick As String)
@@ -267,29 +267,29 @@ Private Sub DeOper(Sender As Integer, Nick As String)
       ' These two flags arent cleared by svso for some reason:
       '  Recieve Infected DCC notices (v)
       '  Can Read and Send To GLOBOPS (g)
-    Else ' SVSO Unsupported, Use SVS2MODE
+    Else ' SVSO Unsupported, Use SVSMODE
       If InStr(Users(TargetIndex).Modes, "o") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -o")
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -o")
         Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "o", "")
       End If
       If InStr(Users(TargetIndex).Modes, "O") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -O")
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -O")
         Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "O", "")
       End If
       If InStr(Users(TargetIndex).Modes, "C") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -C")
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -C")
         Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "C", "")
       End If
       If InStr(Users(TargetIndex).Modes, "A") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -A")
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -A")
         Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "A", "")
       End If
       If InStr(Users(TargetIndex).Modes, "a") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -a")
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -a")
         Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "a", "")
       End If
       If InStr(Users(TargetIndex).Modes, "N") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -N")
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -N")
         Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "N", "")
       End If
     End If
@@ -349,29 +349,29 @@ Select Case UCase(sCommand)
               ' These two flags arent cleared by svso for some reason:
               '  Recieve Infected DCC notices (v)
               '  Can Read and Send To GLOBOPS (g)
-            Else ' SVSO Unsupported, Use SVS2MODE
+            Else ' SVSO Unsupported, Use SVSMODE
               If InStr(.Modes, "o") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & .Nick & " -o")
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -o")
                 .Modes = Replace(.Modes, "o", "")
               End If
               If InStr(.Modes, "O") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & .Nick & " -O")
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -O")
                 .Modes = Replace(.Modes, "O", "")
               End If
               If InStr(.Modes, "C") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & .Nick & " -C")
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -C")
                 .Modes = Replace(.Modes, "C", "")
               End If
               If InStr(.Modes, "A") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & .Nick & " -A")
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -A")
                 .Modes = Replace(.Modes, "A", "")
               End If
               If InStr(.Modes, "a") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & .Nick & " -a")
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -a")
                 .Modes = Replace(.Modes, "a", "")
               End If
               If InStr(.Modes, "N") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & .Nick & " -N")
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -N")
                 .Modes = Replace(.Modes, "N", "")
               End If
               ' Get a new copy of their modes using w00t's method
@@ -431,8 +431,8 @@ If bSet And InStr("oOCAaN" & IIf(basMain.Config.ServerType = "UNREAL", "vg", "")
       ' These two flags arent cleared by svso for some reason:
       '  Recieve Infected DCC notices (v)
       '  Can Read and Send To GLOBOPS (g)
-    Else ' SVSO Unsupported, Use SVS2MODE
-      Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Users(UserID).Nick & " -" & Char)
+    Else ' SVSO Unsupported, Use SVSMODE
+      Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Users(UserID).Nick & " -" & Char)
       Users(UserID).Modes = Replace(Users(UserID).Modes, Char, "")
     End If
   End If

@@ -38,6 +38,9 @@ Services:
  Database  [DB]
              All [AL]
 [-----------------------------------]
+
+25/07/2004
+ -[AL] [Fix] Since SVS2MODE only works on Unreal, made checks for ServerType
 25/07/2004 - aquanight
  -[AG] [Fix] Squashed a tun of compile errors in DoOper and Deny (sorry Jason ;p ).
  -[CO] [Fix] Fixed a problem with CallByName not working in ParseCmd,
