@@ -38,6 +38,8 @@ Services:
              All [AL]
 [-----------------------------------]
 
+19/07/2004 - aquanight
+ -[CO] [---] It's been a while, and I bring you an improved DB routine! Yay!
 04/07/2004 - aquanight
  -[US] [:-)] Happy 4th all you US people! ^_^
  -[CO] [---] Finished the new channel mode parser - the service callbacks are called now (I hope).

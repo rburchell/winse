@@ -868,7 +868,7 @@ End Function
 Public Function FreeChanID() As Integer
     Dim i As Integer
     For i = 0 To UBound(Channels)
-        If Channels(i).Nick = "" Then
+        If Channels(i).Name = "" Then
             FreeChanID = i
             Exit Function
         End If

@@ -34,7 +34,9 @@ Public Type ConfigVars
     UplinkPassword As String
     UplinkType As String
     ServerName As String
-    ServerNumeric As String 'Could be byte??
+    'If it could be byte... I don't care, but NUMERICs
+    'really should be... numeric. :P - aquanight
+    ServerNumeric As Integer 'Could be byte??
     ServerDescription As String
     ServicesMaster  As String
     DefaultMessageType As Boolean
