@@ -35,7 +35,6 @@ Public Const ServiceFloodWarning = "---4WARNING--- You are flooding services. 
 Public Const ServiceFloodKill = "You were warned. Please do not flood services with requests."
 Public Const ServicesConnectedToNetwork = "Services is now connected, and has been synched with the network."
 Public Const ServicesTerminatingNormally = "Services are shutting down normally :) Have a nice day!"
-Public Const AccessTooHigh = "You specified an access level too high. Use a value less than 255."
 
 'Config file errors.
 Public Const ConfigFileDoesntExist = "winse.conf doesnt exist! We need a configuration file to start."
@@ -96,7 +95,8 @@ Public Const NickServLastQuitLocalKill = "[%s] Local kill by %o (%r)"
 Public Const NickServLastQuitFarKill = "Killed (%o (%r))"
 
 'AdminServ
-Public Const AdminServCantAddMaster = "Only users with access 100 can add additional masters."
+Public Const AdminServCantAddCoMaster = "Only Masters can add comasters!"
+Public Const AdminServCantModCoMaster = "Only Masters can modfiy a comaster's access!"
 Public Const AdminServAccessModified = "User %n's access was modified sucessfully."
 Public Const AdminServUserAddToAbuseTeam = "User %n added to the Abuse Team"
 Public Const AdminServUserDelFromAbuseTeam = "User %n deleted from the Abuse Team"

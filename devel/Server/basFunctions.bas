@@ -137,20 +137,21 @@ Public Sub PartServicesFromChannel(Sender As Integer, Channel As String)
 End Sub
 
 Public Function ReturnUserServicesPermissions(UserID As Integer) As Byte
-    'Determines services permissions through a number of different factors.
-    
-    'If the userindex given doesnt exist, tell them that.
-    If basMain.Users(UserID).Nick = "" Then
-        ReturnUserServicesPermissions = -1
-        Exit Function
-    End If
-    'If they are identified to services master nick, access=100
-    If UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
-        ReturnUserServicesPermissions = 100
-        Exit Function
-    End If
-    'else return their given permissions.
-    ReturnUserServicesPermissions = basMain.Users(UserID).Access
+Err.Raise vbObjectError, "ReturnUserServicesPermissions(" & UserID & ")", "This function is outdated since flag based permissions, use HasFlag(UserID As Integer,Flag As String) ONLY ONE FLAG AT A TIME!"
+'    'Determines services permissions through a number of different factors.
+'
+'    'If the userindex given doesnt exist, tell them that.
+'    If basMain.Users(UserID).Nick = "" Then
+'        ReturnUserServicesPermissions = -1
+'        Exit Function
+'    End If
+'    'If they are identified to services master nick, they have
+'    If UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
+'        ReturnUserServicesPermissions = 100
+'        Exit Function
+'    End If
+'    'else return their given permissions.
+'    ReturnUserServicesPermissions = basMain.Users(UserID).Access
 End Function
 
 Public Function IsAbuseTeamMember(UserID As Integer) As Boolean
@@ -270,7 +271,7 @@ Public Sub KillUser(UserID As Integer, ByVal Message As String, Optional Killer 
         basFunctions.SendData (":" + Killer + " KILL " & basMain.Users(UserID).Nick & " :" & Message)
         With basMain.Users(UserID)
             'Blank their record
-            .Access = 0
+            .Access = ""
             .Modes = ""
             .Nick = ""
             .Requests = 0
@@ -390,9 +391,9 @@ Public Sub NotifyAllUsersWithServicesAccess(Message As String)
     Dim Sender As String
     Sender = Service(8).Nick
     For i = 0 To basMain.TotalUsers
-        If basMain.Users(i).Access > 0 Then
+        If HasFlag(i, AccFlagGetServNotices) Then ' Modified to only send to users with the ServNotices flag
             Reciever = basMain.Users(i).Nick
-            Call basFunctions.SendMessage(Sender, Reciever, Message)
+            Call basFunctions.SendMessage(Sender, Reciever, "Services Notice: " & Message)
         End If
     Next i
 End Sub

@@ -29,7 +29,7 @@ Public Sub AdminservHandler(Cmd As String, Sender As Integer)
         Call basFunctions.SendMessage(basMain.Service(5).Nick, SenderNick, Replies.MustBeAServiceAdmin)
         Exit Sub
     End If
-    If basFunctions.ReturnUserServicesPermissions(Sender) < 99 Then
+    If Not basFunctions.HasFlag(Sender, AccFlagCoMaster) And Not basFunctions.HasFlag(Sender, AccFlagMaster) Then
         Call basFunctions.SendMessage(basMain.Service(5).Nick, SenderNick, Replies.MustBeAServicesMasterOrComaster)
         Exit Sub
     End If
@@ -51,10 +51,7 @@ Public Sub AdminservHandler(Cmd As String, Sender As Integer)
                 Call basFunctions.SendMessage(basMain.Service(5).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
-            If CDec(Parameters(2)) > 255 Then
-                Call basFunctions.SendMessage(basMain.Service(5).Nick, SenderNick, Replies.AccessTooHigh)
-            End If
-            Call sAdminServ.Access(Sender, Parameters(1), CByte(Parameters(2)))
+            Call sAdminServ.Access(Sender, Parameters(1), Parameters(2))
         Case "FLAGS"
             Call sAdminServ.Flags(Sender, Parameters(1), Parameters(2))
         Case "GVERSION"
@@ -129,26 +126,32 @@ Private Function Flags(Sender As Integer, Action As String, TargetNick As String
     End Select
 End Function
 
-Private Function Access(Sender As Integer, TargetNick As String, NewAccess As Byte)
+Private Function Access(Sender As Integer, TargetNick As String, Access As String)
     Dim TargetIndex As Integer
-    Dim IndexVal As Integer
     Dim Successful As Boolean
-    'Dont need to check if sender's access >=99 since AdminServ checks will
+    'Dont need to check if sender is comaster since AdminServ checks will
     'do that for us (we hope)
-    If NewAccess >= basMain.Users(Sender).Access And basMain.Users(Sender).Access < 100 Then
-        'That bastard is trying to add permissions above his own!!!
-        'They must be a comaster (access==99) so tell him to get b0rked!
-        Call basFunctions.SendMessage(basMain.Service(5).Nick, basMain.Users(Sender).Nick, Replies.AdminServCantAddMaster)
+    If InStr(1, Access, AccFlagCoMaster) > 0 And Not basFunctions.HasFlag(basMain.Users(Sender), AccFlagMaster) Then
+        'That bastard is trying to add another comaster! He cant do that!
+        Call basFunctions.SendMessage(basMain.Service(5).Nick, basMain.Users(Sender).Nick, Replies.AdminServCantAddCoMaster)
         Exit Function
     End If
-    IndexVal = basFunctions.ReturnUserIndex(TargetNick)
-    If IndexVal <> -1 Then
-        basMain.Users(TargetIndex).Access = NewAccess
-        Successful = True
+    TargetIndex = basFunctions.ReturnUserIndex(TargetNick)
+    If HasFlag(TargetIndex, AccFlagCoMaster) And Not basFunctions.HasFlag(basMain.Users(Sender), AccFlagMaster) Then
+        'That bastard is trying to change a comaster's access! He cant do that!
+        Call basFunctions.SendMessage(basMain.Service(5).Nick, basMain.Users(Sender).Nick, Replies.AdminServCantModCoMaster)
+        Exit Function
+    End If
+    Successful = True
+    If TargetIndex <> -1 Then
+        basFunctions.SetFlags TargetIndex, Access
+    Else
+        Successful = False
     End If
     If basFunctions.IsNickRegistered(TargetNick) Then
-        Call basFileIO.SetInitEntry("users.db", TargetNick, "Access", CStr(NewAccess))
-        Successful = True
+        Call basFileIO.SetInitEntry("users.db", TargetNick, "Access", CStr(Users(TargetIndex).Access))
+    Else
+        Successful = False
     End If
     If Successful = True Then
         Call basFunctions.SendMessage(basMain.Service(5).Nick, basMain.Users(Sender).Nick, Replace(Replies.AdminServAccessModified, "%n", TargetNick))

@@ -33,7 +33,7 @@ Public Sub MassservHandler(Cmd As String, Sender As Integer)
         Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.MustBeAServiceAdmin)
         Exit Sub
     End If
-    If basFunctions.ReturnUserServicesPermissions(Sender) < 50 Then
+    If basFunctions.HasFlag(Sender, AccFlagCanMassServ) Then
         Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.InsufficientPermissions)
         Exit Sub
     End If

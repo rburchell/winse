@@ -39,6 +39,12 @@ Services:
              All [AL]
 [-----------------------------------]
 
+26/07/2004
+ -[CO] [---] Added a permissions flag for recieving services notices by
+             NotifyAllUsersWithServicesAccess.  Only users with flag "g"
+             (AccFlagGetServNotices) recieve the notices now.
+ -[AL] [---] Complete Overhaul of the permissions system, we now use flags,
+             the flag letters are selected by changing constants in basMain
 25/07/2004
  -[AG] [Fix] Numerous bugfixes, I tested it well, then fixed everything that was broken
 25/07/2004 - aquanight

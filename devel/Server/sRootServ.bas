@@ -31,7 +31,7 @@ Public Sub RootservHandler(Cmd As String, Sender As Integer)
         Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, Replies.MustBeAServiceAdmin)
         Exit Sub
     End If
-    If basFunctions.ReturnUserServicesPermissions(Sender) < 100 Then
+    If Not basFunctions.HasFlag(Sender, AccFlagCoMaster) And Not basFunctions.HasFlag(Sender, AccFlagMaster) Then
         Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, Replies.MustBeAServicesMasterOrComaster)
         Exit Sub
     End If
@@ -83,7 +83,7 @@ Private Sub Raw(Sender As Integer, RawString As String)
 End Sub
 
 Private Sub Inject(Sender As Integer, sParameters As String)
-If basFunctions.ReturnUserServicesPermissions(Sender) < 100 Then
+If basFunctions.HasFlag(Sender, AccFlagMaster) Then
   Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.MustBeAServicesMasterOrComaster)
   Exit Sub
 End If

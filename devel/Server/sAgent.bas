@@ -247,7 +247,7 @@ Private Sub UnIdentify(Sender As Integer, Nick As String)
     End If
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT UNIDENTIFY " & Nick)
     basMain.Users(TargetIndex).IdentifiedToNick = ""
-    basMain.Users(TargetIndex).Access = 0
+    basMain.Users(TargetIndex).Access = ""
     basMain.Users(TargetIndex).AbuseTeam = False
     Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replace(Replies.AgentUserUnidentified, "%n", Nick))
 End Sub
@@ -338,10 +338,10 @@ Select Case UCase(sCommand)
     For l = LBound(Users) To UBound(Users)
       If Not Users(l).Nick = "" Then ' Check if there is a user occupying this id
       ' I NEED A BETTER WAY TO DO THIS, and it has to be FAST ^
-        If IsDeny(l) And Not UCase(basMain.Users(l).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master is exempt
+        If IsDeny(l) And Not UCase(basMain.Users(l).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master is exempt, not HasFlag, just in case something happened
           ' Do all denys (to remove from the newly denied)
           With Users(l)
-            .Access = 0
+            .Access = ""
             If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
               Call basFunctions.SendData("SVSO " & .Nick & " -")
               If InStr(.Modes, "g") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & .Nick & " -g")
@@ -423,7 +423,7 @@ End Sub
 Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
 ' DENY
 If bSet And InStr("oOCAaN" & IIf(basMain.Config.ServerType = "UNREAL", "vg", ""), Char) Then
-  If IsDeny(UserID) And Not UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master can OPER
+  If IsDeny(UserID) And Not UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master can OPER, not HasFlag just in case something happened
     If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
       If Char = "O" Then Call basFunctions.SendData("SVSO " & Users(UserID).Nick & " -")
       ' ^ If verifys that only one SVSO is sent

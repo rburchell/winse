@@ -160,7 +160,7 @@ Private Sub Register(Sender As Integer, NickToRegister As String, EMail As Strin
     End If
     
     With basMain.Users(Sender)
-        If UCase(.Nick) = UCase(basMain.Config.ServicesMaster) Then .Access = "M"
+        If UCase(.Nick) = UCase(basMain.Config.ServicesMaster) Then .Access = AccFullAccess
         Access = .Access
         HideEMail = .HideEMail
         MsgStyle = .MsgStyle
@@ -197,7 +197,7 @@ Public Function Identify(Sender As Integer, NickToIdentify As String, Password A
             .Password = basFileIO.GetInitEntry("users.db", .Nick, "Password")
             'Check if they are a master, just in case their permissions got fiddled with.
             If UCase(.IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
-                SetFlags Sender, "+" & AccFlagMaster
+                SetFlags Sender, "+" & AccFlagMaster ' Not AccFullAccess, He might not want to recieve Services Notices (flag g)
             End If
         End With
         Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationSuccessful)

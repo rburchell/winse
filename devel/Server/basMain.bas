@@ -28,7 +28,12 @@ Public Const LogTypeNotice = "NOTICE"
 Public Const LogTypeDebug = "DEBUG"
 
 '[ACCESS FLAGS]
+Public Const AccFullAccess As String = "Mmgoa"
 Public Const AccFlagMaster As String * 1 = "M"
+Public Const AccFlagCoMaster As String * 1 = "m"
+Public Const AccFlagGetServNotices As String * 1 = "g"
+Public Const AccFlagCanOperServ As String * 1 = "o"
+Public Const AccFlagCanMassServ As String * 1 = "a"
 '[/ACCESS FLAGS]
 
 Public Type ConfigVars
