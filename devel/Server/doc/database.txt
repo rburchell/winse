@@ -25,9 +25,15 @@ Access = Text. Access flags.
 
 ChanServ Database:
 Name = Text (Primary Key). The channel name.
+Suspended = Boolean. True if the channel is suspended or forbidden. (When Forbidden Password
+		     is null.)
 Password = Text. The channel password for getting temp +f.
 Description = Text. The channel description.
 Successor = Text. Should be a nick from the nickserv db ;p .
+AccessList = Text. Tab seperated list of ACE's formatted as <nick> <flags>.
+AKicks = Text. CRLF seperated list of AKICK entries formatted as <mask> <expiry> <reason>
+Exempts = Text. CRLF seperated list of EXEMPT entries formatted as <mask> <expiry>
+Invites = Text. CRLF seperated list of INVITES entries formatted as <mask> <expiry>
 SecureOps = Boolean.
 SecureHalfOps = Boolean.
 SecureVoices = Boolean.
@@ -42,6 +48,11 @@ ForgetBans = Boolean.
 Give = Boolean.
 StrictMode = Boolean.
 MLock = Text. See chanflags.txt for how this will be formatted.
+LastTopic = Text.
+TopicSetBy = Text.
+TopicSetOn = Number. UNIX Time Value.
+TimeRegistered = Number. UNIX Time Value.
+LastJoin = Number. For keeping track of expiration.
 Bots = Text. Space seperated list of assigned bots and associated botcommand prefix (or ?
              if no prefix is set - ? is reserved for OperServ special botcommands).
 BotKick = Text. Nick of an assigned bot, or ChanServ.
@@ -65,7 +76,7 @@ KickCapsMinimum = Number. Minimum # of caps in the message.
 KickCapsTrigger = Number. % of message for trigger.
 KickFloodLines = Number. Minimum # of lines to constitute a flood.
 KickFloodDur = Number. # of seconds to count lines.
-KickRepeat = Number. Minimum # of times a line must be repeated to trigger.
+KickRepeatCount = Number. Minimum # of times a line must be repeated to trigger.
 KickBWList = Text. Tab seperated list of badword patterns.
 
 MemoServ Database:

@@ -113,7 +113,7 @@ Public Sub CheckFloodLevel()
     End If
     If Requests = 4 Then
         'warn
-        Call basFunctions.SendMessage(basMain.Service(8).Nick, Nick, Replies.ServiceFloodWarning)
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_GLOBAL).Nick, Nick, Replies.ServiceFloodWarning)
     End If
     'Increase flood requests
     Requests = Requests + 1

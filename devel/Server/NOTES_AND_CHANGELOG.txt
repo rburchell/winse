@@ -26,6 +26,16 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 25/80/2004 - aquanight
+  -[AL] [---] Changed the Service(<number>) references to use symbolic constants instead of
+              "magic numbers". Now we actually know what Service(SVSINDEX_GLOBAL) means,
+              as opposed to a cryptic Service(8).
+  -[CS] [---] Implemented Register and started on Identify. Register correctly checks for
+              illegal attempts, and Identify only has two checks (and doesn't have the
+              success code yet :P ).
+  -[DB] [---] Updated the channel DB description to correctly include all the fields we
+              should need. I hope I didn't miss any. Maybe if I get MySQL installed, I'll
+              create the actual databases :P .
  22/08/2004 - Jason
   -[MsS][---] Cleaned up some commented out, to never again be used code.
   -[MsS][---] Changed the source name in some error logging output, to save us from debug nightmares

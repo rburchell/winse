@@ -30,6 +30,8 @@ Public Const InsufficientParameters = "Insufficient parameters."
 'We could also send:
 ':services.* 421 Lamer <cmd> :Unknown command
 Public Const UnknownCommand = "Unknown command."
+'%c = main command name.
+Public Const UnknownSubCommand = "%c - Unknown subcommand."
 'We could also send:
 ':services.* 401 Lamer <nick> :No such nick/channel
 Public Const UserDoesntExist = "This user doesn't exist."
@@ -123,6 +125,7 @@ Public Const NickServEnforcingNick = "Your nick has been changed to %n."
 Public Const NickServIdentificationSuccessful = "Password accepted, you are now identified."
 Public Const NickServIdentificationBadPassword = "Your password is incorrect."
 Public Const NickServIdentificationNotRegistered = "Your nickname is not registered."
+Public Const NickServAlreadyIdentified = "You are already identified."
 'Might this be a good idea? - aquanight
     'Indeed. --w00t
 Public Const NickServTooManyBadPasswords = "You have tried to incorrectly identify too many times and as such are being disconnected."
@@ -168,21 +171,36 @@ Public Const AgentUserDeOpered = "User %n has had MODE -o set."
 'ChanServ
 'Use this when de-opping the first user, I guess? - aquanight
 Public Const ChanServRegisteredChannel = "This channel has been registered with ChanServ."
-Public Const ChanServChannelNotRegistered = "Channel %n has not been registered"
+Public Const ChanServChannelNotRegistered = "Channel %c has not been registered"
 'Some registration replies.
 '%c = Channel
-Public Const ChanServREGISTEROK = "Channel %c has been registered to your nick. It is advised that you set a successor for this channel as soon as possilbe. See /chanserv HELP SET SUCCESSOR for more information."
+Public Const ChanServREGISTEROK = "Channel %c has been registered to your nick. It is advised that you set a successor for this channel as soon as possible. See /chanserv HELP SET SUCCESSOR for more information."
 Public Const ChanServAlreadyRegd = "Channel %c is already registered. Please try another."
 '%s = Reason:
 '   Channel is '#' which we should ignore.
 '   Channel matches a No-Registration list.
+'   Channel is FORBIDden or SUSPENDed.
+'   Channel is a designated help channel.
+'   Channel is a designated Operations channel.
+'   Channel is a designated Debugging channel.
 Public Const ChanServCantReg = "Channel %c may not be registered (%s)."
 'We could also send:
 ':services.* 482 Lamer #Blah :You're not channel operator
 Public Const ChanServRegNeedOps = "You must be a channel operator to register %c."
 'We could also send:
 ':services.* 403 Lamer #Blah :No such channel
-Public Const ChanServRegEmpty = "Channel %c is empty. You must join it first before you can register it."
+Public Const ChanServRegEmpty = "Channel %c is empty or is an invalid channel name. You must join it first before you can register it."
+'(general no such channel error)
+Public Const ChanServChanEmpty = "Channel %c is empty or invalid."
+'Unregistered nicks can't register channels :P .
+Public Const ChanServYouArentRegistered = "Your nick isn't registered, or you haven't identified yet."
+'IDENTIFY responses.
+Public Const ChanServIdentifyOK = "Password accepted for %c - you now have +" & CHANSERV_COFOUNDER & " access."
+Public Const ChanServIdentifyBadPass = "Password incorrect."
+Public Const ChanServIdentifyBadPassLimit = "You have incorrectly identified too many times. Go away."
+Public Const ChanServIdentifyAlreadyIDd = "You are already identified to %c, or already have +" & CHANSERV_COFOUNDER & " access."
+'I don't think banned lamers should be able to try and crack the password and get around it :) .
+Public Const ChanServIdentifyBanned = "You can't identify to %c because you are banned."
 'Some more responses we could use.
  'For ChanServ KICKs. This is prefixed to the reason
  '(and possibly nickname).

@@ -28,39 +28,39 @@ Public Sub DebugservHandler(ByVal Cmd As String, ByVal Sender As User)
     
     Select Case UCase(Parameters(0))
         Case "MYEMAIL"
-            Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, basMain.Users(Sender).EMail)
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, basMain.Users(Sender).EMail)
         Case "MYACCESS"
-            Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, CStr(basMain.Users(Sender).Access))
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, CStr(basMain.Users(Sender).Access))
         Case "MYABUSETEAMSTATUS"
             i = Sender.IsAbuseTeamMember
-            Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, CStr(i))
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, CStr(i))
         Case "MYMODES"
-            Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, basMain.Users(Sender).Modes)
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, basMain.Users(Sender).Modes)
         Case "DUMPUSER"
             If UBound(Parameters) < 1 Then
-                Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "Not enough parameters.")
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, "Not enough parameters.")
             Else
                 On Local Error Resume Next
                 Call DumpUser(SenderNick, Users(Parameters(1)))
                 If Err.Number = 9 Then
-                    Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "No such user.")
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, "No such user.")
                 End If
             End If
         Case "DUMPCHANNEL"
             If UBound(Parameters) < 1 Then
-                Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "Not enough parameters.")
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, "Not enough parameters.")
             Else
                 On Local Error Resume Next
                 Call DumpChannel(SenderNick, Channels(Parameters(1)))
                 If Err.Number = 9 Then
-                    Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "No such user.")
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, "No such user.")
                 End If
             End If
         Case "HELP"
-            Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "DebugServ:")
-            Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "If you don't know what debugserv is, then at the moment you shouldn't be using these services...")
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, "DebugServ:")
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, "If you don't know what debugserv is, then at the moment you shouldn't be using these services...")
         Case Else
-            Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, Replies.UnknownCommand)
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_DEBUGSERV).Nick, SenderNick, Replies.UnknownCommand)
     End Select
 End Sub
 
@@ -97,15 +97,15 @@ Private Sub DumpLine(ByVal DumpTo As String, ByVal Line As String)
     'Because most clients will open a seperate window
     'for PRIVMSG, we will take advantage of this for
     'dumping.
-    PrivMsg Service(11).Nick, DumpTo, Line
+    PrivMsg Service(SVSINDEX_DEBUGSERV).Nick, DumpTo, Line
 End Sub
 
 Private Sub DumpUser(ByVal DumpTo As String, ByVal ID As Integer)
     If ID = 32767 Then
-        SendMessage Service(11).Nick, DumpTo, "No such user."
+        SendMessage Service(SVSINDEX_DEBUGSERV).Nick, DumpTo, "No such user."
         Exit Sub
     ElseIf Users(ID).Nick = "" Then
-        SendMessage Service(11).Nick, DumpTo, "No such user."
+        SendMessage Service(SVSINDEX_DEBUGSERV).Nick, DumpTo, "No such user."
         Exit Sub
     End If
     With Users(ID)
@@ -144,7 +144,7 @@ End Sub
 
 Private Sub DumpChannel(ByVal DumpTo As String, ByVal Chan As Channel)
     If Chan Is Nothing Then
-        SendMessage Service(11).Nick, DumpTo, "No such channel."
+        SendMessage Service(SVSINDEX_DEBUGSERV).Nick, DumpTo, "No such channel."
         Exit Sub
     End If
     With Chan

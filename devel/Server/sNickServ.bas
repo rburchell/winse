@@ -33,7 +33,7 @@ Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
             'P[3] - Password <-n/a
             'Can only register current nickname now.
             If UBound(Parameters) < 2 Then
-                Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.InsufficientParameters)
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
             Call sNickServ.Register(Sender, SenderNick, Parameters(2), Parameters(1))
@@ -42,7 +42,7 @@ Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
             'P[1] - Nick <- now password.
             'P[2] - Password <- now not used
             If UBound(Parameters) < 1 Then
-                Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.InsufficientParameters)
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
             'We used to be able to ident to a nick that you werent called at the time.
@@ -61,7 +61,7 @@ Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
             'P[1] - Option
             'P[2] - Value
             If UBound(Parameters) < 2 Then
-                Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.InsufficientParameters)
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
             Call sNickServ.Set_(Sender, Parameters(1) & " " & Parameters(2))
@@ -69,7 +69,7 @@ Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
             'Really need to restrict this to access 10+
             Call sNickServ.List(Sender)
         Case Else
-            Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.UnknownCommand)
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.UnknownCommand)
     End Select
 End Sub
 
@@ -78,18 +78,18 @@ Private Sub Help(Sender As User, Cmd)
     SenderNick = Sender.Nick
     Select Case UCase(Cmd)
         Case "SET"
-            Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, "NickServ Set:")
-            Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, " COMMUNICATION [PRIVMSG/NOTICE] - Tells services how to message you.")
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, "NickServ Set:")
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, " COMMUNICATION [PRIVMSG/NOTICE] - Tells services how to message you.")
         Case Else
-            Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, "NickServ Commands:")
-            Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, " REGISTER")
-            Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, " IDENTIFY")
-            Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, " SET")
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, "NickServ Commands:")
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, " REGISTER")
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, " IDENTIFY")
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, " SET")
     End Select
 End Sub
 
 Private Sub Version(Sender As User)
-    Call basFunctions.SendMessage(basMain.Service(1).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(1).Nick & "[" & sNickServ.ModVersion & "]")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(SVSINDEX_NICKSERV).Nick & "[" & sNickServ.ModVersion & "]")
 End Sub
 
 Private Sub Set_(Sender As User, Cmd)
@@ -104,18 +104,18 @@ Private Sub Set_(Sender As User, Cmd)
             Select Case UCase(Parameters)
                 Case "PRIVMSG"
                     basMain.Users(Sender).MsgStyle = False
-                    Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.NickServCommunicationPrivmsg)
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.NickServCommunicationPrivmsg)
                     If basFunctions.IsNickRegistered(basMain.Users(Sender).Nick) Then
                         Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", basMain.Users(Sender).Nick, "MsgStyle", "False")
                     End If
                 Case "NOTICE"
                     basMain.Users(Sender).MsgStyle = True
-                    Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.NickServCommunicationNotice)
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.NickServCommunicationNotice)
                     If basFunctions.IsNickRegistered(basMain.Users(Sender).Nick) Then
                         Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", basMain.Users(Sender).Nick, "MsgStyle", "True")
                     End If
                 Case Else
-                    Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.IncorrectParam)
+                    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, SenderNick, Replies.IncorrectParam)
             End Select
     End Select
 End Sub
@@ -128,7 +128,7 @@ Private Sub List(Sender As User)
         Exit Sub
     Else
         Dim CurrentNick As String, Access As String, HideEMail As String, EMail As String
-        Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, "NickServ List:")
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, "NickServ List:")
         Dim i As Integer
         For i = 0 To TotalRegisteredNicks
             'DO NOT SHOW ABUSE TEAM! ITS MEANT TO BE SECRET!
@@ -136,13 +136,13 @@ Private Sub List(Sender As User)
             Access = basFileIO.GetInitEntry(App.Path & "\databases\users.db", CStr(CurrentNick), "Access")
             HideEMail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", CStr(CurrentNick), "HideEmail")
             EMail = basFileIO.GetInitEntry(App.Path & "\databases\users.db", CStr(CurrentNick), "Email")
-            Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, CStr(CurrentNick))
-            Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, " Access: " & Access)
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, CStr(CurrentNick))
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, " Access: " & Access)
             'need an access check here too...
             If HideEMail = True Then
-                Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, " Email: Hidden")
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, " Email: Hidden")
             Else
-                Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, " Email: " & EMail)
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, " Email: " & EMail)
             End If
         Next
     End If
@@ -155,7 +155,7 @@ Private Sub Register(Sender As User, NickToRegister As String, EMail As String, 
     NickToRegister = UCase(NickToRegister)
     If basFunctions.IsNickRegistered(NickToRegister) Then
         'Nick already registered.
-        Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServNickAlreadyRegistered)
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replies.NickServNickAlreadyRegistered)
         Exit Sub
     End If
     
@@ -170,7 +170,7 @@ Private Sub Register(Sender As User, NickToRegister As String, EMail As String, 
         Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "HideEmail", HideEMail)
         Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "MsgStyle", MsgStyle)
         Call basFileIO.SetInitEntry(App.Path & "\databases\users.db", NickToRegister, "Password", Password)
-        Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replace(Replies.NickServRegisterOK, "%p", Password))
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replace(Replies.NickServRegisterOK, "%p", Password))
     End With
     Dim TotalRegisteredNicks As Variant
     TotalRegisteredNicks = CDec(basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredNicks", -1))
@@ -183,7 +183,7 @@ Public Function Identify(Sender As User, NickToIdentify As String, Password As S
     Dim PasswordonFile As String
     PasswordonFile = basFileIO.GetInitEntry(App.Path & "\databases\users.db", NickToIdentify, "Password")
     If PasswordonFile = "" Then
-        Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationNotRegistered)
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationNotRegistered)
         Exit Function
     End If
     If Password = PasswordonFile Then
@@ -200,10 +200,10 @@ Public Function Identify(Sender As User, NickToIdentify As String, Password As S
                 Sender.SetFlags "+" & AccFlagMaster ' Not AccFullAccess, He might not want to recieve Services Notices (flag g)
             End If
         End With
-        Call basFunctions.SendMessage(basMain.Service(1).Nick, Sender.Nick, Replies.NickServIdentificationSuccessful)
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationSuccessful)
         basMain.Users(Sender).IdentifiedToNick = NickToIdentify
     Else
-        Call basFunctions.SendMessage(basMain.Service(1).Nick, Sender.Nick, Replies.NickServIdentificationBadPassword)
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationBadPassword)
     End If
 End Function
 

@@ -66,6 +66,7 @@ Public Type ConfigVars
     GlobalTargets As String 'What Global sends to send something to everyone.
     InjectToOperServices As Boolean
     AbuseTeamPrivacy As Byte
+    ConnectString As String 'We need this to connect to the database. Must include provider and everything.
 End Type
 
 Public Config As ConfigVars
@@ -109,6 +110,19 @@ Public Const TotalServices = 12
 Public Channels As New Channels
 Public Users As New Users
 Public Service(TotalServices - 1) As Service
+'Because I'm SO TIRED OF GUESSING THE SERVICE INDICES.
+Public Const SVSINDEX_CHANSERV = 0
+Public Const SVSINDEX_NICKSERV = 1
+Public Const SVSINDEX_HOSTSERV = 2
+Public Const SVSINDEX_BOTSERV = 3
+Public Const SVSINDEX_OPERSERV = 4
+Public Const SVSINDEX_ADMINSERV = 5
+Public Const SVSINDEX_ROOTSERV = 6
+Public Const SVSINDEX_AGENT = 7
+Public Const SVSINDEX_GLOBAL = 8
+Public Const SVSINDEX_MASSSERV = 9
+Public Const SVSINDEX_MEMOSERV = 10
+Public Const SVSINDEX_DEBUGSERV = 11
 
 Public Buffer(32767) As String
 Public BufferElements As Integer
@@ -127,53 +141,53 @@ Sub Main()
         'Who uses aliases, really. :P Besides, people like changing stuff. --w00t
     'I think a seperate RealName field would be nice :) -aquanight
         'Perhaps, but I cba atm :P --w00t
-    Service(0).Nick = "ChanServ"
-    Service(0).Hostmask = Config.ServerName '"channel-services." & DomainName
-    Service(0).Name = "channel"
+    Service(SVSINDEX_CHANSERV).Nick = "ChanServ"
+    Service(SVSINDEX_CHANSERV).Hostmask = Config.ServerName '"channel-services." & DomainName
+    Service(SVSINDEX_CHANSERV).Name = "channel"
     
-    Service(1).Nick = "NickServ" 'aka "the service that unreal loves to kill for no reason"
-    Service(1).Hostmask = Config.ServerName '"nick-services." & DomainName
-    Service(1).Name = "nickname"
+    Service(SVSINDEX_NICKSERV).Nick = "NickServ" 'aka "the service that unreal loves to kill for no reason"
+    Service(SVSINDEX_NICKSERV).Hostmask = Config.ServerName '"nick-services." & DomainName
+    Service(SVSINDEX_NICKSERV).Name = "nickname"
     
-    Service(2).Nick = "HostServ"
-    Service(2).Hostmask = Config.ServerName '"hostmask-services." & DomainName
-    Service(2).Name = "hostmask"
+    Service(SVSINDEX_HOSTSERV).Nick = "HostServ"
+    Service(SVSINDEX_HOSTSERV).Hostmask = Config.ServerName '"hostmask-services." & DomainName
+    Service(SVSINDEX_HOSTSERV).Name = "hostmask"
     
-    Service(3).Nick = "BotServ"
-    Service(3).Hostmask = Config.ServerName '"automation-services." & DomainName
-    Service(3).Name = "automation"
+    Service(SVSINDEX_BOTSERV).Nick = "BotServ"
+    Service(SVSINDEX_BOTSERV).Hostmask = Config.ServerName '"automation-services." & DomainName
+    Service(SVSINDEX_BOTSERV).Name = "automation"
     
-    Service(4).Nick = "OperServ"
-    Service(4).Hostmask = Config.ServerName '"operator-services." & DomainName
-    Service(4).Name = "dictator"
+    Service(SVSINDEX_OPERSERV).Nick = "OperServ"
+    Service(SVSINDEX_OPERSERV).Hostmask = Config.ServerName '"operator-services." & DomainName
+    Service(SVSINDEX_OPERSERV).Name = "dictator"
     
-    Service(5).Nick = "AdminServ"
-    Service(5).Hostmask = Config.ServerName '"administrator-services." & DomainName
-    Service(5).Name = "overlord"
+    Service(SVSINDEX_ADMINSERV).Nick = "AdminServ"
+    Service(SVSINDEX_ADMINSERV).Hostmask = Config.ServerName '"administrator-services." & DomainName
+    Service(SVSINDEX_ADMINSERV).Name = "overlord"
     
-    Service(6).Nick = "RootServ"
-    Service(6).Hostmask = Config.ServerName '"master-services." & DomainName
-    Service(6).Name = "master"
+    Service(SVSINDEX_ROOTSERV).Nick = "RootServ"
+    Service(SVSINDEX_ROOTSERV).Hostmask = Config.ServerName '"master-services." & DomainName
+    Service(SVSINDEX_ROOTSERV).Name = "master"
     
-    Service(7).Nick = "Agent"
-    Service(7).Hostmask = Config.ServerName '"blackglasses." & DomainName
-    Service(7).Name = "smith"
+    Service(SVSINDEX_AGENT).Nick = "Agent"
+    Service(SVSINDEX_AGENT).Hostmask = Config.ServerName '"blackglasses." & DomainName
+    Service(SVSINDEX_AGENT).Name = "smith"
     
-    Service(8).Nick = "Global"
-    Service(8).Hostmask = Config.ServerName '"noticer." & DomainName
-    Service(8).Name = "noticer"
+    Service(SVSINDEX_GLOBAL).Nick = "Global"
+    Service(SVSINDEX_GLOBAL).Hostmask = Config.ServerName '"noticer." & DomainName
+    Service(SVSINDEX_GLOBAL).Name = "noticer"
     
-    Service(9).Nick = "MassServ"
-    Service(9).Hostmask = Config.ServerName '"mass-services." & DomainName
-    Service(9).Name = "wmd"
+    Service(SVSINDEX_MASSSERV).Nick = "MassServ"
+    Service(SVSINDEX_MASSSERV).Hostmask = Config.ServerName '"mass-services." & DomainName
+    Service(SVSINDEX_MASSSERV).Name = "wmd"
     
-    Service(10).Nick = "MemoServ"
-    Service(10).Hostmask = Config.ServerName '"memo-services." & DomainName
-    Service(10).Name = "mailman"
+    Service(SVSINDEX_MEMOSERV).Nick = "MemoServ"
+    Service(SVSINDEX_MEMOSERV).Hostmask = Config.ServerName '"memo-services." & DomainName
+    Service(SVSINDEX_MEMOSERV).Name = "mailman"
     
-    Service(11).Nick = "DebugServ"
-    Service(11).Hostmask = Config.ServerName '"services." & DomainName
-    Service(11).Name = "INVISIBLE"
+    Service(SVSINDEX_DEBUGSERV).Nick = "DebugServ"
+    Service(SVSINDEX_DEBUGSERV).Hostmask = Config.ServerName '"services." & DomainName
+    Service(SVSINDEX_DEBUGSERV).Name = "INVISIBLE"
     frmServer.Show
 End Sub
 

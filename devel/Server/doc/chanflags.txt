@@ -98,7 +98,7 @@ B = Ban Operator. Allowed to (un)set the K flag, and manage the seperate AKICK l
 e = Excepted from Bans. ChanServ will place a +e mask before adding any ban that affects
     this user.
     Required to set: E
-E = Exempt Operator. Allowed to (un)set the e flag, and manage the seperate EXEMPT list.
+E = Exempt Operator. Allowed to (un)set the e flag, and manage the seperate EXEMPTS list.
     Required to set: f
 
 i = Invite Allowed. Allowed to use the INVITE command to invite himself to a +i channel.

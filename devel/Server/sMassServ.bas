@@ -40,7 +40,7 @@ Public Sub MassservHandler(ByVal Cmd As String, ByVal Sender As User)
     End If
     
     If Not Sender.HasFlag(AccFlagCanMassServ) Then
-        Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.InsufficientPermissions)
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, Replies.InsufficientPermissions)
         Exit Sub
     End If
     Select Case UCase(Cmd)
@@ -68,46 +68,46 @@ Public Sub MassservHandler(ByVal Cmd As String, ByVal Sender As User)
             If Sender.HasFlag(AccFlagCanMassKill) Then
                 Call sMassServ.MKill(Sender, Parameters)
             Else
-                Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.UnknownCommand)
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, Replies.UnknownCommand)
             End If
         Case "CHANKILL"
             If Sender.HasFlag(AccFlagCanMassKill) Then
                 Call sMassServ.ChanKill(Sender, Parameters)
             Else
-                Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.UnknownCommand)
+                Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, Replies.UnknownCommand)
             End If
         Case Else
-            Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.UnknownCommand)
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, Replies.UnknownCommand)
     End Select
 End Sub
 
 Private Sub Help(ByVal Sender As User, ByVal Cmd As String)
     Dim SenderNick As String
     SenderNick = Sender.Nick
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "MassServ Commands:")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, " ")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  SERVJOIN     #<chan>        Make all Services bots join a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  SERVPART     #<chan>        Make all Services bots part a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLBOTJOIN  #<chan>         Make all bots join a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLBOTPART  #<chan>         Make all bots part a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  OPERJOIN #<chan>            Make all opers join a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  OPERINVITE #<chan>          Invite all opers into a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  ALLINVITE #<chan>           Invite all users into a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  -----------------------------------------")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  MMODE   #<chan>  <mode>     Set a mode on each user on a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  MKICK   #<chan>  <reason>   Kick all users from a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  MINVITE #<chans> #<chand>   Mass Invite all users in one channel to another")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "MassServ Commands:")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, " ")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  SERVJOIN     #<chan>        Make all Services bots join a channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  SERVPART     #<chan>        Make all Services bots part a channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  *ALLBOTJOIN  #<chan>         Make all bots join a channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  *ALLBOTPART  #<chan>         Make all bots part a channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  OPERJOIN #<chan>            Make all opers join a channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  OPERINVITE #<chan>          Invite all opers into a channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  ALLINVITE #<chan>           Invite all users into a channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  -----------------------------------------")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  MMODE   #<chan>  <mode>     Set a mode on each user on a channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  MKICK   #<chan>  <reason>   Kick all users from a channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  MINVITE #<chans> #<chand>   Mass Invite all users in one channel to another")
     If Sender.HasFlag(AccFlagCanMassKill) Then
       ' Begin Mass Kill Commands
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  MKILL <N!U@H> <Reason>      Kill all users matching the specified host")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  CHANKILL #<chan> <Reason>   Kill all users in the specified channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *CHANGLINE #<chan> <Reason> G:Line all users in the specified channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  MKILL <N!U@H> <Reason>      Kill all users matching the specified host")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  CHANKILL #<chan> <Reason>   Kill all users in the specified channel")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, SenderNick, "  *CHANGLINE #<chan> <Reason> G:Line all users in the specified channel")
       ' End Mass Kill Commands
     End If
 End Sub
 
 Private Sub Version(ByVal Sender As User)
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(9).Nick & "[" & sMassServ.ModVersion & "]")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(SVSINDEX_MASSSERV).Nick & "[" & sMassServ.ModVersion & "]")
 End Sub
 
 Private Sub sJoin(ByVal Sender As User, ByVal Channel As String)
@@ -123,7 +123,7 @@ Private Sub OperJoin(ByVal Sender As User, ByVal Channel As String)
     For l = 1 To Users.Count
         If Not Users(l).Nick = "" Then
             If InStr(Users(l).Modes, "o") Then
-                Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+                Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & Users(l).Nick & " " & Channel)
                 Call basFunctions.SendData("SVSJOIN " & Users(l).Nick & " " & Channel)
             End If
         End If
@@ -135,7 +135,7 @@ Private Sub OperInvite(ByVal Sender As User, ByVal Channel As String)
     For l = 1 To Users.Count
         If Not Users(l).Nick = "" Then
             If InStr(Users(l).Modes, "o") Then
-                Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+                Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & Users(l).Nick & " " & Channel)
             End If
         End If
     Next l
@@ -145,7 +145,7 @@ Private Sub AllInvite(ByVal Sender As User, ByVal Channel As String)
     Dim l As Integer
     For l = 1 To Users.Count
         If Not Users(l).Nick = "" Then
-            Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+            Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & Users(l).Nick & " " & Channel)
         End If
     Next l
 End Sub
@@ -166,14 +166,14 @@ Private Sub MMode(ByVal Sender As User, ByVal Parameters As String)
             Case Else
                 If bSet Then
                     For i = 1 To Channels(Chan).Members.Count
-                        basFunctions.SendData Service(9).Nick & " MODE " & Chan.Name & " +" & Mid(Mode, l, 1) & " " & Chan.Members(i).Member.Nick
+                        basFunctions.SendData Service(SVSINDEX_MASSSERV).Nick & " MODE " & Chan.Name & " +" & Mid(Mode, l, 1) & " " & Chan.Members(i).Member.Nick
                     Next i
                 Else
                     If UCase(basMain.Config.ServerType) = "UNREAL" Then
-                        basFunctions.SendData Service(9).Nick & " SVSMODE " & Chan.Name & " -" & Mid(Mode, l, 1)
+                        basFunctions.SendData Service(SVSINDEX_MASSSERV).Nick & " SVSMODE " & Chan.Name & " -" & Mid(Mode, l, 1)
                     Else
                         For i = 1 To Channels(Chan).Members.Count
-                            basFunctions.SendData Service(9).Nick & " MODE " & Chan.Name & " -" & Mid(Mode, l, 1) & " " & Chan.Members(i).Member.Nick
+                            basFunctions.SendData Service(SVSINDEX_MASSSERV).Nick & " MODE " & Chan.Name & " -" & Mid(Mode, l, 1) & " " & Chan.Members(i).Member.Nick
                         Next i
                     End If
                 End If
@@ -191,7 +191,7 @@ Private Sub MKick(ByVal Sender As User, ByVal Parameters As String)
     Reason = Split(Parameters, " ", 2)(1)
     Dim l As Integer
     For l = 1 To Chan.Members.Count
-        Call basFunctions.SendData(":" & Service(0).Nick & " KICK " & Chan.Name & " " & Chan.Members(l).Member.Nick & " :" & Reason)
+        Call basFunctions.SendData(":" & Service(SVSINDEX_CHANSERV).Nick & " KICK " & Chan.Name & " " & Chan.Members(l).Member.Nick & " :" & Reason)
     Next l
     Exit Sub
 Fail:
@@ -205,7 +205,7 @@ Private Sub MInvite(ByVal Sender As User, ByVal Parameters As String)
     DestChan = Split(Parameters, " ")(1)
     Dim l As Integer
     For l = 1 To SourceChan.Members.Count
-        Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & SourceChan.Members(l).Member.Nick & " " & DestChan)
+        Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & SourceChan.Members(l).Member.Nick & " " & DestChan)
     Next l
     Exit Sub
 Fail:
@@ -224,7 +224,7 @@ Private Sub MKill(ByVal Sender As User, ByVal Parameters As String)
         With Users(l)
             If .Nick & "!" & .UserName & "@" & .HostName Like Mask Then
                 'Use a sender of "" so that KillUser doesn't mulilate our custom path.
-                Users(l).KillUser " :" & basMain.Service(4).Nick & "!" & Sender.Nick & " (" & Reason & ")", ""
+                Users(l).KillUser " :" & basMain.Service(SVSINDEX_OPERSERV).Nick & "!" & Sender.Nick & " (" & Reason & ")", ""
             End If
         End With
     Next l
@@ -237,7 +237,7 @@ Private Sub ChanKill(ByVal Sender As User, ByVal Parameters As String)
     Message = Split(Parameters, " ", 2)(1)
     Dim l As Integer
     For l = 0 To Chan.Members.Count
-        Users(l).KillUser basMain.Service(4).Nick & "!" & Sender.Nick & " (" & Message & ")", ""
+        Users(l).KillUser basMain.Service(SVSINDEX_OPERSERV).Nick & "!" & Sender.Nick & " (" & Message & ")", ""
     Next l
     Exit Sub
 Fail:

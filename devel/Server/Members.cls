@@ -41,5 +41,7 @@ Attribute NewEnum.VB_UserMemId = -4
     Set NewEnum = mData.[_NewEnum]
 End Function
 
-
-
+Public Function Exists(ByVal idx As Variant) As Boolean
+    On Error Resume Next
+    Exists = Not Item(idx) Is Nothing
+End Function

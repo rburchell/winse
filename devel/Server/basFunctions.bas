@@ -56,7 +56,8 @@ End Sub
 Public Function IsChanRegistered(ByVal ChanName As String) As Boolean
     Dim Password As String
     'If we have a password, we must be registered ;)
-    Password = basFileIO.GetInitEntry(App.Path & "\databases\channels.db", UCase(ChanName), "Password")
+    On Error Resume Next
+    Password = DB(ChanName)("Password")
     IsChanRegistered = (Password <> "")
 End Function
 
@@ -144,13 +145,18 @@ ForgetIt:
     Exit Sub
 End Sub
 
+'Sender is ALWAYS the server!
+Public Sub SendNumeric(ByVal Receiver As String, ByVal Numeric As Integer, ByVal Message As String)
+    SendData ":" + basMain.Config.ServerName + " " + Format(Numeric, "000") + " " + Receiver + " " + Message
+End Sub
+
 Public Sub GlobalMessage(ByVal Message As String)
     'I'm thinking that we should Global the easy way :)
     'IMHO, global messages should always be NOTICE,
     'but that's partly because mIRC does wierd things
     'with $target PRIVMSGs (in status: (nick) message).
     ' - aquanight
-    basFunctions.SendData ":" + Service(8).Nick + " NOTICE " + basMain.Config.GlobalTargets + " :" + Message
+    basFunctions.SendData ":" + Service(SVSINDEX_GLOBAL).Nick + " NOTICE " + basMain.Config.GlobalTargets + " :" + Message
 End Sub
 
 Public Sub SquitServices(Optional ByVal Message As String = "")
@@ -187,7 +193,7 @@ Public Sub NotifyAllUsersWithFlags(ByVal Flag As String, ByVal Message As String
     Dim i As Integer
     Dim Reciever As String
     Dim Sender As String
-    Sender = Service(8).Nick
+    Sender = Service(SVSINDEX_GLOBAL).Nick
     For i = 0 To Users.Count
         If basMain.Users(i).HasFlag(Flag) Then
             Reciever = basMain.Users(i).Nick
@@ -297,13 +303,6 @@ Public Function CountArray(ByRef WhatArray As Variant) As Long
     lRet = UBound(WhatArray) - LBound(WhatArray) + 1
     'If errored, lRet will remain 0.
     CountArray = lRet
-End Function
-
-Public Function IndexOfChannelMember(ByVal ChanID As Integer, ByVal UserID As Integer) As Integer
-    Dim idx As Long
-    For idx = 0 To CountArray(Channels(ChanID).Members) - 1
-        
-    Next idx
 End Function
 
 'Sometimes we have to modify an item in a collection.

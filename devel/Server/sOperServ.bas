@@ -28,11 +28,11 @@ Public Sub OperservHandler(ByVal Cmd As String, ByVal Sender As User)
     FirstSpace = InStr(Cmd, " ")
     If FirstSpace <> 0 Then Cmd = Left(Cmd, FirstSpace - 1)
     If Not Sender.IsOper Then
-        Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, Replies.MustBeOpered)
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, Replies.MustBeOpered)
         Exit Sub
     End If
     If Not Sender.HasFlag(AccFlagCanOperServ) Then
-        Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, Replies.InsufficientPermissions)
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, Replies.InsufficientPermissions)
         Exit Sub
     End If
     Select Case UCase(Cmd)
@@ -43,35 +43,35 @@ Public Sub OperservHandler(ByVal Cmd As String, ByVal Sender As User)
         Case "GLOBAL"
             Call basFunctions.GlobalMessage(Parameters)
         Case Else
-            Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, Replies.UnknownCommand)
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, Replies.UnknownCommand)
     End Select
 End Sub
 
 Private Sub Help(ByVal Sender As User)
     Dim SenderNick As String
     SenderNick = Sender.Nick
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "OperServ Commands:")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, " ")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *AKILL      - Manipulate the AKILL list")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *CLEAR      - Wipe channel modes/users")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  GLOBAL     - Send a message to all users")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *JUPE       - 'Jupiter' a server")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *LISTADM    - List all Services Operator.")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *QLINE      - Let make services a global QLINE on a nick")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *SPECS      - Show what you can do.")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *TRACE      - List all user match the host you search.")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *TRIGGER    - Control clone warnings")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *UINFO      - View additional details about a client")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *ABUSER     - Mark a user for abuse team review")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  ")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  ")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  Notice: For more Information type /msg OperServ HELP command")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  Notice: All commands sent to OperServ are logged!")
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  ")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "OperServ Commands:")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, " ")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *AKILL      - Manipulate the AKILL list")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *CLEAR      - Wipe channel modes/users")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  GLOBAL     - Send a message to all users")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *JUPE       - 'Jupiter' a server")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *LISTADM    - List all Services Operator.")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *QLINE      - Let make services a global QLINE on a nick")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *SPECS      - Show what you can do.")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *TRACE      - List all user match the host you search.")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *TRIGGER    - Control clone warnings")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *UINFO      - View additional details about a client")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  *ABUSER     - Mark a user for abuse team review")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  ")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  ")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  Notice: For more Information type /msg OperServ HELP command")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  Notice: All commands sent to OperServ are logged!")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, SenderNick, "  ")
 End Sub
 
 Private Sub Version(ByVal Sender As User)
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(4).Nick & "[" & sOperServ.ModVersion & "]")
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_OPERSERV).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(SVSINDEX_OPERSERV).Nick & "[" & sOperServ.ModVersion & "]")
 End Sub
 
 'Callin subs for channel mode changes

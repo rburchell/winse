@@ -73,7 +73,7 @@ Public Function ReadTableIntoCollection(ByVal Connection As Variant, ByVal table
                 col2.Add .Value, .Name
             End With
         Next idx
-        col.Add col2, rs.Index
+        col.Add col2
     Wend
     If bCloseTable Or bCloseConn Then rs.Close
     If bCloseConn Then conn.Close
