@@ -19,15 +19,11 @@ Option Explicit
 Public Const ModVersion = "0.0.0.1"
 
 Public Sub MassservHandler(Cmd As String, Sender As Integer)
+    Dim Parameters() As String
     Dim SenderNick As String
     
     SenderNick = basFunctions.ReturnUserName(Sender)
-    
-    Dim Parameters As String, FirstSpace As Integer
-    FirstSpace = InStr(Cmd, " ")
-    Parameters = Right(Cmd, Len(Cmd) - FirstSpace)
-    FirstSpace = InStr(Cmd, " ")
-    If FirstSpace <> 0 Then Cmd = Left(Cmd, FirstSpace - 1)
+    Parameters() = basFunctions.ParseBuffer(Cmd)
     
     If Not basFunctions.IsServicesAdmin(Sender) Then
         Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.MustBeAServiceAdmin)
@@ -39,19 +35,27 @@ Public Sub MassservHandler(Cmd As String, Sender As Integer)
     End If
     Select Case UCase(Cmd)
         Case "HELP"
-            Call sMassServ.Help(Sender, Parameters)
+            Call sMassServ.Help(Sender)
         Case "VERSION"
             Call sMassServ.Version(Sender)
         Case "SERVJOIN"
+	    If UBound(Parameters) < 1 Then
+                Call basFunctions.SendMessage(basMain.Service(5).Nick, SenderNick, Replies.InsufficientParameters)
+		Exit Sub
+	    End If
             Call sMassServ.sJoin(Sender, Parameters)
         Case "SERVPART"
+	    If UBound(Parameters) < 1 Then
+                Call basFunctions.SendMessage(basMain.Service(5).Nick, SenderNick, Replies.InsufficientParameters)
+		Exit Sub
+	    End If
             Call sMassServ.sPart(Sender, Parameters)
         Case Else
             Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.UnknownCommand)
     End Select
 End Sub
 
-Private Sub Help(Sender As Integer, Cmd)
+Private Sub Help(Sender As Integer)
     Dim SenderNick As String
     SenderNick = basFunctions.ReturnUserName(Sender)
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "MassServ Commands:")
