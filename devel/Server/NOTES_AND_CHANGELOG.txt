@@ -40,6 +40,7 @@ Services:
 [-----------------------------------]
 
 23/07/2004 - Jason
+ -[AG] [---] Modified deoper to use "SVSO Nick -" on unreal servers (designed specificly to clear oper flags on those servers)
  -[CO] [---] Added a ServerType config directive, to allow for more efficent server-specific ways of doing things.
 23/07/2004 - aquanight
  -[DB] [Fix] Squashed a few compilation errors.
