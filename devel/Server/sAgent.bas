@@ -240,7 +240,11 @@ Private Sub DeOper(Sender As Integer, Nick As String)
     End If
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT DEOPER " & Nick)
     'remove their oper privilages, courtesy of Agent :)
-    Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -o")
+    If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
+      Call basFunctions.SendData("SVSO " & Nick & " -")
+    Else ' SVSO Unsupported, Use SVS2MODE
+      Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -o")
+    End If
     'Until we clear up all this modes business, blank OUR copy of their modes
     'and request a new one. (ie let the current parser reparse their new modes)
     'instead of trying to remove one :/ What I would do for C flags... --w00t
