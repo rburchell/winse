@@ -17,3 +17,7 @@ Attribute VB_Name = "sBotServ"
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Option Explicit
 Public Const ModVersion = "0.0.0.0"
+
+Public Sub BotservHandler(Cmd As String, Sender As Integer)
+
+End Sub

@@ -18,3 +18,6 @@ Attribute VB_Name = "sMemoServ"
 Option Explicit
 Public Const ModVersion = "0.0.0.0"
 
+Public Sub MemoservHandler(Cmd As String, Sender As Integer)
+
+End Sub
