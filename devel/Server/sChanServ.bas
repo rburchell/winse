@@ -108,7 +108,7 @@ Public Sub SaveData(ByVal conn As Connection)
     Dim rs As Recordset
     Set rs = GetTable(conn, "ChanServ")
     'Prepare the fields array in advance.
-    Dim Fields(0 To 50) As String
+    Dim Fields(0 To 51) As String
     Fields(0) = "name"
     Fields(1) = "password"
     Fields(2) = "description"
@@ -480,29 +480,29 @@ Public Sub ChanservHandler(ByVal Cmd As String, ByVal Sender As User)
     End Select
 End Sub
 
-Public Sub Register(ByVal Source As User, ByVal channel As channel, ByVal Password As String, ByVal Description As String)
+Public Sub Register(ByVal Source As User, ByVal Channel As Channel, ByVal Password As String, ByVal Description As String)
     'Now, first thing is, can we register this channel?
     'Conditions for registration:
     '- Channel isn't #
     '- Channel isn't "do not register"
     '- Channel isn't forbidden or suspended.
     '- Channel isn't an official channel listed in the configuration (Help, Operations, Debug).
-    If channel.Name = "#" Then
-        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServCantReg, "%s", "Null channel cannot be registered."), "%c", channel.Name))
-    ElseIf CollectionContains(DB, channel.Name) Then
+    If Channel.Name = "#" Then
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServCantReg, "%s", "Null channel cannot be registered."), "%c", Channel.Name))
+    ElseIf CollectionContains(DB, Channel.Name) Then
         'It's already registered.
-        If DB(channel.Name)("suspended") And DB(channel.Name)("password") = "" Then
-            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServCantReg, "%s", "Channel is forbidden"), "%c", channel.Name))
+        If DB(Channel.Name)("suspended") And DB(Channel.Name)("password") = "" Then
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServCantReg, "%s", "Channel is forbidden"), "%c", Channel.Name))
         Else
-            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServAlreadyRegd, "%c", channel.Name))
+            Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServAlreadyRegd, "%c", Channel.Name))
         End If
     'TODO: Add Help/Operations/Debug channel checks?
-    ElseIf Not channel.Members.Exists(Source.Nick) Then
-        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServRegNeedOps, "%c", channel.Name))
-        Call basFunctions.SendNumeric(Source.Nick, 482, channel.Name & " :You're not channel operator.")
-    ElseIf InStr(channel.Members(Source.Nick).Modes, "o") = 0 And InStr(channel.Members(Source.Nick).Modes, "a") = 0 And InStr(channel.Members(Source.Nick).Modes, "q") = 0 Then
-        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServRegNeedOps, "%c", channel.Name))
-        Call basFunctions.SendNumeric(Source.Nick, 482, channel.Name & " :You're not channel operator.")
+    ElseIf Not Channel.Members.Exists(Source.Nick) Then
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServRegNeedOps, "%c", Channel.Name))
+        Call basFunctions.SendNumeric(Source.Nick, 482, Channel.Name & " :You're not channel operator.")
+    ElseIf InStr(Channel.Members(Source.Nick).Modes, "o") = 0 And InStr(Channel.Members(Source.Nick).Modes, "a") = 0 And InStr(Channel.Members(Source.Nick).Modes, "q") = 0 Then
+        Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServRegNeedOps, "%c", Channel.Name))
+        Call basFunctions.SendNumeric(Source.Nick, 482, Channel.Name & " :You're not channel operator.")
     ElseIf Not Source.IdentifiedToNick = "" Then
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.ChanServYouArentRegistered)
     Else
@@ -510,7 +510,7 @@ Public Sub Register(ByVal Source As User, ByVal channel As channel, ByVal Passwo
         Dim newcol As Collection, nTime As Double
         nTime = basUnixTime.GetTime()
         Set newcol = New Collection
-        newcol.Add channel.Name, "name"
+        newcol.Add Channel.Name, "name"
         newcol.Add False, "suspended"
         newcol.Add Password, "password"
         newcol.Add Description, "description"
@@ -560,29 +560,29 @@ Public Sub Register(ByVal Source As User, ByVal channel As channel, ByVal Passwo
         newcol.Add 3, "kick_repeat_count"
         newcol.Add "", "kick_bw_list"
         'Now do what we need to do :).
-        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServREGISTEROK, "%c", channel.Name))
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServREGISTEROK, "%c", Channel.Name))
     End If
 End Sub
 
-Public Sub Identify(ByVal Source As User, ByVal channel As channel, ByVal Password As String)
-    If Not IsChanRegistered(channel.Name) Then
-        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServChannelNotRegistered, "%c", channel.Name))
+Public Sub Identify(ByVal Source As User, ByVal Channel As Channel, ByVal Password As String)
+    If Not IsChanRegistered(Channel.Name) Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServChannelNotRegistered, "%c", Channel.Name))
     'Already identified, or already has cofounder access?
-    ElseIf CollectionContains(channel.IdentifedUsers, Source.Nick) Then
-        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyAlreadyIDd, "%c", channel.Name))
-    ElseIf HasFlag(channel.Name, Source.Nick, "+" + CHANSERV_COFOUNDER) Then
-        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyAlreadyIDd, "%c", channel.Name))
+    ElseIf CollectionContains(Channel.IdentifedUsers, Source.Nick) Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyAlreadyIDd, "%c", Channel.Name))
+    ElseIf HasFlag(Channel.Name, Source.Nick, "+" + CHANSERV_COFOUNDER) Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyAlreadyIDd, "%c", Channel.Name))
     'Banned from the channel (via AKICK or +K flag)?
-    ElseIf GetFirstAKick(channel.Name, Source) <> "" Or HasFlag(channel.Name, Source.Nick, "+" + CHANSERV_AUTOKICK) Then
-        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyBanned, "%c", channel.Name))
+    ElseIf GetFirstAKick(Channel.Name, Source) <> "" Or HasFlag(Channel.Name, Source.Nick, "+" + CHANSERV_AUTOKICK) Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyBanned, "%c", Channel.Name))
     'Is the channel restricted, and the user not on the ACL (thus effectively +K'd)?
-    ElseIf DB(channel.Name)("Restricted") And AllFlags(channel.Name, Source.Nick) = "" Then
-        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", channel.Name))
+    ElseIf DB(Channel.Name)("Restricted") And AllFlags(Channel.Name, Source.Nick) = "" Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", Channel.Name))
     'Is the channel +A, +O, or +z, and the user is not?
-    ElseIf (InStr(channel.Modes, "A") > 0 And InStr(Source.Modes, "A") = 0) Or (InStr(channel.Modes, "O") > 0 And InStr(Source.Modes, "o") = 0) Or (InStr(channel.Modes, "z") > 0 And InStr(Source.Modes, "z") = 0) Then
-        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", channel.Name))
+    ElseIf (InStr(Channel.Modes, "A") > 0 And InStr(Source.Modes, "A") = 0) Or (InStr(Channel.Modes, "O") > 0 And InStr(Source.Modes, "o") = 0) Or (InStr(Channel.Modes, "z") > 0 And InStr(Source.Modes, "z") = 0) Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", Channel.Name))
     'Is the password correct?
-    ElseIf Password <> DB(channel.Name)("Password") Then
+    ElseIf Password <> DB(Channel.Name)("Password") Then
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.ChanServIdentifyBadPass)
         Source.BadIdentifies = Source.BadIdentifies + 1
         If Source.BadIdentifies >= basMain.Config.BadPassLimit Then
@@ -592,72 +592,72 @@ Public Sub Identify(ByVal Source As User, ByVal channel As channel, ByVal Passwo
         End If
     Else
         'All validations pass (or did I forget any?)... so mark him as identified.
-        channel.IdentifedUsers.Add Source
-        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyOK, "%c", channel.Name))
-        If channel.Members.Exists(Source) Then
-            Call basFunctions.SendData(":" + Service(SVSINDEX_CHANSERV).Nick + " MODE " + channel.Name + " +ao " + Source.Nick + " " + Source.Nick)
-            channel.SetChannelModes Service(SVSINDEX_CHANSERV).Nick, "+ao " + Source.Nick + " " + Source.Nick
+        Channel.IdentifedUsers.Add Source
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyOK, "%c", Channel.Name))
+        If Channel.Members.Exists(Source) Then
+            Call basFunctions.SendData(":" + Service(SVSINDEX_CHANSERV).Nick + " MODE " + Channel.Name + " +ao " + Source.Nick + " " + Source.Nick)
+            Channel.SetChannelModes Service(SVSINDEX_CHANSERV).Nick, "+ao " + Source.Nick + " " + Source.Nick
         End If
     End If
 End Sub
 
-Public Sub Access(ByVal Source As User, ByVal channel As channel, ByVal Subcommand As String, Optional ByVal NickName As String = "", Optional ByVal Flags As String = "")
+Public Sub Access(ByVal Source As User, ByVal Channel As Channel, ByVal Subcommand As String, Optional ByVal NickName As String = "", Optional ByVal Flags As String = "")
 
 End Sub
 
-Public Sub ManageMaskList(ByVal Source As User, ByVal channel As channel, ByVal List As String, ByVal Subcommand As String, Optional ByVal Entry As String = "", Optional ByVal Reason As String = "")
+Public Sub ManageMaskList(ByVal Source As User, ByVal Channel As Channel, ByVal List As String, ByVal Subcommand As String, Optional ByVal Entry As String = "", Optional ByVal Reason As String = "")
 
 End Sub
 
-Public Sub Invite(ByVal Source As User, ByVal channel As channel, ByVal Nick As User)
+Public Sub Invite(ByVal Source As User, ByVal Channel As Channel, ByVal Nick As User)
 
 End Sub
 
-Public Sub Unban(ByVal Source As User, ByVal channel As channel, ByVal User As User)
+Public Sub Unban(ByVal Source As User, ByVal Channel As Channel, ByVal User As User)
 
 End Sub
 
-Public Sub StatusChange(ByVal Source As User, ByVal channel As channel, ByVal What As String, ByVal Target As User)
+Public Sub StatusChange(ByVal Source As User, ByVal Channel As Channel, ByVal What As String, ByVal Target As User)
 
 End Sub
 
-Public Sub StandardList(ByVal Source As User, ByVal channel As channel, ByVal What As String, ByVal Target As String)
+Public Sub StandardList(ByVal Source As User, ByVal Channel As Channel, ByVal What As String, ByVal Target As String)
 
 End Sub
 
-Public Sub BootUser(ByVal Source As User, ByVal channel As channel, ByVal Target As User, ByVal Message As String, Optional ByVal BanType As Integer = -1)
+Public Sub BootUser(ByVal Source As User, ByVal Channel As Channel, ByVal Target As User, ByVal Message As String, Optional ByVal BanType As Integer = -1)
 
 End Sub
 
-Public Sub Topic(ByVal Source As User, ByVal channel As channel, ByVal NewTopic As String)
+Public Sub Topic(ByVal Source As User, ByVal Channel As Channel, ByVal NewTopic As String)
 
 End Sub
 
-Public Sub Mode(ByVal Source As User, ByVal channel As channel, ByVal ModeChange As String)
+Public Sub Mode(ByVal Source As User, ByVal Channel As Channel, ByVal ModeChange As String)
 
 End Sub
 
-Public Sub ChannelSetting(ByVal Source As User, ByVal channel As channel, ByVal Setting As String)
+Public Sub ChannelSetting(ByVal Source As User, ByVal Channel As Channel, ByVal Setting As String)
 
 End Sub
 
-Public Sub LockChange(ByVal Source As User, ByVal channel As channel, ByVal Locking As Boolean, ByVal SubLock As String, Optional ByVal Entry As String = "")
+Public Sub LockChange(ByVal Source As User, ByVal Channel As Channel, ByVal Locking As Boolean, ByVal SubLock As String, Optional ByVal Entry As String = "")
 
 End Sub
 
-Public Sub Drop(ByVal Source As User, ByVal channel As channel, Optional ByVal ConfirmationCode As String)
+Public Sub Drop(ByVal Source As User, ByVal Channel As Channel, Optional ByVal ConfirmationCode As String)
 
 End Sub
 
-Public Sub Forbid(ByVal Source As User, ByVal channel As channel, ByVal Reason As String)
+Public Sub Forbid(ByVal Source As User, ByVal Channel As Channel, ByVal Reason As String)
 
 End Sub
 
-Public Sub Suspend(ByVal Source As User, ByVal channel As channel, ByVal Reason As String)
+Public Sub Suspend(ByVal Source As User, ByVal Channel As Channel, ByVal Reason As String)
 
 End Sub
 
-Public Sub Unsuspend(ByVal Source As User, ByVal channel As channel)
+Public Sub Unsuspend(ByVal Source As User, ByVal Channel As Channel)
 
 End Sub
 
@@ -674,7 +674,7 @@ Private Sub Version(Sender As User)
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
+Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
     'We bounce this if:
     '- If it aint a service! :D
     '- strict_status and sender is not +V (for (de)voicing) +H (for (de)halfopping) +O (for (de)opping)
@@ -929,19 +929,19 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As channel, ByVal bSe
     End If
 End Sub
 
-Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
     DoMLOCK Chan, False
 End Sub
 
-Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
     DoMLOCK Chan, False
 End Sub
 
-Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
     DoMLOCK Chan, False
 End Sub
 
@@ -954,7 +954,7 @@ Public Sub HandleUserMode(ByVal User As User, ByVal bSet As Boolean, ByVal Char 
 End Sub
 
 Public Sub HandleTick(ByVal Interval As Single)
-    Dim c As channel, sng As Single
+    Dim c As Channel, sng As Single
     For Each c In Channels
         On Error GoTo InitTimer
         sng = c.Custom("LimitTimer")
@@ -976,28 +976,28 @@ Public Sub HandleEvent(ByVal Source As String, ByVal EventName As String, Parame
 End Sub
 
 'Some general subs.
-Public Sub InitChannel(ByVal channel As channel)
+Public Sub InitChannel(ByVal Channel As Channel)
     Dim s As String
-    s = DB(channel.Name)("bots")
+    s = DB(Channel.Name)("bots")
     Dim vBots() As String
     vBots = Split(s, " ")
     'The first character will be the prefix, so...
     Dim v As Variant
     For Each v In vBots
-        Call JoinBot(channel, Mid(v, 2))
+        Call JoinBot(Channel, Mid(v, 2))
     Next v
-    DoMLOCK channel, True
-    BotTopic channel, newcol("last_topic"), newcol("topic_set_by"), newcol("topic_set_on")
+    DoMLOCK Channel, True
+    BotTopic Channel, newcol("last_topic"), newcol("topic_set_by"), newcol("topic_set_on")
 End Sub
 
 'Enforces the MLOCK of the given channel.
-Public Sub DoMLOCK(ByVal channel As channel, Optional ByVal UpdateFloatingLimit As Boolean = False)
+Public Sub DoMLOCK(ByVal Channel As Channel, Optional ByVal UpdateFloatingLimit As Boolean = False)
     Dim mlock As String
     On Error Resume Next
-    mlock = DB(channel.Name)("mlock")
+    mlock = DB(Channel.Name)("mlock")
     If Err.Number <> 0 Then 'Not registered, so the mlock is -r and nothing more.
-        If InStr(1, channel.Modes, "r", vbBinaryCompare) Then
-            channel.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-r"
+        If InStr(1, Channel.Modes, "r", vbBinaryCompare) Then
+            Channel.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-r"
         End If
         Exit Sub
     End If
@@ -1015,28 +1015,28 @@ Public Sub DoMLOCK(ByVal channel As channel, Optional ByVal UpdateFloatingLimit 
         ElseIf ch = "-" Then
             bSet = False
         ElseIf bSet And ch = "l" And UpdateFloatingLimit Then
-            BotMode channel, True, "+l " & CStr(channel.Members.Count + 8)
+            BotMode Channel, True, "+l " & CStr(Channel.Members.Count + 8)
         ElseIf Not bSet And InStr(1, Split(basMain.ChannelModes2, ",", 2)(1), ch, vbBinaryCompare) Then
             '- and a Type B, C, or D mode.
-            If ch = "f" And channel.FloodProtection <> "" Then
-                BotMode channel, True, "-f " & channel.FloodProtection
-            ElseIf ch = "k" And channel.ChannelKey <> "" Then
-                BotMode channel, True, "-k " & channel.ChannelKey
-            ElseIf ch = "L" And channel.OverflowChannel <> "" Then
-                BotMode channel, True, "-L " & channel.OverflowChannel
-            ElseIf ch = "l" And channel.OverflowLimit <> 0 Then
+            If ch = "f" And Channel.FloodProtection <> "" Then
+                BotMode Channel, True, "-f " & Channel.FloodProtection
+            ElseIf ch = "k" And Channel.ChannelKey <> "" Then
+                BotMode Channel, True, "-k " & Channel.ChannelKey
+            ElseIf ch = "L" And Channel.OverflowChannel <> "" Then
+                BotMode Channel, True, "-L " & Channel.OverflowChannel
+            ElseIf ch = "l" And Channel.OverflowLimit <> 0 Then
                 sUnSet = sUnSet & "l"
-            ElseIf InStr(1, channel.Modes, ch, vbBinaryCompare) Then
+            ElseIf InStr(1, Channel.Modes, ch, vbBinaryCompare) Then
                 sUnSet = sUnSet & ch
             End If
         ElseIf bSet And InStr(1, Split(basMain.ChannelModes2, ",")(3), ch, vbBinaryCompare) Then
             '+ and a Type D mode.
-            If InStr(1, channel.Modes, ch, vbBinaryCompare) = 0 Then
+            If InStr(1, Channel.Modes, ch, vbBinaryCompare) = 0 Then
                 sSet = sSet & ch
             End If
         End If
     Next idx
-    BotMode channel, True, "+" & sSet & "-" & sUnSet
+    BotMode Channel, True, "+" & sSet & "-" & sUnSet
     Dim Modes As String, idx2 As Long
     For idx = 1 To UBound(m)
         Modes = m(idx)
@@ -1054,25 +1054,25 @@ Public Sub DoMLOCK(ByVal channel As channel, Optional ByVal UpdateFloatingLimit 
                 Select Case ch
                     Case "l":
                         If IsNumeric(sParam) Then
-                            If channel.OverflowLimit <> CLng(sParam) Then
-                                BotMode channel, True, "+l " & sParam
+                            If Channel.OverflowLimit <> CLng(sParam) Then
+                                BotMode Channel, True, "+l " & sParam
                             End If
                         End If
                     Case "k":
-                        If channel.ChannelKey <> sParam Then
-                            BotMode channel, True, "+k " & sParam
+                        If Channel.ChannelKey <> sParam Then
+                            BotMode Channel, True, "+k " & sParam
                         End If
                     Case "L":
-                        If channel.OverflowChannel <> sParam Then
-                            BotMode channel, True, "+L " & sParam
+                        If Channel.OverflowChannel <> sParam Then
+                            BotMode Channel, True, "+L " & sParam
                         End If
                     Case "f":
-                        If channel.FloodProtection <> sParam Then
-                            BotMode channel, True, "+f " & sParam
+                        If Channel.FloodProtection <> sParam Then
+                            BotMode Channel, True, "+f " & sParam
                         End If
                     Case Else
                         'We can't optimize it down, so just send the dang thing already.
-                        BotMode channel, True, FormatString("+{0} {1}", ch, sParam)
+                        BotMode Channel, True, FormatString("+{0} {1}", ch, sParam)
                     'End Case
                 End Select
             End If
@@ -1080,36 +1080,36 @@ Public Sub DoMLOCK(ByVal channel As channel, Optional ByVal UpdateFloatingLimit 
     Next idx
 End Sub
 
-Public Sub JoinBot(ByVal channel As channel, ByVal Bot As String)
-    Call basFunctions.SendData(":" + Bot & " JOIN " & channel.Name)
-    Call basFunctions.SendData(":" + Bot & " MODE " & channel.Name & " +ao " & Bot & " " & Bot)
+Public Sub JoinBot(ByVal Channel As Channel, ByVal Bot As String)
+    Call basFunctions.SendData(":" + Bot & " JOIN " & Channel.Name)
+    Call basFunctions.SendData(":" + Bot & " MODE " & Channel.Name & " +ao " & Bot & " " & Bot)
 End Sub
 
-Public Sub BotKick(ByVal channel As channel, ByVal Auto As Boolean, ByVal Target As User, ByVal Reason As String)
+Public Sub BotKick(ByVal Channel As Channel, ByVal Auto As Boolean, ByVal Target As User, ByVal Reason As String)
     Dim vBot As Variant
-    vBot = IIf(Auto, DB(channel.Name)("bot_auto_kick"), DB(channel.Name)("bot_kick"))
+    vBot = IIf(Auto, DB(Channel.Name)("bot_auto_kick"), DB(Channel.Name)("bot_kick"))
     If IsNull(vBot) Then vBot = Service(SVSINDEX_CHANSERV).Nick
-    channel.KickUser vBot, Target, Reason
+    Channel.KickUser vBot, Target, Reason
 End Sub
 
-Public Sub BotMode(ByVal channel As channel, ByVal Auto As Boolean, ByVal Modes As String)
+Public Sub BotMode(ByVal Channel As Channel, ByVal Auto As Boolean, ByVal Modes As String)
     Dim vBot As Variant
-    vBot = IIf(Auto, DB(channel.Name)("bot_auto_mode"), DB(channel.Name)("bot_mode"))
+    vBot = IIf(Auto, DB(Channel.Name)("bot_auto_mode"), DB(Channel.Name)("bot_mode"))
     If IsNull(vBot) Then vBot = Service(SVSINDEX_CHANSERV).Nick
-    channel.SendChannelModes vBot, Modes
+    Channel.SendChannelModes vBot, Modes
 End Sub
 
-Public Sub BotTopic(ByVal channel As channel, ByVal Topic As String, ByVal SetBy As String, ByVal SetOn As Long)
+Public Sub BotTopic(ByVal Channel As Channel, ByVal Topic As String, ByVal SetBy As String, ByVal SetOn As Long)
     Dim vBot As Variant
-    vBot = DB(channel.Name)("bot_topic")
+    vBot = DB(Channel.Name)("bot_topic")
     If IsNull(vBot) Then vBot = Service(SVSINDEX_CHANSERV).Nick
-    channel.Topic = Topic
-    channel.TopicSetBy = SetBy
-    channel.TopicSetOn = SetOn
-    Call basFunctions.SendData(FormatString(":{0} TOPIC {1} {2} {3} :{4}", vBot, channel.Name, SetBy, SetOn, Topic))
+    Channel.Topic = Topic
+    Channel.TopicSetBy = SetBy
+    Channel.TopicSetOn = SetOn
+    Call basFunctions.SendData(FormatString(":{0} TOPIC {1} {2} {3} :{4}", vBot, Channel.Name, SetBy, SetOn, Topic))
 End Sub
 
-Public Function HasFlag(ByVal channel As String, ByVal User As String, ByVal Flag As String) As Boolean
+Public Function HasFlag(ByVal Channel As String, ByVal User As String, ByVal Flag As String) As Boolean
     'Checks the ACL if the user has specified flag(s).
     Dim sFlagsSet As String
     Dim sFlagsUnset As String
@@ -1125,7 +1125,7 @@ Public Function HasFlag(ByVal channel As String, ByVal User As String, ByVal Fla
         End Select
     Next idx
     Dim sResult As String
-    sResult = AllFlags(channel, User)
+    sResult = AllFlags(Channel, User)
     For idx = 1 To Len(sFlagsSet)
         If InStr(1, sResult, Mid(sFlagsSet, idx, 1), vbBinaryCompare) = 0 Then Exit Function
     Next idx
@@ -1135,11 +1135,11 @@ Public Function HasFlag(ByVal channel As String, ByVal User As String, ByVal Fla
     HasFlag = True
 End Function
 
-Public Function HasAnyFlag(ByVal channel As String, ByVal User As String, ParamArray Flags() As Variant) As Boolean
+Public Function HasAnyFlag(ByVal Channel As String, ByVal User As String, ParamArray Flags() As Variant) As Boolean
     Dim idx As Long
     For idx = LBound(Flags) To UBound(Flags)
         If Not IsMissing(Flags(idx)) Then
-            If HasFlag(channel, User, Flags(idx)) Then
+            If HasFlag(Channel, User, Flags(idx)) Then
                 HasAnyFlag = True
                 Exit Function
             End If
@@ -1147,11 +1147,11 @@ Public Function HasAnyFlag(ByVal channel As String, ByVal User As String, ParamA
     Next idx
 End Function
 
-Public Sub SetFlag(ByVal channel As String, ByVal User As String, ByVal Flag As String)
+Public Sub SetFlag(ByVal Channel As String, ByVal User As String, ByVal Flag As String)
     Dim bSet As Boolean
     Dim idx As Long, ch As String * 1
     Dim sResult As String
-    sResult = AllFlags(channel, User)
+    sResult = AllFlags(Channel, User)
     For idx = 1 To Len(Flag)
         ch = Mid(Flag, idx, 1)
         Select Case ch
@@ -1160,13 +1160,13 @@ Public Sub SetFlag(ByVal channel As String, ByVal User As String, ByVal Flag As 
             Case Else: If bSet Then sResult = sResult + ch Else sResult = Replace(sResult, ch, "")
         End Select
     Next idx
-    AllFlags(channel, User) = sResult
+    AllFlags(Channel, User) = sResult
 End Sub
 
-Public Property Get AllFlags(ByVal channel As String, ByVal User As String) As String
-    If channel = "" Or User = "" Then Exit Property
+Public Property Get AllFlags(ByVal Channel As String, ByVal User As String) As String
+    If Channel = "" Or User = "" Then Exit Property
     Dim sACL As String
-    sACL = DB(channel)("AccessList")
+    sACL = DB(Channel)("AccessList")
     Dim vACL As Variant
     vACL = Split(sACL, vbTab)
     Dim idx As Long
@@ -1180,10 +1180,10 @@ Public Property Get AllFlags(ByVal channel As String, ByVal User As String) As S
     AllFlags = ""
 End Property
 
-Public Property Let AllFlags(ByVal channel As String, ByVal User As String, ByVal Flags As String)
-    If channel = "" Or User = "" Then Err.Raise 9, , "No such nick/channel"
+Public Property Let AllFlags(ByVal Channel As String, ByVal User As String, ByVal Flags As String)
+    If Channel = "" Or User = "" Then Err.Raise 9, , "No such nick/channel"
     Dim sACL As String, vACL As Variant, bFound As Boolean
-    sACL = DB(channel)("AccessList")
+    sACL = DB(Channel)("AccessList")
     vACL = Split(sACL, vbTab)
     Dim idx As Long
     For idx = 0 To UBound(vACL)
@@ -1206,16 +1206,16 @@ Public Property Let AllFlags(ByVal channel As String, ByVal User As String, ByVa
     sACL = Join(vACL, vbTab)
     While InStr(sACL, vbTab & vbTab): sACL = Replace(sACL, vbTab & vbTab, vbTab): Wend
     'Wish I could retain the order here but...
-    SetItem(DB(channel), "AccessList") = sACL
+    SetItem(DB(Channel), "AccessList") = sACL
 End Property
 
-Public Sub DelAllFlags(ByVal channel As String, ByVal User As String)
-    AllFlags(channel, User) = ""
+Public Sub DelAllFlags(ByVal Channel As String, ByVal User As String)
+    AllFlags(Channel, User) = ""
 End Sub
 
-Public Function GetFirstAKick(ByVal channel As String, ByVal User As User) As String
+Public Function GetFirstAKick(ByVal Channel As String, ByVal User As User) As String
     Dim sAK As String, vAK As Variant
-    sAK = DB(channel)("AKicks")
+    sAK = DB(Channel)("AKicks")
     vAK = Split(sAK, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vAK)
@@ -1228,9 +1228,9 @@ Public Function GetFirstAKick(ByVal channel As String, ByVal User As User) As St
     GetFirstAKick = ""
 End Function
 
-Public Property Get AKickReason(ByVal channel As String, ByVal AKickMask As String) As String
+Public Property Get AKickReason(ByVal Channel As String, ByVal AKickMask As String) As String
     Dim sAK As String, vAK As Variant
-    sAK = DB(channel)("AKicks")
+    sAK = DB(Channel)("AKicks")
     vAK = Split(sAK, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vAK)
@@ -1243,9 +1243,9 @@ Public Property Get AKickReason(ByVal channel As String, ByVal AKickMask As Stri
     AKickReason = ""
 End Property
 
-Public Property Get AKickExpiry(ByVal channel As String, ByVal AKickMask As String) As Double
+Public Property Get AKickExpiry(ByVal Channel As String, ByVal AKickMask As String) As Double
     Dim sAK As String, vAK As Variant
-    sAK = DB(channel)("AKicks")
+    sAK = DB(Channel)("AKicks")
     vAK = Split(sAK, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vAK)
@@ -1258,9 +1258,9 @@ Public Property Get AKickExpiry(ByVal channel As String, ByVal AKickMask As Stri
     AKickExpiry = -1
 End Property
 
-Public Property Let AKickExpiry(ByVal channel As String, ByVal AKickMask As String, ByVal NewExpiry As Double)
+Public Property Let AKickExpiry(ByVal Channel As String, ByVal AKickMask As String, ByVal NewExpiry As Double)
     Dim sAK As String, vAK As Variant
-    sAK = DB(channel)("AKicks")
+    sAK = DB(Channel)("AKicks")
     vAK = Split(sAK, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vAK)
@@ -1269,22 +1269,22 @@ Public Property Let AKickExpiry(ByVal channel As String, ByVal AKickMask As Stri
             vEntry(1) = CStr(NewExpiry)
             vAK(idx) = Join(vEntry, " ")
             sAK = Join(vAK, vbCrLf)
-            DB(channel)("AKicks") = sAK
+            DB(Channel)("AKicks") = sAK
         End If
     Next idx
 End Property
 
-Public Sub AddAKick(ByVal channel As String, ByVal AKickMask As String, ByVal Expiry As Double, ByVal Reason As String)
-    If AKickExpiry(channel, AKickMask) >= 0 Then Exit Sub
+Public Sub AddAKick(ByVal Channel As String, ByVal AKickMask As String, ByVal Expiry As Double, ByVal Reason As String)
+    If AKickExpiry(Channel, AKickMask) >= 0 Then Exit Sub
     Dim sResult As String
-    sResult = DB(channel)("AKicks")
+    sResult = DB(Channel)("AKicks")
     sResult = sResult & vbCrLf & AKickMask & " " & CStr(Expiry) & " " & Reason
-    DB(channel)("AKick") = sResult
+    DB(Channel)("AKick") = sResult
 End Sub
 
-Public Sub DelAKick(ByVal channel As String, ByVal AKickMask As String)
+Public Sub DelAKick(ByVal Channel As String, ByVal AKickMask As String)
     Dim sResult As String, vSplit As Variant
-    sResult = DB(channel)("AKicks")
+    sResult = DB(Channel)("AKicks")
     vSplit = Split(sResult, vbCrLf)
     Dim idx As Long
     For idx = 0 To UBound(vSplit)
@@ -1298,9 +1298,9 @@ Public Sub DelAKick(ByVal channel As String, ByVal AKickMask As String)
     While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
 End Sub
 
-Public Function GetFirstExempt(ByVal channel As String, ByVal User As User) As String
+Public Function GetFirstExempt(ByVal Channel As String, ByVal User As User) As String
     Dim sExempt As String, vExempt As Variant
-    sExempt = DB(channel)("Exempts")
+    sExempt = DB(Channel)("Exempts")
     vExempt = Split(sExempt, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vExempt)
@@ -1313,9 +1313,9 @@ Public Function GetFirstExempt(ByVal channel As String, ByVal User As User) As S
     GetFirstExempt = ""
 End Function
 
-Public Property Get ExemptExpiry(ByVal channel As String, ByVal ExemptMask As String) As Double
+Public Property Get ExemptExpiry(ByVal Channel As String, ByVal ExemptMask As String) As Double
     Dim sExempt As String, vExempt As Variant
-    sExempt = DB(channel)("Exempts")
+    sExempt = DB(Channel)("Exempts")
     vExempt = Split(sExempt, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vExempt)
@@ -1328,9 +1328,9 @@ Public Property Get ExemptExpiry(ByVal channel As String, ByVal ExemptMask As St
     ExemptExpiry = -1
 End Property
 
-Public Property Let ExemptExpiry(ByVal channel As String, ByVal ExemptMask As String, ByVal NewExpiry As Double)
+Public Property Let ExemptExpiry(ByVal Channel As String, ByVal ExemptMask As String, ByVal NewExpiry As Double)
     Dim sExempt As String, vExempt As Variant
-    sExempt = DB(channel)("Exempts")
+    sExempt = DB(Channel)("Exempts")
     vExempt = Split(sExempt, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vExempt)
@@ -1339,22 +1339,22 @@ Public Property Let ExemptExpiry(ByVal channel As String, ByVal ExemptMask As St
             vEntry(1) = CStr(NewExpiry)
             vExempt(idx) = Join(vEntry, " ")
             sExempt = Join(vExempt, vbCrLf)
-            DB(channel)("Exempts") = sExempt
+            DB(Channel)("Exempts") = sExempt
         End If
     Next idx
 End Property
 
-Public Sub AddExempt(ByVal channel As String, ByVal ExemptMask As String, ByVal Expiry As Double)
-    If ExemptExpiry(channel, ExemptMask) >= 0 Then Exit Sub
+Public Sub AddExempt(ByVal Channel As String, ByVal ExemptMask As String, ByVal Expiry As Double)
+    If ExemptExpiry(Channel, ExemptMask) >= 0 Then Exit Sub
     Dim sResult As String
-    sResult = DB(channel)("Exempts")
+    sResult = DB(Channel)("Exempts")
     sResult = sResult & vbCrLf & ExemptMask & " " & CStr(Expiry)
-    DB(channel)("Exempt") = sResult
+    DB(Channel)("Exempt") = sResult
 End Sub
 
-Public Sub DelExempt(ByVal channel As String, ByVal ExemptMask As String)
+Public Sub DelExempt(ByVal Channel As String, ByVal ExemptMask As String)
     Dim sResult As String, vSplit As Variant
-    sResult = DB(channel)("Exempts")
+    sResult = DB(Channel)("Exempts")
     vSplit = Split(sResult, vbCrLf)
     Dim idx As Long
     For idx = 0 To UBound(vSplit)
@@ -1368,9 +1368,9 @@ Public Sub DelExempt(ByVal channel As String, ByVal ExemptMask As String)
     While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
 End Sub
 
-Public Function GetFirstInvite(ByVal channel As String, ByVal User As User) As String
+Public Function GetFirstInvite(ByVal Channel As String, ByVal User As User) As String
     Dim sInvite As String, vInvite As Variant
-    sInvite = DB(channel)("Invites")
+    sInvite = DB(Channel)("Invites")
     vInvite = Split(sInvite, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vInvite)
@@ -1383,9 +1383,9 @@ Public Function GetFirstInvite(ByVal channel As String, ByVal User As User) As S
     GetFirstInvite = ""
 End Function
 
-Public Property Get InviteExpiry(ByVal channel As String, ByVal InviteMask As String) As Double
+Public Property Get InviteExpiry(ByVal Channel As String, ByVal InviteMask As String) As Double
     Dim sInvite As String, vInvite As Variant
-    sInvite = DB(channel)("Invites")
+    sInvite = DB(Channel)("Invites")
     vInvite = Split(sInvite, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vInvite)
@@ -1398,9 +1398,9 @@ Public Property Get InviteExpiry(ByVal channel As String, ByVal InviteMask As St
     InviteExpiry = -1
 End Property
 
-Public Property Let InviteExpiry(ByVal channel As String, ByVal InviteMask As String, ByVal NewExpiry As Double)
+Public Property Let InviteExpiry(ByVal Channel As String, ByVal InviteMask As String, ByVal NewExpiry As Double)
     Dim sInvite As String, vInvite As Variant
-    sInvite = DB(channel)("Invites")
+    sInvite = DB(Channel)("Invites")
     vInvite = Split(sInvite, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vInvite)
@@ -1409,22 +1409,22 @@ Public Property Let InviteExpiry(ByVal channel As String, ByVal InviteMask As St
             vEntry(1) = CStr(NewExpiry)
             vInvite(idx) = Join(vEntry, " ")
             sInvite = Join(vInvite, vbCrLf)
-            DB(channel)("Invites") = sInvite
+            DB(Channel)("Invites") = sInvite
         End If
     Next idx
 End Property
 
-Public Sub AddInvite(ByVal channel As String, ByVal InviteMask As String, ByVal Expiry As Double)
-    If InviteExpiry(channel, InviteMask) >= 0 Then Exit Sub
+Public Sub AddInvite(ByVal Channel As String, ByVal InviteMask As String, ByVal Expiry As Double)
+    If InviteExpiry(Channel, InviteMask) >= 0 Then Exit Sub
     Dim sResult As String
-    sResult = DB(channel)("Invites")
+    sResult = DB(Channel)("Invites")
     sResult = sResult & vbCrLf & InviteMask & " " & CStr(Expiry)
-    DB(channel)("Invite") = sResult
+    DB(Channel)("Invite") = sResult
 End Sub
 
-Public Sub DelInvite(ByVal channel As String, ByVal InviteMask As String)
+Public Sub DelInvite(ByVal Channel As String, ByVal InviteMask As String)
     Dim sResult As String, vSplit As Variant
-    sResult = DB(channel)("Invites")
+    sResult = DB(Channel)("Invites")
     vSplit = Split(sResult, vbCrLf)
     Dim idx As Long
     For idx = 0 To UBound(vSplit)
@@ -1438,7 +1438,7 @@ Public Sub DelInvite(ByVal channel As String, ByVal InviteMask As String)
     While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
 End Sub
 
-Public Function AccessLevel(ByVal channel As String, ByVal User As String) As Integer
+Public Function AccessLevel(ByVal Channel As String, ByVal User As String) As Integer
     'Returns a number indicating the "level" of a user:
     'Voice - 1
     'VoiceOp - 2
@@ -1452,29 +1452,29 @@ Public Function AccessLevel(ByVal channel As String, ByVal User As String) As In
     'OwnerOp - 10
     'CoFounder - 11
     'PermFounder - 12
-    If HasFlag(channel, User, CHANSERV_PERMFOUNDER) Then
+    If HasFlag(Channel, User, CHANSERV_PERMFOUNDER) Then
         AccessLevel = 12
-    ElseIf HasFlag(channel, User, CHANSERV_COFOUNDER) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_COFOUNDER) Then
         AccessLevel = 11
-    ElseIf HasFlag(channel, User, CHANSERV_OWNEROP) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_OWNEROP) Then
         AccessLevel = 10
-    ElseIf HasFlag(channel, User, CHANSERV_OWNER) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_OWNER) Then
         AccessLevel = 9
-    ElseIf HasFlag(channel, User, CHANSERV_PROTECTOP) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_PROTECTOP) Then
         AccessLevel = 8
-    ElseIf HasFlag(channel, User, CHANSERV_PROTECT) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_PROTECT) Then
         AccessLevel = 7
-    ElseIf HasFlag(channel, User, CHANSERV_OPOP) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_OPOP) Then
         AccessLevel = 6
-    ElseIf HasFlag(channel, User, CHANSERV_OP) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_OP) Then
         AccessLevel = 5
-    ElseIf HasFlag(channel, User, CHANSERV_HALFOPOP) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_HALFOPOP) Then
         AccessLevel = 4
-    ElseIf HasFlag(channel, User, CHANSERV_HALFOP) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_HALFOP) Then
         AccessLevel = 3
-    ElseIf HasFlag(channel, User, CHANSERV_VOICEOP) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_VOICEOP) Then
         AccessLevel = 2
-    ElseIf HasFlag(channel, User, CHANSERV_VOICE) Then
+    ElseIf HasFlag(Channel, User, CHANSERV_VOICE) Then
         AccessLevel = 1
     End If
 End Function
