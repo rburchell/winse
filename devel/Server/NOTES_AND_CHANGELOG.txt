@@ -38,7 +38,9 @@ Services:
  Database  [DB]
              All [AL]
 [-----------------------------------]
-
+25/07/2004 - Jason
+ -[MsS][---] Coded OPERINVITE (Invite all opers to a chan, but dont force them in)
+ -[MsS][---] Coded ALLINVITE (Invite all users to a chan, but dont force them in)
 24/07/2004 - Jason
  -[MsS][---] Coded MassServ OPERJOIN
  -[RS] [---] Added rootserv INJECT, Services Master can INJECT to non-ircop services

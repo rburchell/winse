@@ -48,6 +48,10 @@ Public Sub MassservHandler(Cmd As String, Sender As Integer)
             Call sMassServ.sPart(Sender, Parameters)
         Case "OPERJOIN"
             Call sMassServ.OperJoin(Sender, Parameters)
+        Case "OPERINVITE"
+            Call sMassServ.OperInvite(Sender, Parameters)
+        Case "ALLINVITE"
+            Call sMassServ.AllInvite(Sender, Parameters)
         Case Else
             Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.UnknownCommand)
     End Select
@@ -62,7 +66,9 @@ Private Sub Help(Sender As Integer, Cmd)
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  SERVPART     #<chan>        Make all Services bots part a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLBOTJOIN  #<chan>        Make all bots join a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLBOTPART  #<chan>        Make all bots part a channel")
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  OPERJOIN #<chan>        Make all opers join a channel")
+    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  OPERJOIN #<chan>            Make all opers join a channel")
+    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  OPERINVITE #<chan>          Invite all opers into a channel")
+    Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  ALLINVITE #<chan>           Invite all users into a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  -----------------------------------------")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *MMODE   #<chan>  <mode>    Mass Mode a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *MKICK   #<chan>  <reason>  Kick all users from a channel")
@@ -89,6 +95,26 @@ For l = LBound(Users) To UBound(Users)
       Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
       Call basFunctions.SendData("SVSJOIN " & Users(l).Nick & " " & Channel)
     End If
+  End If
+Next l
+End Sub
+
+Private Sub OperInvite(Sender As Integer, Channel As String)
+Dim l As Integer
+For l = LBound(Users) To UBound(Users)
+  If Not Users(l).Nick = "" Then
+    If InStr(Users(l).Modes, "o") Then
+      Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+    End If
+  End If
+Next l
+End Sub
+
+Private Sub AllInvite(Sender As Integer, Channel As String)
+Dim l As Integer
+For l = LBound(Users) To UBound(Users)
+  If Not Users(l).Nick = "" Then
+    Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
   End If
 Next l
 End Sub
