@@ -26,6 +26,11 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 06/09/2004 - aquanight
+  -[MS] [Fix] Squashed some old index stuffs.
+  -[CO] [Fix] Added IndexOf to the collections.
+  -[RS] [Fix] Fixed an old index usage.
+  -[MS] [Fix] Fixed a w00tism in MemoServ READ.
  05/09/2004 - aquanight
   As reported by w00t:
   -[CS] [Fix] Removed bouncy modes for now, I do want to be able to _run_ cvs...

@@ -66,3 +66,13 @@ Public Function Exists(ByVal idx As Variant) As Boolean
     On Error Resume Next
     Exists = Not Item(idx) Is Nothing
 End Function
+
+Public Function IndexOf(ByVal Item As Memo) As Long
+    Dim idx As Long
+    For idx = 1 To mData.Count
+        If mData(idx) Is Item Then
+            IndexOf = idx
+            Exit Function
+        End If
+    Next idx
+End Function

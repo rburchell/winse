@@ -70,7 +70,7 @@ End Sub
 
 Private Sub Shutdown(ByVal Sender As User, Message As String)
     Call basFunctions.GlobalMessage("Services shutting down on request of " & Sender.Nick & " [" & Message & "]")
-    Call basFunctions.SquitServices("SHUTDOWN Command by " + Users(Sender).Nick)
+    Call basFunctions.SquitServices("SHUTDOWN Command by " + Sender.Nick)
     End
 End Sub
 

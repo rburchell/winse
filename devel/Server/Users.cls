@@ -67,3 +67,14 @@ Private Function KeyToIndex(ByVal Key As String) As Long
         End If
     Next idx
 End Function
+
+Public Function IndexOf(ByVal Item As User) As Long
+    Dim idx As Long
+    For idx = 1 To mData.Count
+        If mData(idx) Is Item Then
+            IndexOf = idx
+            Exit Function
+        End If
+    Next idx
+End Function
+

@@ -37,7 +37,7 @@ Public Const UnknownSubCommand = "%c - Unknown subcommand."
 Public Const UserDoesntExist = "This user doesn't exist."
 'We could also send:
 ':services.* 481 Lamer :Permission denied - Insufficient services access.
-Public Const InsufficientPermissions = "Access denied."
+Public Const InsufficientPermissions = "I SPIT AT YOU THUSLY!"
 'We could also send:
 ':services.* 481 Lamer :Permission denied - You are not an IRC Operator.
 Public Const MustBeOpered = "You must be opered to use this service. [+o]"

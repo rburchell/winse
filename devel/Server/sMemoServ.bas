@@ -54,7 +54,7 @@ Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
     Parameters() = Split(Cmd, " ")
     
     'Check that the nick is registered and identified.
-    If (Not basFunctions.IsNickRegistered(SenderNick)) And (basMain.Users(Sender).IdentifiedToNick <> "") Then
+    If (Not basFunctions.IsNickRegistered(SenderNick)) And (Sender.IdentifiedToNick <> "") Then
         Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "You must be identified to a nickname!")
         Exit Sub
     End If
@@ -68,10 +68,12 @@ Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
                 Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
+            Dim iMemo As Integer
             If UBound(Parameters) = 2 Then
                 'Reading another persons memos.
                 If Not Sender.HasFlag(AccFlagCanMemoServAdmin) Then
-                    Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "I SPIT AT YOU THUSLY!")
+                    Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, Replies.InsufficientPermissions)
+                    Call basFunctions.SendNumeric(SenderNick, 481, ":Permission denied - Insufficient services access.")
                     Exit Sub
                 End If
                 On Error Resume Next
@@ -81,13 +83,16 @@ Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
                     Exit Sub
                 End If
                 On Error GoTo 0
+                iMemo = Parameters(2)
+            Else
+                iMemo = Parameters(1)
             End If
             With Sender
-                If .Memos.Exists(CByte(Parameters(2))) Then
-                    Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo from " & .Memos(CByte(Parameters(2))).strSenderNick & ":")
-                    Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "" & .Memos(CByte(Parameters(2))).strMemoText)
+                If .Memos.Exists(iMemo) Then
+                    Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo from " & .Memos(iMemo).strSenderNick & ":")
+                    Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "" & .Memos(iMemo).strMemoText)
                     'I guess we dont want them not to have an unread memo that appears read...
-                    '.Memos(CByte(Parameters(2))).bllRead = True
+                    If SenderNick = Sender.Nick Then .Memos(iMemo).bllRead = True
                 Else
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Hmm, it appears that memo doesnt exist. Bummer.")
                 End If
@@ -101,9 +106,9 @@ Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
                 Exit Sub
             End If
             Dim TargetID As User
-            Dim MemoBody As String
+            Dim MemoBody As String, m As Memo
             Set TargetID = Users(Parameters(1))
-            If TargetID = -1 Or Not basFunctions.IsNickRegistered(Parameters(1)) Then
+            If TargetID Is Nothing Or Not basFunctions.IsNickRegistered(Parameters(1)) Then
                 Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Either the nick doesnt exist, or they are not registered. Moo.")
                 Exit Sub
             End If
@@ -111,8 +116,8 @@ Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
                 MemoBody = MemoBody & " " & Parameters(i)
             Next i
             'really shouldnt use trim, but im too lazy to redisign a loop ;p
-            i = sMemoServ.AddMemo(TargetID, SenderNick, Trim(MemoBody))
-            Call basFunctions.SendMessage(basMain.Service(10).Nick, TargetID.Nick, "You have recieved a new memo from " & SenderNick & ". Use /msg memoserv read " & i & " to read it.")
+            Set m = sMemoServ.AddMemo(TargetID, SenderNick, Trim(MemoBody))
+            Call basFunctions.SendMessage(basMain.Service(10).Nick, TargetID.Nick, "You have recieved a new memo from " & SenderNick & ". Use /msg memoserv read " & TargetID.Memos.IndexOf(m) & " to read it.")
             Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Hmm. Memo sent, we hope.")
         Case "LIST"
             Dim SentOne As Boolean
@@ -133,9 +138,9 @@ Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
             'Ok. If we are listing ours, sender points to us. Else Sender is now the id of
             'the nick to list. Got it? ;p (yes, this could be done in the IF--ELSE statement,
             'but spacewise this is a bit more efficient). -w00t
-            With basMain.Users(Sender)
+            With Sender
                 Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "START MEMOLIST:")
-                For i = 0 To MS_TOTALMEMOS
+                For i = 1 To .Memos.Count
                     If .Memos(i).strSenderNick <> "" Then
                         If .Memos(i).bllRead Then
                             Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo #" & i & " from " & .Memos(i).strSenderNick & " Read")
@@ -196,7 +201,6 @@ Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
                     End If
                 End With
             End If
-
     End Select
 End Sub
 

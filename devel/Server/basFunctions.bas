@@ -42,6 +42,7 @@ Public Sub LogEvent(ByVal Header As String, ByVal Message As String)
 End Sub
 
 Public Sub LogEventWithMessage(ByVal Header As String, ByVal Message As String)
+Attribute LogEventWithMessage.VB_UserMemId = 0
     'Notifies all users with saccess, and logs event to file
     Call basFunctions.NotifyAllUsersWithServicesAccess(Header & " " & Message)
     Call basFunctions.LogEvent(Header, Message)
@@ -272,12 +273,12 @@ Public Sub ParseCmd(ByVal Incoming As String)
     'Now do a source check. If it's not a server, and we don't know it, remove it.
     If sSource <> "" And InStr(sSource, ".") = 0 Then
         'It's a user.
-        If Users.Exists(sSource) Then
+        If Not Users.Exists(sSource) Then
             'Could we be introducing a user (strange IRCd puts the new nick in the source param)?
             If sCmd <> "NICK" Or UBound(sArgs) <= 2 Then
                 'Not introducing and doesn't exist. This is bad.
                 LogEventWithMessage LogTypeError, "EEEK! Unknown user " & sSource & ". Are we desynched?"
-                SendData ":" & basMain.Config.ServerName & " KILL " & sSource & " :" & sSource & "(?) <- " & basMain.Config.UplinkName
+                SendData ":" & basMain.Config.ServerName & " KILL " & sSource & " :" & basMain.Config.ServerName & " (" & sSource & "(?) <- " & basMain.Config.UplinkName & ")"
                 Exit Sub
             'Otherwise, it's an IRCd introducing a user and putting the new nick in the source.
             End If
