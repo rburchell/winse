@@ -25,8 +25,14 @@ Services:
              All [AL]
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-/*  */
- 25/80/2004 - aquanight
+/* 0.0.4.0-sense_datum */
+ 29/08/2004 - w00t
+  -[MS] [Add] I BRING THEE MEMOSERV. In really basic form ;p. Doesn't have database stuff yet.
+              This is probably going to break CVS until we fix userstructure, etc to work with it.
+  -[MS] [Add] Added memoserv help files. Whoopee.
+  -[AL] [Fix] Fixed aquanight's date silliness :)
+
+ 25/08/2004 - aquanight
   -[AL] [---] Changed the Service(<number>) references to use symbolic constants instead of
               "magic numbers". Now we actually know what Service(SVSINDEX_GLOBAL) means,
               as opposed to a cryptic Service(8).

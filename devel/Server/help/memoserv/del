@@ -1,0 +1,6 @@
+Syntax: DEL [nick] <memoid/ALL>
+Deletes memo with id <memoid>. Alternativly, specifying "ALL"
+deletes all your memos.
+
+For admins, specifying the [nick] parameter allows you to
+delete another users memo.

@@ -1,0 +1,5 @@
+Syntax: LIST [nick]
+Lists all your memos and who sent them, and if they have been read
+
+For admins, specifying the [nick] parameter allows you to
+list another users memos.

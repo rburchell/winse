@@ -1,0 +1,5 @@
+Syntax: READ [nick] <memoid>
+Reads the memo stored in <memoid>. 
+
+For admins, specifying the [nick] parameter allows you to
+read another users memo.

@@ -1,0 +1,3 @@
+Syntax: SEND <nick> <memo text>
+Sends a memo containing <memo text> to <nick>. Similar to a short email,
+this allows you to send messages to offline users.

@@ -1,0 +1,14 @@
+MemoServ:
+  This service provides the ability to send short notes to other users,
+  even if they are offline. It can only be used by registered nicks, and
+  memos can only be sent to registered nicks.
+ 
+  This service is available to all users.
+ 
+  Commands:
+    SEND <nick> <memo text>
+    READ [nick, for admins] <memoid>
+    DEL [nick, for admins] <memoid/ALL>
+    LIST [nick, for admins]
+ 
+   Notice: For more Information type /msg MemoServ HELP <command>

@@ -22,3 +22,4 @@ CURRENTLY DOCUMENTED SERVICES: (add when you do one :P)
  AdminServ
  Agent
  ChanServ
+ MemoServ
