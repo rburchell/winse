@@ -38,6 +38,7 @@ Public Sub AdminservHandler(Cmd As String, Sender As Integer)
         Case "JUPE"
             If UBound(Parameters) < 2 Then
                 Call basFunctions.SendMessage(basMain.Service(5).Nick, SenderNick, Replies.InsufficientParameters)
+		Exit Sub
             Else
                 'remember to add "sender" to jupe paramlist
                 Call sAdminServ.Jupe(Sender, Parameters)
