@@ -169,6 +169,7 @@ Public Sub ParseConfigurationFile(File As String)
     Directives.Add "SERVICESMASTER"
     Directives.Add "DEFAULTMESSAGETYPE"
     Directives.Add "GLOBALTARGETS"
+    Directives.Add "INJECTTOOPERSERVICES"
     
     Call basFunctions.LogEvent(basMain.LogTypeDebug, "Checking conf existance")
     fd = FreeFile
@@ -240,6 +241,17 @@ NextLine:
                             Case Else
                                 Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
                                 basMain.Config.DefaultMessageType = True
+                        End Select
+                    Case "INJETTOOPERSERVICES"
+                        'Defines the default for users().msgstyle True=notice false=privmsg
+                        Select Case LCase(DirectiveVal)
+                            Case "yes"
+                                basMain.Config.InjectToOperServices = True
+                            Case "no"
+                                basMain.Config.InjectToOperServices = False
+                            Case Else
+                                Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
+                                basMain.Config.InjectToOperServices = False
                         End Select
                 End Select
                 GoTo NextLine

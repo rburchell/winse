@@ -27,12 +27,8 @@ Public Sub RootservHandler(Cmd As String, Sender As Integer)
     Parameters = Right(Cmd, Len(Cmd) - FirstSpace)
     FirstSpace = InStr(Cmd, " ")
     If FirstSpace <> 0 Then Cmd = Left(Cmd, FirstSpace - 1)
-    If Not basFunctions.IsServicesAdmin(Sender) Then
-        Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, Replies.MustBeAServiceAdmin)
-        Exit Sub
-    End If
-    If Not basFunctions.HasFlag(Sender, AccFlagCoMaster) And Not basFunctions.HasFlag(Sender, AccFlagMaster) Then
-        Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, Replies.MustBeAServicesMasterOrComaster)
+    If Not basFunctions.HasFlag(Sender, AccFlagCanRootServ) Then
+        Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, Replies.RootServNeedPermissions)
         Exit Sub
     End If
     Select Case UCase(Cmd)
@@ -83,8 +79,8 @@ Private Sub Raw(Sender As Integer, RawString As String)
 End Sub
 
 Private Sub Inject(Sender As Integer, sParameters As String)
-If basFunctions.HasFlag(Sender, AccFlagMaster) Then
-  Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.MustBeAServicesMasterOrComaster)
+If basFunctions.HasFlag(Sender, AccFlagCanRootServInject) Then
+  Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServInjectNeedPermissions)
   Exit Sub
 End If
 Dim InjectData() As String, TargetID As Integer
@@ -97,20 +93,22 @@ Select Case UCase(InjectData(1))
     Call sChanServ.ChanservHandler(InjectData(3), TargetID)
   Case "MEMOSERV"
     Call sMemoServ.MemoservHandler(InjectData(3), TargetID)
-'  Case "OPERSERV"
-'    Call sOperServ.OperservHandler(InjectData(3), TargetID)
-'  Case "ROOTSERV"
-'    Call sRootServ.RootservHandler(InjectData(3), TargetID)
   Case "BOTSERV"
     Call sBotServ.BotservHandler(InjectData(3), TargetID)
-'  Case "MASSSERV"
-'    Call sMassServ.MassservHandler(InjectData(3), TargetID)
-'  Case "HOSTSERV"
-'    Call sHostServ.HostservHandler(InjectData(3), TargetID)
 End Select
-' None to AGENT or ADMINSERV for obvious reasons...
-
-' IRCop services cant be injected to, for obvious reasons, in case we make a access flag for this
+If basMain.Config.InjectToOperServices Then
+  Select Case UCase(InjectData(1))
+    Case "OPERSERV"
+      Call sOperServ.OperservHandler(InjectData(3), TargetID)
+    Case "ROOTSERV"
+      Call sRootServ.RootservHandler(InjectData(3), TargetID)
+    Case "MASSSERV"
+      Call sMassServ.MassservHandler(InjectData(3), TargetID)
+    Case "HOSTSERV"
+      Call sHostServ.HostservHandler(InjectData(3), TargetID)
+  End Select
+End If
+' None to AGENT or ADMINSERV for obvious reasons... (Not abuse team? Give yourself more access?)
 End Sub
 
 'Callin subs for channel mode changes

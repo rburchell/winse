@@ -39,13 +39,16 @@ Services:
              All [AL]
 [-----------------------------------]
 
-26/07/2004
+26/07/2004 - Jason
+ -[RS] [---] RootServ Inject can inject to Oper services with the exception of
+             AdminServ and Agent if the proper config directive is set
+ -[RS] [---] RootServ Inject is no longer restricted to Masters, but to its own flag
  -[CO] [---] Added a permissions flag for recieving services notices by
              NotifyAllUsersWithServicesAccess.  Only users with flag "g"
              (AccFlagGetServNotices) recieve the notices now.
  -[AL] [---] Complete Overhaul of the permissions system, we now use flags,
              the flag letters are selected by changing constants in basMain
-25/07/2004
+25/07/2004 - Jason
  -[AG] [Fix] Numerous bugfixes, I tested it well, then fixed everything that was broken
 25/07/2004 - aquanight
  -[--] [---] I got enough complaints that COMSocket was difficult to

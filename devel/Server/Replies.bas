@@ -94,6 +94,10 @@ Public Const NickServLastQuitLocalKill = "[%s] Local kill by %o (%r)"
  '%o = Operator, %r = Reason
 Public Const NickServLastQuitFarKill = "Killed (%o (%r))"
 
+'RootServ
+Public Const RootServNeedPermissions = "You do not have sufficent access to use RootServ"
+Public Const RootServInjectNeedPermissions = "You do not have sufficent access to use RootServ Inject"
+
 'AdminServ
 Public Const AdminServCantAddCoMaster = "Only Masters can add comasters!"
 Public Const AdminServCantModCoMaster = "Only Masters can modfiy a comaster's access!"
