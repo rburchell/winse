@@ -1,6 +1,6 @@
 Attribute VB_Name = "sChanServ"
 ' Winse - WINdows SErvices. IRC services for Windows.
-' Copyright (C) 2004 w00t[w00t@netronet.org]
+' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
 '
 ' This program is free software; you can redistribute it and/or modify
 ' it under the terms of the GNU General Public License as published by
@@ -15,55 +15,42 @@ Attribute VB_Name = "sChanServ"
 ' You should have received a copy of the GNU General Public License
 ' along with this program; if not, write to the Free Software
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-'
-' Contact Maintainer: w00t[w00t@netronet.org]
 Option Explicit
-
 Public Const ModVersion = "0.0.0.2"
 
 Public Sub ChanservHandler(Cmd As String, Sender As Integer)
-    Dim SenderNick As String
     Dim Parameters() As String
-    Dim Description As String
-    ReDim Parameters(0) As String
+    Dim SenderNick As String
     
     SenderNick = basFunctions.ReturnUserName(Sender)
-    Dim Cmdcopy As String, Spacer As Long, Elements As Long
-    Cmdcopy = Cmd
-    Do While InStr(Cmdcopy, " ") <> 0
-        Spacer = InStr(Cmdcopy, " ")
-        If Spacer <> 0 Then
-            Parameters(Elements) = Left(Cmdcopy, Spacer - 1)
-        Else
-            Parameters(Elements) = Cmdcopy
-        End If
-        Cmdcopy = Right(Cmdcopy, Len(Cmdcopy) - Spacer)
-        Elements = Elements + 1
-        ReDim Preserve Parameters(Elements) As String
-    Loop
-    Parameters(Elements) = Cmdcopy
+    Parameters() = basFunctions.ParseBuffer(Cmd)
     
     Select Case UCase(Parameters(0))
+        Case "ACCESS"
+            'ACCESS #thelounge ADD w00t 80
+            If UBound(Parameters) < 4 Then
+                'insufficient parameters.
+            End If
+            Call sChanServ.Access(Sender, Parameters)
         Case "REGISTER"
             'REGISTER #thelounge testpass description
             'P[0] - REGISTER
             'P[1] - Name
             'P[2] - Password
             'P[3] - Description
-            If Elements < 3 Then
+            If UBound(Parameters) < 3 Then
                 Call basFunctions.SendMessage(basMain.Service(0).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
-            Description = Parameters(3)
             Dim i As Integer
-            For i = 4 To Elements
-                Description = Description & " " & Parameters(i)
+            For i = 4 To UBound(Parameters)
+                Parameters(3) = Parameters(3) & " " & Parameters(i)
             Next i
-            Call sChanServ.Register(Sender, Parameters(1), Parameters(2), Description)
+            Call sChanServ.Register(Sender, Parameters(1), Parameters(2), Parameters(3))
         Case "HELP"
             'P[0] - HELP
             'P[1]> - Word
-            If Elements <> 0 Then
+            If UBound(Parameters) <> 0 Then
                 Call sChanServ.Help(Sender, Parameters(1))
             Else
                 Call sChanServ.Help(Sender, "")
@@ -83,11 +70,31 @@ Private Sub Help(Sender As Integer, Cmd)
         Case Else
             Call basFunctions.SendMessage(basMain.Service(0).Nick, SenderNick, "ChanServ Commands:")
             Call basFunctions.SendMessage(basMain.Service(0).Nick, SenderNick, " REGISTER")
+            Call basFunctions.SendMessage(basMain.Service(0).Nick, SenderNick, " ACCESS")
     End Select
 End Sub
 
 Private Sub Version(Sender As Integer)
     Call basFunctions.SendMessage(basMain.Service(0).Nick, basFunctions.ReturnUserName(Sender), AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(0).Nick & "[" & sNickServ.ModVersion & "]")
+End Sub
+
+Private Sub Access(Sender As Integer, Parameters() As String)
+    'ACCESS #thelounge ADD w00t 80
+    'Check if the chan is registered first.
+    If basFunctions.ReturnChannelIndex(Parameters(1)) = -1 Then
+        Call basFunctions.NotifyAllUsersWithServicesAccess(Replies.SanityCheckLostChannel)
+        Exit Sub
+    End If
+    If Not basFunctions.IsChanRegistered(Parameters(1)) Then
+        'chan not registered.
+        Call basFunctions.SendMessage(basMain.Service(0).Nick, basMain.Users(Sender).Nick, Replace(Replies.ChanServChannelNotRegistered, "%n", Parameters(1)))
+        Exit Sub
+    End If
+    
+    Select Case Parameters(2)
+        Case "ADD"
+        Case "DEL"
+    End Select
 End Sub
 
 Private Sub Register(Sender As Integer, ChannelToRegister As String, Password As String, Description As String)
@@ -96,13 +103,13 @@ Private Sub Register(Sender As Integer, ChannelToRegister As String, Password As
     Dim ChanIndex As Integer
     ChanIndex = basFunctions.ReturnChannelIndex(ChannelToRegister)
     If ChanIndex = -1 Then
-        ' :| This should NEVER EVER HAPPEN! If it does, a services restart
-        'should really be required!!! (hopefully, we never get this far :P)
-        Call basFunctions.NotifyAllUsersWithServicesAccess("CHANSERV: Sanity check! We lost a channel in the array! aaaargh!!!! Advise a restart!")
+        'This is a Bad Thing.
+        Call basFunctions.NotifyAllUsersWithServicesAccess(Replies.SanityCheckLostChannel)
         'For the sake of not proceeding on with an
         'invalid index... - aquanight
         Exit Sub '!!!
         'Alternatively, we can RTE. - aquanight
+            'Dear god, did I really forget that Exit?? *checks old code* Oops. --w00t
     End If
 
     With basMain.Channels(ChanIndex)
@@ -119,7 +126,7 @@ Private Sub Register(Sender As Integer, ChannelToRegister As String, Password As
     Call basFileIO.SetInitEntry("index.db", "Channels", "RegisteredChannel" & TotalRegisteredChannels, ChannelToRegister)
     
     'Channel registered. Get cs to set the topic :P
-    Call basFunctions.SendData(":ChanServ TOPIC " & ChannelToRegister & " :Registered by " & basMain.Users(Sender).Nick)
+    Call basFunctions.SendData(":" & basMain.Service(0).Nick & " TOPIC " & ChannelToRegister & " :Registered by " & basMain.Users(Sender).Nick)
     'now get cs to set the modes yay
     'Putting +nt isn't a good idea IMHO. The chanop
     'may not want this behavior :P . I'm not gonna
@@ -127,5 +134,7 @@ Private Sub Register(Sender As Integer, ChannelToRegister As String, Password As
     'their right mind would run without +n (dunno about
     '+t). Assuming everyone is in the right mind,
     'however, is just plain stupid :P - aquanight
-    basFunctions.SendData (":ChanServ MODE " & ChannelToRegister & " :+ntr")
+        'It will be configurable eventually when I get around to it. Too much coding, too little time.
+        '--w00t
+    basFunctions.SendData (":" & basMain.Service(0).Nick & " MODE " & ChannelToRegister & " :+ntr")
 End Sub

@@ -1,6 +1,6 @@
 Attribute VB_Name = "sNickServ"
 ' Winse - WINdows SErvices. IRC services for Windows.
-' Copyright (C) 2004 w00t[w00t@netronet.org]
+' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
 '
 ' This program is free software; you can redistribute it and/or modify
 ' it under the terms of the GNU General Public License as published by
@@ -15,33 +15,15 @@ Attribute VB_Name = "sNickServ"
 ' You should have received a copy of the GNU General Public License
 ' along with this program; if not, write to the Free Software
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-'
-' Contact Maintainer: w00t[w00t@netronet.org]
 Option Explicit
-
 Public Const ModVersion = "0.0.2.2"
 
 Public Sub NickservHandler(Cmd As String, Sender As Integer)
-    Dim SenderNick As String
     Dim Parameters() As String
-    ReDim Parameters(0) As String
+    Dim SenderNick As String
     
     SenderNick = basFunctions.ReturnUserName(Sender)
-    Dim Cmdcopy As String
-    Cmdcopy = Cmd
-    Dim Spacer As Integer, Elements As Integer
-    Do While InStr(Cmdcopy, " ") <> 0
-        Spacer = InStr(Cmdcopy, " ")
-        If Spacer <> 0 Then
-            Parameters(Elements) = Left(Cmdcopy, Spacer - 1)
-        Else
-            Parameters(Elements) = Cmdcopy
-        End If
-        Cmdcopy = Right(Cmdcopy, Len(Cmdcopy) - Spacer)
-        Elements = Elements + 1
-        ReDim Preserve Parameters(Elements) As String
-    Loop
-    Parameters(Elements) = Cmdcopy
+    Parameters() = basFunctions.ParseBuffer(Cmd)
     
     Select Case UCase(Parameters(0))
         Case "REGISTER"
@@ -50,7 +32,7 @@ Public Sub NickservHandler(Cmd As String, Sender As Integer)
             'P[2] - Email
             'P[3] - Password <-n/a
             'Can only register current nickname now.
-            If Elements < 2 Then
+            If UBound(Parameters) < 2 Then
                 Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
@@ -59,15 +41,15 @@ Public Sub NickservHandler(Cmd As String, Sender As Integer)
             'P[0] - Cmd
             'P[1] - Nick <- now password.
             'P[2] - Password <- now not used
-            If Elements < 1 Then
+            If UBound(Parameters) < 1 Then
                 Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
             'We used to be able to ident to a nick that you werent called at the time.
-            'Feature Removed...
+            'Feature Removed... --w00t
             Call sNickServ.Identify(Sender, SenderNick, Parameters(1))
         Case "HELP"
-            If Elements <> 0 Then
+            If UBound(Parameters) <> 0 Then
                 Call sNickServ.Help(Sender, Parameters(1))
             Else
                 Call sNickServ.Help(Sender, "")
@@ -78,13 +60,13 @@ Public Sub NickservHandler(Cmd As String, Sender As Integer)
             'P[0] - Cmd
             'P[1] - Option
             'P[2] - Value
-            If Elements < 2 Then
+            If UBound(Parameters) < 2 Then
                 Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
             Call sNickServ.Set_(Sender, Parameters(1) & " " & Parameters(2))
         Case "LIST"
-            'really need to restrict this to access 10+
+            'Really need to restrict this to access 10+
             Call sNickServ.List(Sender)
         Case Else
             Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, Replies.UnknownCommand)
@@ -188,6 +170,7 @@ Private Sub Register(Sender As Integer, NickToRegister As String, EMail As Strin
         Call basFileIO.SetInitEntry("users.db", NickToRegister, "HideEmail", HideEMail)
         Call basFileIO.SetInitEntry("users.db", NickToRegister, "MsgStyle", MsgStyle)
         Call basFileIO.SetInitEntry("users.db", NickToRegister, "Password", Password)
+        Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replace(Replies.NickServRegisterOK, "%p", Password))
     End With
     Dim TotalRegisteredNicks As Variant
     TotalRegisteredNicks = CDec(basFileIO.GetInitEntry("index.db", "Totals", "TotalRegisteredNicks", -1))
@@ -217,8 +200,6 @@ Public Function Identify(Sender As Integer, NickToIdentify As String, Password A
                 .Access = 100
             End If
         End With
-        'Exit Function
-    'End If
         Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationSuccessful)
         basMain.Users(Sender).IdentifiedToNick = NickToIdentify
     Else

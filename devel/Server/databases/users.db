@@ -19,3 +19,10 @@ Email=test@test.com
 HideEmail=False
 MsgStyle=False
 Password=test
+[THE_AVATAR]
+AbuseTeam=False
+Access=3
+Email=the_avatar@hyperluminae.net
+HideEmail=False
+MsgStyle=False
+Password=prevision

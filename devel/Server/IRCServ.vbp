@@ -1,12 +1,11 @@
 Type=Exe
-Reference=*\G{00020430-0000-0000-C000-000000000046}#2.0#0#..\..\..\..\..\..\..\..\WINDOWS\System32\stdole2.tlb#OLE Automation
-Reference=*\G{00025E01-0000-0000-C000-000000000046}#4.0#0#..\..\..\..\..\..\..\..\Program Files\Common Files\Microsoft Shared\DAO\DAO350.DLL#Microsoft DAO 3.51 Object Library
+Reference=*\G{00020430-0000-0000-C000-000000000046}#2.0#0#..\..\..\..\..\..\WINDOWS\System32\stdole2.tlb#OLE Automation
+Reference=*\G{00025E01-0000-0000-C000-000000000046}#4.0#0#..\..\..\..\..\..\Program Files\Common Files\Microsoft Shared\DAO\DAO350.DLL#Microsoft DAO 3.51 Object Library
 Reference=*\G{3B9CC6C5-1E06-4DB8-864E-1CE59060644D}#1.0#0#COMSocket\bin\COMSocket.tlb#COMSocket
 Object={3B7C8863-D78F-101B-B9B5-04021C009402}#1.2#0; RICHTX32.OCX
 Form=frmServer.frm
 Module=basMain; basMain.bas
 Module=basFileIO; basINIFunctions.bas
-Module=NOTES; NOTES.bas
 Module=basFunctions; basFunctions.bas
 Module=sRootServ; sRootServ.bas
 Module=sAdminServ; sAdminServ.bas

@@ -1,6 +1,6 @@
 Attribute VB_Name = "sMassServ"
 ' Winse - WINdows SErvices. IRC services for Windows.
-' Copyright (C) 2004 w00t[w00t@netronet.org]
+' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
 '
 ' This program is free software; you can redistribute it and/or modify
 ' it under the terms of the GNU General Public License as published by
@@ -15,17 +15,13 @@ Attribute VB_Name = "sMassServ"
 ' You should have received a copy of the GNU General Public License
 ' along with this program; if not, write to the Free Software
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-'
-' Contact Maintainer: w00t[w00t@netronet.org]
 Option Explicit
-
 Public Const ModVersion = "0.0.0.1"
 
 Public Sub MassservHandler(Cmd As String, Sender As Integer)
     Dim SenderNick As String
     
     SenderNick = basFunctions.ReturnUserName(Sender)
-    
     
     Dim Parameters As String, FirstSpace As Integer
     FirstSpace = InStr(Cmd, " ")
@@ -64,11 +60,6 @@ Private Sub Help(Sender As Integer, Cmd)
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  SERVPART     #<chan>        Make all Services bots part a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLBOTJOIN  #<chan>        Make all bots join a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLBOTPART  #<chan>        Make all bots part a channel")
-    'ALLJOIN wont be happening!! Imagine if that was done on a large net!
-    'Besides, its irritating.
-    'Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLJOIN     #<chan>        Make all users join a channel")
-    'ALLOPERJOIN is a bit invasive... I am thinking about implementing it,
-    'but allowing it only to services master/comaster.
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *ALLOPERJOIN #<chan>        Make all opers join a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  -----------------------------------------")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  *MMODE   #<chan>  <mode>    Mass Mode a channel")

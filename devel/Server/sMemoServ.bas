@@ -1,6 +1,6 @@
 Attribute VB_Name = "sMemoServ"
 ' Winse - WINdows SErvices. IRC services for Windows.
-' Copyright (C) 2004 w00t[w00t@netronet.org]
+' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
 '
 ' This program is free software; you can redistribute it and/or modify
 ' it under the terms of the GNU General Public License as published by
@@ -15,9 +15,5 @@ Attribute VB_Name = "sMemoServ"
 ' You should have received a copy of the GNU General Public License
 ' along with this program; if not, write to the Free Software
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-'
-' Contact Maintainer: w00t[w00t@netronet.org]
-'lmao nothing here yet...
-
-'aquanight: Now there is :)
 Option Explicit
+Public Const ModVersion = "0.0.0.0"

@@ -1,6 +1,6 @@
 Attribute VB_Name = "sAgent"
 ' Winse - WINdows SErvices. IRC services for Windows.
-' Copyright (C) 2004 w00t[w00t@netronet.org]
+' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
 '
 ' This program is free software; you can redistribute it and/or modify
 ' it under the terms of the GNU General Public License as published by
@@ -15,20 +15,12 @@ Attribute VB_Name = "sAgent"
 ' You should have received a copy of the GNU General Public License
 ' along with this program; if not, write to the Free Software
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-'
-' Contact Maintainer: w00t[w00t@netronet.org]
-
 Option Explicit
-Public Const ModVersion = "0.0.2.2"
+Public Const ModVersion = "0.0.2.4"
 
 Public Sub AgentHandler(Cmd As String, Sender As Integer)
-    'Agent does NOT require a user to be opered. This is by design. (Any user can be abuseteam,
-    'so basically meaning "behave, big brother is watching..."
-    'It instead requires the AbuseTeam flag be set on the Sender.
-    '---*NOTE*--- AbuseTeam should be _very_ restricted.
-    
-    'Agent also doesnt require services access in general.
-    
+    'You need not be opered, or have services access to use Agent. All you
+    'need is to be on the abuse team. --w00t
     Dim Parameters() As String
     Dim Message As String
     ReDim Parameters(0) As String
@@ -39,14 +31,14 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
     Dim Elements As Integer
     Dim i As Integer
     SenderNick = basFunctions.ReturnUserName(Sender)
-       
-    'We shouldnt need either oper status or services access to use agent...
-    'just be on the abuse team. --w00t
     
     'Considering that Service Master (?) can probably
     'add/remove Abuse Team members, we may as well give
-    'him automatic access here, don't you think?
-    ' - aquanight
+    'him automatic access here, don't you think? -aquanight
+        'Nope, cause my eventual scheme is to require diplomatic "voting" from users
+        'connected to the server... Long way off, but saves us adding a check that
+        'will eventually be removed. (maybe perhaps :P) --w00t
+        '(oh, and besides, what's the point? Since he is, he can just add himself :))
 
     If basFunctions.IsAbuseTeamMember(Sender) = False Then
         Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, Replies.ServiceRestrictedToAbuseTeam)
@@ -66,8 +58,6 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
         ReDim Preserve Parameters(Elements)
     Loop
     Parameters(Elements) = Cmdcopy
-    
-    'Moved checks to stop wasting CPU on a request that was going to be ignored.
     
     Select Case UCase(Parameters(0))
         Case "HELP"
@@ -148,7 +138,16 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
         Case "UNIDENTIFY"
             'P[0] - Cmd
             'P[1] - Target
+            If Elements < 1 Then
+                Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, Replies.InsufficientParameters)
+                Exit Sub
+            End If
             Call sAgent.UnIdentify(Sender, Parameters(1))
+        Case "DEOPER"
+            'P[0] - Cmd
+            'P[1] - Target
+            Call sAgent.DeOper(Sender, Parameters(1))
+            'Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, " Not yet functional.")
         Case "VERSION"
             Call sAgent.Version(Sender)
         Case Else
@@ -173,7 +172,8 @@ Private Sub Help(Sender As Integer)
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  UMODE      - Change user modes")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  *DENY       - Deny a client from services/opering")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  *UNDENY     - Grant services back to client")
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  UNIDENTIFY - Makes user with nick specified not be identified.")
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  UNIDENTIFY - Removes services access from a client.")
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  DEOPER     - Removes +o from a client.")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  *ZLINE      - Add a global Z:LINE to the network")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, " ")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  Notice: For more Information type /msg Agent HELP command")
@@ -184,15 +184,16 @@ Private Sub Version(Sender As Integer)
     Call basFunctions.SendMessage(basMain.Service(7).Nick, basFunctions.ReturnUserName(Sender), AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(7).Nick & "[" & sAgent.ModVersion & "]")
 End Sub
 
+'damn not letting me use a keyword >:(
 Private Sub Exit_(Sender As Integer, Nick As String, Message As String)
-    Call basFunctions.LogEventWithMessage(basMain.Users(Sender).Nick & " used AGENT EXIT " & Nick & " with message " & Message)
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT EXIT " & Nick & " with message " & Message)
     basFunctions.SendData ("SVSKILL " & Nick & " :" & LTrim(Message))
 End Sub
 
 Private Sub UMode(Sender As Integer, Nick As String, Modes As String)
     Dim Target As Integer
     Target = basFunctions.ReturnUserIndex(Nick)
-    Call basFunctions.LogEventWithMessage(basMain.Users(Sender).Nick & " set modes " & Modes & " on " & Nick)
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " set modes " & Modes & " on " & Nick)
     Call basFunctions.SetUserModes(Target, Modes)
     Call basFunctions.SendData("SVS2MODE " & Nick & " " & Modes)
 End Sub
@@ -201,19 +202,20 @@ Private Sub Nick(Sender As Integer, OldNick As String, NewNick As String)
     'IMHO, we really ought to have a check to make sure that users cant change
     'the nick of those with access greater than them, but that can wait for now.
     '--w00t
-    'They're _ABUSE TEAM_. I can understand such a check
-    'for other Abuse Team members, but otherwise...
-    Call basFunctions.LogEventWithMessage(basMain.Users(Sender).Nick & " used AGENT NICK " & OldNick & " " & NewNick)
+        'They're _ABUSE TEAM_. I can understand such a check
+        'for other Abuse Team members, but otherwise... -aquanight
+            'True. Belay that order. I take it you mean NON-abuse team members? --w00t
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT NICK " & OldNick & " " & NewNick)
     Call basFunctions.ForceChangeNick(Sender, OldNick, NewNick)
 End Sub
 
 Private Sub Kill(Sender As Integer, Nick As String, Message As String)
-    Call basFunctions.LogEventWithMessage(basMain.Users(Sender).Nick & " used AGENT KILL " & Nick & " with reason " & Message)
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KILL " & Nick & " with reason " & Message)
     Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KILL " & Nick & " :" & LTrim(Message) & " (" & basFunctions.ReturnUserName(Sender) & ")")
 End Sub
 
 Private Sub Kick(Sender As Integer, Nick As String, Channel As String, Message As String)
-    Call basFunctions.LogEventWithMessage(basMain.Users(Sender).Nick & " used AGENT KICK " & Nick & " from " & Channel & " with reason " & Message)
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KICK " & Nick & " from " & Channel & " with reason " & Message)
     Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KICK " & Nick & " " & Channel & " :" & Message & " (" & basFunctions.ReturnUserName(Sender) & ")")
 End Sub
 
@@ -223,18 +225,38 @@ Private Sub UnIdentify(Sender As Integer, Nick As String)
     If TargetIndex = -1 Then
         Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replies.UserDoesntExist)
     End If
-    Call basFunctions.LogEventWithMessage(basMain.Users(Sender).Nick & " used AGENT UNIDENTIFY " & Nick)
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT UNIDENTIFY " & Nick)
     basMain.Users(TargetIndex).IdentifiedToNick = ""
     basMain.Users(TargetIndex).Access = 0
     basMain.Users(TargetIndex).AbuseTeam = False
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replace(Replies.AgentUserUnidentified, "%n", Nick))
+End Sub
+
+Private Sub DeOper(Sender As Integer, Nick As String)
+    Dim TargetIndex As Variant
+    TargetIndex = basFunctions.ReturnUserIndex(Nick)
+    If TargetIndex = -1 Then
+        Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replies.UserDoesntExist)
+    End If
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT DEOPER " & Nick)
+    'remove their oper privilages, courtesy of Agent :)
+    Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -o")
+    'Until we clear up all this modes business, blank OUR copy of their modes
+    'and request a new one. (ie let the current parser reparse their new modes)
+    'instead of trying to remove one :/ What I would do for C flags... --w00t
+    basMain.Users(TargetIndex).Modes = ""
+    Call basFunctions.SendData("MODE " & Nick)
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replace(Replies.AgentUserDeOpered, "%n", Nick))
 End Sub
 
 Private Sub FJoin(Sender As Integer, Nick As String, Channel As String)
-    Call basFunctions.LogEventWithMessage(basMain.Users(Sender).Nick & " AGENT FJOINed " & Nick & " to " & Channel)
+    'Use SVSJOIN since we are forcing them.
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " AGENT FJOINed " & Nick & " to " & Channel)
     Call basFunctions.SendData("SVSJOIN " & Nick & " " & Channel)
 End Sub
 
 Private Sub FPart(Sender As Integer, Nick As String, Channel As String)
-    Call basFunctions.LogEventWithMessage(basMain.Users(Sender).Nick & " AGENT FPARTed " & Nick & " from " & Channel)
+    'Use SVSPART since we are forcing them.
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " AGENT FPARTed " & Nick & " from " & Channel)
     Call basFunctions.SendData("SVSPART " & Nick & " " & Channel)
 End Sub
