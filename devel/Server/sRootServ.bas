@@ -107,7 +107,7 @@ Select Case UCase(InjectData(1))
 '    Call sMassServ.MassservHandler(InjectData(3), TargetID)
 '  Case "HOSTSERV"
 '    Call sHostServ.HostservHandler(InjectData(3), TargetID)
-
+End Select
 ' None to AGENT or ADMINSERV for obvious reasons...
 
 ' IRCop services cant be injected to, for obvious reasons, in case we make a access flag for this
