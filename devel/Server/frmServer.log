@@ -1,0 +1,4 @@
+Line 33: Class MSWinsockLib.Winsock of control tcpServer was not a loaded control class.
+Line 36: The property name _ExtentX in tcpServer is invalid.
+Line 37: The property name _ExtentY in tcpServer is invalid.
+Line 38: The property name _Version in tcpServer is invalid.

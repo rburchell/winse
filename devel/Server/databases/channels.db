@@ -1,0 +1,12 @@
+[#THELOUNGE]
+Topic=Registered by w00t
+TopicSetBy=ChanServ
+Founder=w00t
+FounderPassword=testpass
+MLock=+ntr
+[#TEST]
+Topic=Registered by w00t
+TopicSetBy=ChanServ
+Founder=w00t
+FounderPassword=testpass2
+MLock=+ntr
