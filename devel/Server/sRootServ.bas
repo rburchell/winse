@@ -84,7 +84,7 @@ End Sub
 
 Private Sub Inject(Sender As Integer, sParameters As String)
 If basFunctions.ReturnUserServicesPermissions(Sender) < 100 Then
-  Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, Replies.MustBeAServicesMasterOrComaster)
+  Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.MustBeAServicesMasterOrComaster)
   Exit Sub
 End If
 Dim InjectData() As String, TargetID As Integer

@@ -38,6 +38,12 @@ Services:
  Database  [DB]
              All [AL]
 [-----------------------------------]
+25/07/2004 - aquanight
+ -[AG] [Fix] Squashed a tun of compile errors in DoOper and Deny (sorry Jason ;p ).
+ -[CO] [Fix] Fixed a problem with CallByName not working in ParseCmd,
+             partly VB6's fault for not marking the last parameter as
+             ParamArray (it is just a Variant array), even though it is
+             treated as such.
 25/07/2004 - Jason
  -[MsS][---] Coded OPERINVITE (Invite all opers to a chan, but dont force them in)
  -[MsS][---] Coded ALLINVITE (Invite all users to a chan, but dont force them in)

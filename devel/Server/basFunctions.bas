@@ -557,8 +557,13 @@ Public Sub ParseCmd(ByVal Incoming As String)
     Set cd = New CommandDispatcher
     'Now execute it :) Use late-binding to pick the
     'correct procedure.
+    Dim sArgs() As String, idx As Long
+    ReDim sArgs(LBound(vArgs) To UBound(vArgs))
+    For idx = LBound(vArgs) To UBound(vArgs)
+        sArgs(idx) = vArgs(idx)
+    Next idx
     On Error Resume Next
-    Call CallByName(cd, sCmd, VbMethod, Array(sSource, vArgs, Incoming))
+    Call CallByName(cd, sCmd, VbMethod, sSource, sArgs, Incoming)
     If Err.Number <> 0 Then
         Debug.Print Err.Number, Err.Description
         Exit Sub
@@ -568,14 +573,14 @@ Public Sub ParseCmd(ByVal Incoming As String)
     'NOTE: These could theoretically handle PRIVMSG,
     'NOTICE and MODE, but that isn't really a good idea
     'as we have seperate subs for those purposes ;p .
-    sAdminServ.HandleCommand sSource, sCmd, vArgs
-    sAgent.HandleCommand sSource, sCmd, vArgs
-    sChanServ.HandleCommand sSource, sCmd, vArgs
-    sDebugServ.HandleCommand sSource, sCmd, vArgs
-    sMassServ.HandleCommand sSource, sCmd, vArgs
-    sNickServ.HandleCommand sSource, sCmd, vArgs
-    sOperServ.HandleCommand sSource, sCmd, vArgs
-    sRootServ.HandleCommand sSource, sCmd, vArgs
+    sAdminServ.HandleCommand sSource, sCmd, sArgs
+    sAgent.HandleCommand sSource, sCmd, sArgs
+    sChanServ.HandleCommand sSource, sCmd, sArgs
+    sDebugServ.HandleCommand sSource, sCmd, sArgs
+    sMassServ.HandleCommand sSource, sCmd, sArgs
+    sNickServ.HandleCommand sSource, sCmd, sArgs
+    sOperServ.HandleCommand sSource, sCmd, sArgs
+    sRootServ.HandleCommand sSource, sCmd, sArgs
 End Sub
 
 'BEHOLD! The NEW AND IMPROVED Channel Mode Parser! :D
