@@ -26,6 +26,9 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 22/08/2004 - Jason
+  -[MsS][---] Cleaned up some commented out, to never again be used code.
+  -[MsS][---] Changed the source name in some error logging output, to save us from debug nightmares
  21/08/2004 - aquanight
   -[CS] [---] Getting ready for the redesign - I've laid out the base commands :) .
   -[CO] [---] Added some functions to add mIRC formatting.
@@ -40,7 +43,6 @@ Services:
               from the start ;p . I don't know how stable things are, so be on the
               lookout.
  7/08/2004 - Jason
-  -[AG] [---] Made DENY slightly more efficent, Added DENY ENFORCE
   -[MsS][---] Added MKILL and CHANKILL, CHANGLINE is on my ToDo list
  03/08/2004 - aquanight / w00t
   -[CO] [---] IT'S A MIRACLE! Due to the benevolent wonders of CVS,

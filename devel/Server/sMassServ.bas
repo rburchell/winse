@@ -27,14 +27,6 @@ Public Sub MassservHandler(ByVal Cmd As String, ByVal Sender As User)
     
     SenderNick = Sender.Nick
     
-'    Dim Parameters As String, FirstSpace As Integer
-'    FirstSpace = InStr(Cmd, " ")
-'    Parameters = Right(Cmd, Len(Cmd) - FirstSpace)
-'    FirstSpace = InStr(Cmd, " ")
-'    If FirstSpace <> 0 Then Cmd = Left(Cmd, FirstSpace - 1)
- ' Darn thats ugly... Im redoing it with Split()
- ' Or, if its not less ugly, Im Bored!
- 
     Dim Parameters As String
     If InStr(Cmd, " ") > 0 Then
         'doing that doesn't work for me. It only works when Variant is used.
@@ -189,12 +181,6 @@ Private Sub MMode(ByVal Sender As User, ByVal Parameters As String)
     Next l
     Exit Sub
 Fail:
-'    Debug.Print "*** Begin Automated Error Report ***"
-'    Debug.Print "Error " & Err.Number & ": " & Err.Description
-'    Debug.Print "Error Source: " & Err.Source
-'    Debug.Print "*** End Automated Error Report ***"
-'    Stop ' Read your Immediate Window
-'WTF? LOG MAN! LOG!!!
     basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MMODE! " & Err.Number & ": " & Err.Description
 End Sub
 
@@ -209,13 +195,7 @@ Private Sub MKick(ByVal Sender As User, ByVal Parameters As String)
     Next l
     Exit Sub
 Fail:
-'Debug.Print "*** Begin Automated Error Report ***"
-'Debug.Print "Error " & Err.Number & ": " & Err.Description
-'Debug.Print "Error Source: " & Err.Source
-'Debug.Print "*** End Automated Error Report ***"
-'Stop ' Read your Immediate Window
-'WTF? LOG MAN! LOG!!!
-    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MMODE! " & Err.Number & ": " & Err.Description
+    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MKICK! " & Err.Number & ": " & Err.Description
 End Sub
 
 Private Sub MInvite(ByVal Sender As User, ByVal Parameters As String)
@@ -229,13 +209,7 @@ Private Sub MInvite(ByVal Sender As User, ByVal Parameters As String)
     Next l
     Exit Sub
 Fail:
-'Debug.Print "*** Begin Automated Error Report ***"
-'Debug.Print "Error " & Err.Number & ": " & Err.Description
-'Debug.Print "Error Source: " & Err.Source
-'Debug.Print "*** End Automated Error Report ***"
-'Stop ' Read your Immediate Window
-'WTF? LOG MAN! LOG!!!
-    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MMODE! " & Err.Number & ": " & Err.Description
+    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MInvite! " & Err.Number & ": " & Err.Description
 End Sub
 
 Private Sub MKill(ByVal Sender As User, ByVal Parameters As String)
@@ -267,13 +241,7 @@ Private Sub ChanKill(ByVal Sender As User, ByVal Parameters As String)
     Next l
     Exit Sub
 Fail:
-'Debug.Print "*** Begin Automated Error Report ***"
-'Debug.Print "Error " & Err.Number & ": " & Err.Description
-'Debug.Print "Error Source: " & Err.Source
-'Debug.Print "*** End Automated Error Report ***"
-'Stop ' Read your Immediate Window
-'WTF? LOG MAN! LOG!!!
-    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MMODE! " & Err.Number & ": " & Err.Description
+    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ CHANKILL! " & Err.Number & ": " & Err.Description
 End Sub
 
 'Callin subs for channel mode changes
