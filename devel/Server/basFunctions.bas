@@ -51,12 +51,6 @@ Attribute LogEventWithMessage.VB_UserMemId = 0
     Call basFunctions.LogEvent(Header, Message)
 End Sub
 
-Public Sub ForceChangeNick(ByVal Sender As Integer, ByVal OldNick As String, ByVal NewNick As String)
-    Dim TimeStamp As Long
-    TimeStamp = basUnixTime.GetTime
-    Call basFunctions.SendData("SVSNICK " & OldNick & " " & NewNick & " " & TimeStamp)
-End Sub
-
 Public Function IsChanRegistered(ByVal ChanName As String) As Boolean
     Dim Password As String
     'If we have a password, we must be registered ;)
@@ -85,7 +79,7 @@ Public Sub IntroduceClient(ByVal Nick As String, ByVal Host As String, ByVal Nam
     If ExtraModes <> "" Then basFunctions.SendData ":" & Nick & " MODE " & Nick & " +" & ExtraModes
 End Sub
 
-Public Sub JoinServicesToChannel(ByVal Sender As Integer, ByVal Channel As String)
+Public Sub JoinServicesToChannel(ByVal Sender As Integer, ByVal channel As String)
     'This may need to be bumped to a larger
     'type to satisify Option Strict when we .NET-ize it :) --aquanight
     Dim i As Byte
@@ -94,12 +88,12 @@ Public Sub JoinServicesToChannel(ByVal Sender As Integer, ByVal Channel As Strin
         Nick = basMain.Service(i).Nick
         Host = basMain.Service(i).Hostmask
         Name = basMain.Service(i).Name
-        Call basFunctions.SendData(":" & Nick & " JOIN " & Channel)
-        basFunctions.SendData ":" & Nick & " MODE " & Channel & " +ao " & Nick & " " & Nick
+        Call basFunctions.SendData(":" & Nick & " JOIN " & channel)
+        basFunctions.SendData ":" & Nick & " MODE " & channel & " +ao " & Nick & " " & Nick
     Next i
 End Sub
 
-Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal Channel As String)
+Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal channel As String)
     'See JoinServicesToChannel comment on this.  - aquanight
     Dim i As Byte
     Dim Nick, Host, Name As String
@@ -107,9 +101,116 @@ Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal Channel As Str
         Nick = basMain.Service(i).Nick
         Host = basMain.Service(i).Hostmask
         Name = basMain.Service(i).Name
-        Call basFunctions.SendData(":" & Nick & " PART " & Channel)
+        Call basFunctions.SendData(":" & Nick & " PART " & channel)
     Next i
 End Sub
+
+Public Function FormatString(ByVal s As String, ParamArray Args() As Variant)
+    'Replaces format specifiers in s with the arguments formatted accordingly.
+    'Format specifiers take the following form:
+    '{index[,minwidth][:format]} where format goes to VB's own Format() function.
+    'minwidth may be negative for a right alignment.
+    Dim iPos As Integer
+    Dim nIndex As Integer, nWidth As Integer, sFormat As String
+    Dim sIndexTemp As String, sWidthTemp As String
+    Dim cState As String * 1 'Current state: " " normal, "{" reading index, "," reading width, ":" reading format
+    Dim sTmp As String
+    Dim ch As String * 1
+    cState = " "
+    For iPos = 1 To Len(s)
+        ch = Mid(s, iPos, 1)
+        Select Case cState
+            Case " " 'Normal
+                If ch = "{" Then
+                    If Mid(s, iPos + 1, 1) = "{" Then
+                        iPos = iPos + 1
+                        sTmp = sTmp & "{"
+                    Else
+                        cState = "{"
+                    End If
+                Else
+                    sTmp = sTmp & ch
+                End If
+            Case "{" 'Index
+                Select Case ch
+                    Case ",", ":"
+                        cState = ch
+                        On Error GoTo BadFormat
+                        nIndex = CInt(sIndexTemp)
+                        On Error GoTo 0
+                    Case "}"
+                        On Error GoTo BadFormat
+                        nIndex = CInt(sIndexTemp)
+                        On Error GoTo 0
+                        'I hate having to do this, but one copy of code > than several.
+                        GoSub DoFormat 'This will clear out the temps and everything.
+                        cState = " "
+                    Case Else
+                        sIndexTemp = sIndexTemp & ch
+                    'End Case
+                End Select
+            Case "," 'Width
+                Select Case ch
+                    Case ":"
+                        cState = ch
+                        On Error GoTo BadFormat
+                        nWidth = CInt(sWidthTemp)
+                    Case "}"
+                        On Error GoTo BadFormat
+                        nWidth = CInt(sWidthTemp)
+                        On Error GoTo 0
+                        'I hate having to do this, but one copy of code > than several.
+                        GoSub DoFormat 'This will clear out the temps and everything.
+                        cState = " "
+                    Case Else
+                        sWidthTemp = sWidthTemp & ch
+                    'End Case
+                End Select
+            Case ":" 'Format
+                If ch = "}" Then
+                    If Mid(s, iPos + 1, 1) = "}" Then
+                        sFormat = sFormat & "}"
+                        iPos = iPos + 1
+                    Else
+                        On Error GoTo BadFormat
+                        nIndex = CInt(sIndexTemp)
+                        On Error GoTo 0
+                        'I hate having to do this, but one copy of code > than several.
+                        GoSub DoFormat 'This will clear out the temps and everything.
+                        cState = " "
+                    End If
+                Else
+                    sFormat = sFormat & ch
+                End If
+            'End Case
+        End Select
+    Next iPos
+    FormatString = sTmp
+    Exit Function
+DoFormat:
+    On Error GoTo BadFormat
+    Dim v As Variant, sWork As String
+    v = Args(nIndex)
+    If sFormat = "" Then sWork = CStr(v) Else sWork = Format(v, sFormat)
+    Select Case nWidth
+        Case Is < 0 'Right align.
+            If Len(sWork) < Abs(nWidth) Then sWork = String(Abs(Len(sWork) - Abs(nWidth)), 32) & sWork
+        Case Is > 0 'Left align.
+            If Len(sWork) < Abs(nWidth) Then sWork = sWork & String(Abs(Len(sWork) - Abs(nWidth)), 32)
+        'End Case
+    End Select
+    sTmp = sTmp & sWork
+    sIndexTemp = ""
+    sWidthTemp = ""
+    sFormat = ""
+    nIndex = 0
+    nWidth = 0
+    sWork = ""
+    v = Empty
+    Return
+BadFormat:
+    Err.Raise 5, , "Format error"
+End Function
 
 Public Sub SendData(ByVal Buffer As String)
     'With the new socket library, buffering might not
@@ -163,6 +264,11 @@ Public Sub GlobalMessage(ByVal Message As String)
     basFunctions.SendData ":" + Service(SVSINDEX_GLOBAL).Nick + " NOTICE " + basMain.Config.GlobalTargets + " :" + Message
 End Sub
 
+Public Sub WallOps(ByVal Sender As String, ByVal Message As String)
+    If Sender = "" Then Sender = basMain.Config.ServerName
+    SendData ":" + Sender + " GLOBOPS :" + Message
+End Sub
+
 Public Sub SquitServices(Optional ByVal Message As String = "")
     Call basFunctions.SendData("SQUIT " & basMain.Config.UplinkName & IIf(Message <> "", " :" & Message, ""))
     'Now flush all remaining data...
@@ -204,6 +310,19 @@ Public Sub NotifyAllUsersWithFlags(ByVal Flag As String, ByVal Message As String
             Call basFunctions.SendMessage(Sender, Reciever, "Services Notice: " & Message)
         End If
     Next i
+End Sub
+
+Public Sub RaiseCustomEvent(ByVal Source As String, ByVal EventName As String, ParamArray Parameters() As Variant)
+    'Calls handlers formatted like this:
+    'Public Sub HandleEvent(ByVal Source As String, ByVal EventName As String, Parameters() As Variant)
+    sAdminServ.HandleEvent Source, EventName, Parameters
+    sAgent.HandleEvent Source, EventName, Parameters
+    sChanServ.HandleEvent Source, EventName, Parameters
+    sDebugServ.HandleEvent Source, EventName, Parameters
+    sMassServ.HandleEvent Source, EventName, Parameters
+    sNickServ.HandleEvent Source, EventName, Parameters
+    sOperServ.HandleEvent Source, EventName, Parameters
+    sRootServ.HandleEvent Source, EventName, Parameters
 End Sub
 
 Public Sub ParseCmd(ByVal Incoming As String)
@@ -527,4 +646,28 @@ Public Function NUHMaskIsMatch(ByVal User As User, ByVal Mask As String) As Bool
     sMask = Replace(sMask, "[", "[[]")
     sMask = Replace(sMask, "#", "[#]")
     NUHMaskIsMatch = (User.Nick & "!" & User.UserName & "@" & User.HostName Like Mask)
+End Function
+
+Public Function CollToArray(ByVal col As Collection, Optional ByRef Keys As Variant) As Variant
+    'Keys can be anything we can enumerate.
+    Dim idx As Long, vRes() As String
+    If IsMissing(Keys) Then
+        ReDim vRes(0 To col.Count - 1)
+        For idx = 0 To col.Count - 1
+            vRes(idx) = col(idx + 1)
+        Next idx
+    ElseIf VarType(Keys) = (vbArray Or vbString) Then
+        ReDim vRes(0 To UBound(Keys))
+        For idx = 0 To UBound(Keys)
+            vRes(idx) = col(Keys(idx))
+        Next idx
+    ElseIf IsObject(Keys) Then
+        If TypeOf Keys Is Collection Then
+            For idx = 0 To Keys.Count - 1
+                vRes(idx) = col(Keys(idx + 1))
+            Next idx
+        Else: Error 13
+        End If
+    Else: Error 13
+    End If
 End Function

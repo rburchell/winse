@@ -111,11 +111,9 @@ Public Sub SetChannelModes(ByVal Source As String, ByVal Modes As String)
                 'to die under a very normal
                 'circumstance.)
                 If IsServicesNick(sParam) Then
-                    'It's a service spiel. We'll figure
-                    'out how to deal with this later...
-                    'For now, just do nothing so that
-                    'we don't die :/ .
-                Else
+                    'It's a service.
+                    RaiseCustomEvent Me.Name, basEvents.ServiceChanModeChanged, Me, IIf(bSet, "+", "-") & sChar, sParam
+                ElseIf Users.Exists(sParam) Then
                     DispatchPrefix Source, bSet, sChar, basMain.Users(sParam)
                 End If
             Else
@@ -176,7 +174,7 @@ Private Sub DispatchPrefix(ByVal Source As String, ByVal bSet As Boolean, ByVal 
     If Target Is Nothing Then
         'Now something really went pear-shaped. :P
         'Send out a scream.
-        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchPrefix")
+        LogEventWithMessage LogTypeBug, Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchPrefix")
         'Reboot.
         RestartServices "Fatal sanity check error. Forcing restart."
     End If
@@ -192,7 +190,7 @@ Private Sub DispatchPrefix(ByVal Source As String, ByVal bSet As Boolean, ByVal 
     sAdminServ.HandlePrefix Source, Me, bSet, Char, Target
     sAgent.HandlePrefix Source, Me, bSet, Char, Target
     sChanServ.HandlePrefix Source, Me, bSet, Char, Target
-'    sDebugServ.HandlePrefix Source, Me, bSet, Char, Target
+    sDebugServ.HandlePrefix Source, Me, bSet, Char, Target
     sMassServ.HandlePrefix Source, Me, bSet, Char, Target
     sNickServ.HandlePrefix Source, Me, bSet, Char, Target
     sOperServ.HandlePrefix Source, Me, bSet, Char, Target
@@ -203,7 +201,7 @@ Private Sub DispatchModeTypeA(ByVal Source As String, ByVal bSet As Boolean, ByV
     If Entry = "" Then
         'Now something really went pear-shaped. :P
         'Send out a scream.
-        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
+        LogEventWithMessage LogTypeBug, Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
         'Reboot.
         RestartServices "Fatal sanity check error. Forcing restart."
     End If
@@ -244,7 +242,7 @@ Private Sub DispatchModeTypeB(ByVal Source As String, ByVal bSet As Boolean, ByV
     If (Entry = "" And bSet = True) Then
         'Now something really went pear-shaped. :P
         'Send out a scream.
-        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
+        LogEventWithMessage LogTypeBug, Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
         'Reboot.
         RestartServices "Fatal sanity check error. Forcing restart."
     End If
@@ -266,7 +264,7 @@ Private Sub DispatchModeTypeB(ByVal Source As String, ByVal bSet As Boolean, ByV
     sAdminServ.HandleModeTypeB Source, Me, bSet, Char, Entry
     sAgent.HandleModeTypeB Source, Me, bSet, Char, Entry
     sChanServ.HandleModeTypeB Source, Me, bSet, Char, Entry
-'    sDebugServ.HandleModeTypeB Source, Me, bSet, Char, Entry
+    sDebugServ.HandleModeTypeB Source, Me, bSet, Char, Entry
     sMassServ.HandleModeTypeB Source, Me, bSet, Char, Entry
     sNickServ.HandleModeTypeB Source, Me, bSet, Char, Entry
     sOperServ.HandleModeTypeB Source, Me, bSet, Char, Entry
@@ -277,7 +275,7 @@ Private Sub DispatchModeTypeC(ByVal Source As String, ByVal bSet As Boolean, ByV
     If (Entry = "" And bSet = True) Then
         'Now something really went pear-shaped. :P
         'Send out a scream.
-        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
+        LogEventWithMessage LogTypeBug, Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
         'Reboot.
         RestartServices "Fatal sanity check error. Forcing restart."
     End If
@@ -309,7 +307,7 @@ Private Sub DispatchModeTypeD(ByVal Source As String, ByVal bSet As Boolean, ByV
     sAdminServ.HandleModeTypeD Source, Me, bSet, Char
     sAgent.HandleModeTypeD Source, Me, bSet, Char
     sChanServ.HandleModeTypeD Source, Me, bSet, Char
-'    sDebugServ.HandleModeTypeD Source, Me, bSet, Char
+    sDebugServ.HandleModeTypeD Source, Me, bSet, Char
     sMassServ.HandleModeTypeD Source, Me, bSet, Char
     sNickServ.HandleModeTypeD Source, Me, bSet, Char
     sOperServ.HandleModeTypeD Source, Me, bSet, Char

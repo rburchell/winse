@@ -202,15 +202,26 @@ End Sub
 
 Private Sub UMode(Sender As User, Nick As String, Modes As String)
     Dim Target As User
+    If Users.Exists(Nick) = False Then
+        SendMessage Service(SVSINDEX_AGENT).Nick, Sender.Nick, Replies.UserDoesntExist
+        Exit Sub
+    End If
     Set Target = Users(Nick)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " set modes " & Modes & " on " & Nick)
-    Call Target.SetUserModes(Modes)
-    Call basFunctions.SendData(IIf(basMain.Config.ServerType = "Unreal", "SVS2MODE ", "SVSMODE ") & Nick & " " & Modes)
+    Target.ForceUserModes Modes, Service(SVSINDEX_AGENT).Nick
+    If basMain.Config.AbuseTeamPrivacy = 0 Then SendMessage Service(SVSINDEX_AGENT), Target.Nick, FormatString("{0} changed your usermodes ({1} -> {2})", Sender.Nick, Modes, Target.Modes) Else SendMessage Service(SVSINDEX_AGENT).Nick, Target.Nick, FormatString("Your usermodes were changed ({0} -> {1})", Modes, Target.Modes)
+    'Call Target.SetUserModes(Modes)
+    'Call basFunctions.SendData(IIf(basMain.Config.ServerType = "Unreal", "SVS2MODE ", "SVSMODE ") & Nick & " " & Modes)
 End Sub
 
 Private Sub Nick(Sender As User, OldNick As String, NewNick As String)
+    If Users.Exists(OldNick) = False Then
+        SendMessage Service(SVSINDEX_AGENT).Nick, Sender.Nick, Replies.UserDoesntExist
+        Exit Sub
+    End If
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT NICK " & OldNick & " " & NewNick)
-    Call basFunctions.ForceChangeNick(Sender, OldNick, NewNick)
+    Call Users(OldNick).ForceChangeNick(NewNick)
+    If basMain.Config.AbuseTeamPrivacy = 0 Then SendMessage Service(SVSINDEX_AGENT), NewNick, FormatString("{0} changed your nick to {1}", Sender.Nick, NewNick) Else SendMessage Service(SVSINDEX_AGENT).Nick, NewNick, FormatString("Your nick is now {0}", NewNick)
 End Sub
 
 Private Sub Kill(Sender As User, Nick As String, Message As String)
@@ -222,11 +233,22 @@ Private Sub Kill(Sender As User, Nick As String, Message As String)
     If basMain.Config.AbuseTeamPrivacy = 2 Then basFunctions.NotifyAllUsersWithFlags AccFlagMaster, Users(Sender).Nick & " used Agent KILL on " & Nick
 End Sub
 
-Private Sub Kick(Sender As User, Nick As String, Channel As String, Message As String)
-    Call basFunctions.LogEvent(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KICK " & Nick & " from " & Channel & " with reason " & Message)
-    Call basFunctions.SendData(":" & basMain.Service(SVSINDEX_AGENT).Nick & " KICK " & Channel & " " & Nick & " :" & Message & IIf(basMain.Config.AbuseTeamPrivacy = 0, " (" & Sender.Nick & ")", ""))
-    If basMain.Config.AbuseTeamPrivacy = 1 Then basFunctions.NotifyAllUsersWithServicesAccess Users(Sender).Nick & " used Agent KICK on " & Nick & " " & Channel
-    If basMain.Config.AbuseTeamPrivacy = 2 Then basFunctions.NotifyAllUsersWithFlags AccFlagMaster, Users(Sender).Nick & " used Agent KICK on " & Nick & " " & Channel
+Private Sub Kick(Sender As User, Nick As String, channel As String, Message As String)
+    'Call basFunctions.SendData(":" & basMain.Service(SVSINDEX_AGENT).Nick & " KICK " & Channel & " " & Nick & " :" & Message & IIf(basMain.Config.AbuseTeamPrivacy = 0, " (" & Sender.Nick & ")", ""))
+    LogEvent LogTypeNotice, FormatString("{0} used Agent KICK on {1} in {2}", Sender.Nick, Nick, channel)
+    If Channels.Exists(channel) = False Then
+        SendMessage Service(SVSINDEX_AGENT).Nick, Sender.Nick, Replies.ChanServChanEmpty
+        Exit Sub
+    End If
+    Dim ch As channel
+    Set ch = Channels(channel)
+    If ch.Members.Exists(Nick) Then
+        SendMessage Service(SVSINDEX_AGENT).Nick, Sender.Nick, "User isn't on that channel."
+        Exit Sub
+    End If
+    ch.KickUser Service(SVSINDEX_AGENT).Nick, Users(Nick), FormatString("{0}" & IIf(basMain.Config.AbuseTeamPrivacy = 0, " ({1})"), Message, Sender.Nick)
+    If basMain.Config.AbuseTeamPrivacy <= 1 Then basFunctions.NotifyAllUsersWithServicesAccess FormatString("{0} used Agent KICK on {1} in {2}", Sender.Nick, Nick, channel)
+    If basMain.Config.AbuseTeamPrivacy = 2 Then basFunctions.NotifyAllUsersWithFlags AccFlagMaster, FormatString("{0} used Agent KICK on {1} in {2}", Sender.Nick, Nick, channel)
 End Sub
 
 Private Sub UnIdentify(Sender As User, Nick As String)
@@ -240,6 +262,8 @@ Private Sub UnIdentify(Sender As User, Nick As String)
     TargetIndex.IdentifiedToNick = ""
     TargetIndex.Access = ""
     TargetIndex.AbuseTeam = False
+    TargetIndex.ForceUserModes "-r"
+    SendMessage Service(SVSINDEX_AGENT).Nick, Nick, "You have been unidentified."
     Call basFunctions.SendMessage(basMain.Service(SVSINDEX_AGENT).Nick, Sender.Nick, Replace(Replies.AgentUserUnidentified, "%n", Nick))
 End Sub
 
@@ -268,26 +292,27 @@ Private Sub DeOper(Sender As User, Nick As String)
         'that all the modes would be removed. Unless you have a bahamut IRCd
         'to test this with, I'm inclined to agree with removing all of them.
         'Though why we check, I don't know :) .
-        Call basFunctions.SendData(":" & basMain.Service(SVSINDEX_AGENT).Nick & " SVSMODE " & Nick & " -OoCAaN")
+        'Call basFunctions.SendData(":" & basMain.Service(SVSINDEX_AGENT).Nick & " SVSMODE " & Nick & " -OoCAaN")
         'And why two seperate SVSMODEs? :P
         'Call basFunctions.SendData(":" & basMain.Service(SVSINDEX_AGENT).Nick & " SVSMODE " & Nick & " -O")
         'Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "o", "")
-        TargetIndex.SetUserModes "-OoCAaN"
+        'TargetIndex.SetUserModes "-OoCAaN"
+        TargetIndex.ForceUserModes "-OoCAaN", Service(SVSINDEX_AGENT).Nick
     End If
     Call basFunctions.SendMessage(basMain.Service(SVSINDEX_AGENT).Nick, basMain.Users(Sender).Nick, Replace(Replies.AgentUserDeOpered, "%n", Nick))
 End Sub
 
-Private Sub FJoin(Sender As User, Nick As String, Channel As String)
+Private Sub FJoin(Sender As User, Nick As String, channel As String)
     'Invite then use SVSJOIN since we are forcing them.
-    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, Sender.Nick & " AGENT FJOINed " & Nick & " to " & Channel)
-    basFunctions.SendData ":" + basMain.Service(SVSINDEX_AGENT).Nick + " INVITE " + Nick + " " + Channel
-    Call basFunctions.SendData("SVSJOIN " & Nick & " " & Channel)
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, Sender.Nick & " AGENT FJOINed " & Nick & " to " & channel)
+    basFunctions.SendData ":" + basMain.Service(SVSINDEX_AGENT).Nick + " INVITE " + Nick + " " + channel
+    Call basFunctions.SendData("SVSJOIN " & Nick & " " & channel)
 End Sub
 
-Private Sub FPart(Sender As User, Nick As String, Channel As String)
+Private Sub FPart(Sender As User, Nick As String, channel As String)
     'Use SVSPART since we are forcing them.
-    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, Sender.Nick & " AGENT FPARTed " & Nick & " from " & Channel)
-    Call basFunctions.SendData("SVSPART " & Nick & " " & Channel)
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, Sender.Nick & " AGENT FPARTed " & Nick & " from " & channel)
+    Call basFunctions.SendData("SVSPART " & Nick & " " & channel)
 End Sub
 
 Private Sub Deny(Sender As User, sCommand As String, Optional sParameter As String)
@@ -335,23 +360,23 @@ Private Sub Deny(Sender As User, sCommand As String, Optional sParameter As Stri
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
+Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -396,3 +421,6 @@ Public Sub HandleTick(ByVal Interval As Single)
 
 End Sub
 
+Public Sub HandleEvent(ByVal Source As String, ByVal EventName As String, Parameters() As Variant)
+
+End Sub

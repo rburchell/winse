@@ -26,6 +26,11 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 22/09/2004 - aquanight
+  -[CS] [Add] Added some MLOCK enforcement. Though right now the MLOCK is either +ntr if
+              registered, or -r if not. Also implemented a floating +l system.
+  -[AL] [Add] Added a rudimentary "Custom event" system and callbacks. This will allow,
+              for example, NickServ to notify other services of a successful IDENTIFY.
  12/09/2004 - aquanight
   -[DB] [Fix] Unw00ted OpenDB. Why the HECK did you want to hardcode the MDB connect string?
               It works when I use the full provider string in the provided config option!

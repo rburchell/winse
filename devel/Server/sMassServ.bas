@@ -110,49 +110,49 @@ Private Sub Version(ByVal Sender As User)
     Call basFunctions.SendMessage(basMain.Service(SVSINDEX_MASSSERV).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(SVSINDEX_MASSSERV).Nick & "[" & sMassServ.ModVersion & "]")
 End Sub
 
-Private Sub sJoin(ByVal Sender As User, ByVal Channel As String)
-    Call basFunctions.JoinServicesToChannel(Sender, Channel)
+Private Sub sJoin(ByVal Sender As User, ByVal channel As String)
+    Call basFunctions.JoinServicesToChannel(Sender, channel)
 End Sub
 
-Private Sub sPart(ByVal Sender As User, ByVal Channel As String)
-    Call basFunctions.PartServicesFromChannel(Sender, Channel)
+Private Sub sPart(ByVal Sender As User, ByVal channel As String)
+    Call basFunctions.PartServicesFromChannel(Sender, channel)
 End Sub
 
-Private Sub OperJoin(ByVal Sender As User, ByVal Channel As String)
+Private Sub OperJoin(ByVal Sender As User, ByVal channel As String)
     Dim l As Integer
     For l = 1 To Users.Count
         If Not Users(l).Nick = "" Then
             If InStr(Users(l).Modes, "o") Then
-                Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & Users(l).Nick & " " & Channel)
-                Call basFunctions.SendData("SVSJOIN " & Users(l).Nick & " " & Channel)
+                Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & Users(l).Nick & " " & channel)
+                Call basFunctions.SendData("SVSJOIN " & Users(l).Nick & " " & channel)
             End If
         End If
     Next l
 End Sub
 
-Private Sub OperInvite(ByVal Sender As User, ByVal Channel As String)
+Private Sub OperInvite(ByVal Sender As User, ByVal channel As String)
     Dim l As Integer
     For l = 1 To Users.Count
         If Not Users(l).Nick = "" Then
             If InStr(Users(l).Modes, "o") Then
-                Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+                Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & Users(l).Nick & " " & channel)
             End If
         End If
     Next l
 End Sub
 
-Private Sub AllInvite(ByVal Sender As User, ByVal Channel As String)
+Private Sub AllInvite(ByVal Sender As User, ByVal channel As String)
     Dim l As Integer
     For l = 1 To Users.Count
         If Not Users(l).Nick = "" Then
-            Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+            Call basFunctions.SendData(":" & Service(SVSINDEX_MASSSERV).Nick & " INVITE " & Users(l).Nick & " " & channel)
         End If
     Next l
 End Sub
 
 Private Sub MMode(ByVal Sender As User, ByVal Parameters As String)
     On Local Error GoTo Fail
-    Dim Chan As Channel, Mode As String
+    Dim Chan As channel, Mode As String
     Set Chan = Channels(Split(Parameters, " ")(0))
     Mode = Split(Parameters, " ")(1)
     Dim l As Integer, i As Integer
@@ -186,7 +186,7 @@ End Sub
 
 Private Sub MKick(ByVal Sender As User, ByVal Parameters As String)
     On Local Error GoTo Fail
-    Dim Chan As Channel, Reason As String
+    Dim Chan As channel, Reason As String
     Set Chan = Channels(Split(Parameters, " ", 2)(0))
     Reason = Split(Parameters, " ", 2)(1)
     Dim l As Integer
@@ -200,7 +200,7 @@ End Sub
 
 Private Sub MInvite(ByVal Sender As User, ByVal Parameters As String)
     On Local Error GoTo Fail
-    Dim SourceChan As Channel, DestChan As String
+    Dim SourceChan As channel, DestChan As String
     Set SourceChan = Channels(Split(Parameters, " ")(0))
     DestChan = Split(Parameters, " ")(1)
     Dim l As Integer
@@ -232,36 +232,36 @@ End Sub
 
 Private Sub ChanKill(ByVal Sender As User, ByVal Parameters As String)
     On Local Error GoTo Fail
-    Dim Chan As Channel, Message As String
+    Dim Chan As channel, Message As String
     Set Chan = Channels(Split(Parameters, " ", 2)(0))
     Message = Split(Parameters, " ", 2)(1)
     Dim l As Integer
-    For l = 0 To Chan.Members.Count
+    For l = 1 To Chan.Members.Count
         Users(l).KillUser basMain.Service(SVSINDEX_OPERSERV).Nick & "!" & Sender.Nick & " (" & Message & ")", ""
     Next l
     Exit Sub
 Fail:
-    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ CHANKILL! " & Err.Number & ": " & Err.Description
+    basFunctions.LogEventWithMessage LogTypeError, "Error in MassServ CHANKILL! " & Err.Number & ": " & Err.Description
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
+Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -277,3 +277,6 @@ Public Sub HandleTick(ByVal Interval As Single)
 
 End Sub
 
+Public Sub HandleEvent(ByVal Source As String, ByVal EventName As String, Parameters() As Variant)
+
+End Sub

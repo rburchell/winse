@@ -65,23 +65,23 @@ Public Sub DebugservHandler(ByVal Cmd As String, ByVal Sender As User)
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+Public Sub HandlePrefix(ByVal Source As String, ByVal ChanID As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Source As String, ByVal ChanID As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Source As String, ByVal ChanID As channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Source As String, ByVal ChanID As channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Source As String, ByVal ChanID As channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -139,7 +139,7 @@ Private Sub DumpUser(ByVal DumpTo As String, ByVal ID As User)
     DumpLine DumpTo, "End of Dump."
 End Sub
 
-Private Sub DumpChannel(ByVal DumpTo As String, ByVal Chan As Channel)
+Private Sub DumpChannel(ByVal DumpTo As String, ByVal Chan As channel)
     If Chan Is Nothing Then
         SendMessage Service(SVSINDEX_DEBUGSERV).Nick, DumpTo, "No such channel."
         Exit Sub
@@ -182,3 +182,6 @@ Public Sub HandleTick(ByVal Interval As Single)
 
 End Sub
 
+Public Sub HandleEvent(ByVal Source As String, ByVal EventName As String, Parameters() As Variant)
+
+End Sub

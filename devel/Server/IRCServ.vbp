@@ -30,6 +30,7 @@ Class=ChannelMember; ChannelMember.cls
 Class=Members; Members.cls
 Class=Memo; Memo.cls
 Class=Memos; Memos.cls
+Module=basEvents; basEvents.bas
 IconForm="frmServer"
 Startup="Sub Main"
 HelpFile=""

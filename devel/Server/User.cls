@@ -128,6 +128,31 @@ Public Sub CheckFloodLevel()
     Requests = Requests + 1
 End Sub
 
+Public Sub ForceUserModes(ByVal Modes As String, Optional ByVal Sender As String = "")
+    SetUserModes Modes
+    SendData FormatString(":{0} SVS{1}MODE {2} {3}", IIf(Sender <> "", Sender, basMain.Config.ServerName), IIf(basMain.Config.ServerType = "Unreal", "2", ""), Nick, Modes)
+End Sub
+
+Public Sub ForceJoin(ByVal Channel As Channel, Optional ByVal Sender As String = "", Optional ByVal Override As Boolean = False)
+    'We can leave it the IRCd to send us a JOIN for this.
+    If Override Then
+        'I don't think servers can invite, so "borrow" Channy.
+        'We could SAJOIN, but I REFUSE TO USE SA* COMMANDS IN SERVICES.
+        SendData FormatString(":{0} INVITE {1} {2}", IIf(Sender <> "", Sender, Service(SVSINDEX_CHANSERV).Nick), Nick, Channel.Name)
+    End If
+    SendData FormatString(":{0} SVSJOIN {1} {2}", IIf(Sender <> "", Sender, basMain.Config.ServerName), Nick, Channel.Name)
+End Sub
+
+Public Sub ForcePart(ByVal Channel As Channel)
+    SendData FormatString(":{0} SVSPART {1} {2}", basMain.Config.ServerName, Nick, Channel.Name)
+End Sub
+
+Public Sub ForceChangeNick(ByVal NewNick As String)
+    Dim TimeStamp As Long
+    TimeStamp = basUnixTime.GetTime
+    Call basFunctions.SendData(FormatString("SVSNICK {0} {1} {2}", Nick, NewNick, TimeStamp))
+End Sub
+
 Public Sub SetUserModes(ByVal Modes As String)
     Dim l As Integer
     Dim ModeChar As String * 1

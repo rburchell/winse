@@ -373,7 +373,7 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckJOINInsufficientParameters)
         Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " JOIN :Not enough parameters")
     End If
-    Dim chns As Variant, i As Integer, v As Variant, u As User, c As Channel, cm As ChannelMember
+    Dim chns As Variant, i As Integer, v As Variant, u As User, c As channel, cm As ChannelMember
     Set u = Users(sNick)
     chns = Split(Args(0), ",")
     Dim sChan As Variant
@@ -387,7 +387,7 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         Else
             If Channels.Exists(sChan) = False Then
                 'NEW CHANNEL!
-                Set c = New Channel
+                Set c = New channel
                 With c
                     .Name = sChan
                     Set cm = New ChannelMember
@@ -406,6 +406,8 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
                 End With
                 Channels.Add c
                 u.Channels.Add c
+                RaiseCustomEvent c.Name, basEvents.ChanCreate, c, u
+                RaiseCustomEvent Channels(sChan).Name, basEvents.ChanJoin, Channels(sChan), u
             Else
                 With Channels(sChan)
                     If .Members.Exists(u.Nick) Then Exit Sub 'Already on the channel.
@@ -416,6 +418,7 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
                     .Members.Add cm
                     On Error GoTo 0
                 End With
+                RaiseCustomEvent Channels(sChan).Name, basEvents.ChanJoin, Channels(sChan), u
             End If
         End If
     Next sChan
@@ -438,6 +441,7 @@ Public Sub CmdPart(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     chns = Split(Args(0), ",")
     Dim sChan As Variant
     For Each sChan In chns
+        RaiseCustomEvent Channels(sChan).Name, basEvents.ChanPart, Channels(sChan), u
         u.Channels.Remove sChan
         With Channels(sChan)
             On Error Resume Next
@@ -445,6 +449,7 @@ Public Sub CmdPart(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             If .Members.Count = 0 Then
                 'Invalidate the channel, as it is now
                 'empty.
+                RaiseCutomEvent Channels(sChan).Name, basEvents.ChanDestroy, Channels(sChan), u
                 Channels.Remove sChan
             End If
         End With
