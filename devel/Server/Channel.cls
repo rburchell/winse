@@ -18,6 +18,7 @@ Public Topic As String
 Public TopicSetBy As String
 Public TopicSetOn As Long                   'Not sure if this is really needed... --w00t
 Public Modes As String
+Public TS As Long                           'We should track this for the sake of being marginally TS capable.
 Private mMembers As Members
 'Now for the extended modes that require parameters (+flL etc)
 Private mBans As Collection

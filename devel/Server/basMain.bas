@@ -111,6 +111,8 @@ Public Const TotalServices = 12
 'WAY*10^7 faster to loop through stuff... *sigh*
 Public Channels As New Channels
 Public Users As New Users
+'Yay, new server tracking!
+Public Servers As New Servers
 Public Service(TotalServices - 1) As Service
 'Because I'm SO TIRED OF GUESSING THE SERVICE INDICES.
 Public Const SVSINDEX_CHANSERV = 0

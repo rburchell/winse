@@ -45,6 +45,9 @@ Public Const UserConnect As String = "UserConnect"
 'Client changing nick
 'Parameters: User (User), OldNick (String), NewNick (String)
 Public Const UserNickChange As String = "UserRename"
+'Client quitting
+'Parameters: User (User), Reason (String)
+Public Const UserQuit As String = "UserQuit"
 
 'NickServ/AuthServ Events.
 'User IDENTIFY. Parameters: User (User), Nick/Account Identified (String).

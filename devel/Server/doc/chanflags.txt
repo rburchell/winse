@@ -117,10 +117,10 @@ c = CLEAR access. Co-operates with these flags:
     u = Also BANS allowed
     E = EXEMPTS allowed (clear the +e list)
     I = INVITES allowed (clear the +I list, if supported)
-    O = OPS allowed (-qaoh everyone)
+    O = OPS allowed (-qao everyone)
+    H = HALFOPS allowed (-h everyone)
     V = VOICES allowed (-v everyone)
     m = MODES allowed (clear all Class B, C, and D modes except MLOCKd modes).
-    M = MODES allowed (clear all Class B, C, and D modes including MLOCKd modes).
     Required to set: f
 
 t = Topic Operator. May use ChanServ TOPIC if +topiclock.

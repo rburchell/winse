@@ -13,31 +13,33 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
-Public Nick As String                 'Nickname
-Public EMail As String                'User email. NOT CHECKED FOR VALIDITY!!
-Public Password As String             'User password.
-Public MemoID As Integer              'ID associated with memos in the memoserv database.
-Public Modes As String                'Usermodes
+Public Nick As String                   'Nickname
+Public EMail As String                  'User email. NOT CHECKED FOR VALIDITY!!
+Public Password As String               'User password.
+Public MemoID As Integer                'ID associated with memos in the memoserv database.
+Public Modes As String                  'Usermodes
 Private mMemos As Memos
-Public HideEMail As Boolean           'Is email visible?
-Public Access As String               'Services access.
-Public Requests As Byte               'Flood level. Goes up by 1 on each request.
-                                      'When it hits 5, a warning. 10, a kill. 20, a gline (unless >= services admin)
-                                      'Flood level goes down by 1 every 2 seconds??
-Public MsgStyle As Boolean            'True=notice false=privmsg
-Public AbuseTeam As Boolean           'Abuse Team members can use services commands that otherwise, only the services master can use.
-Public IdentifiedToNick As String     'Holds nick that user has identified to. Blank if not identified.
-Private mChannels As Channels         'Channels this user is on.
+Public HideEmail As Boolean             'Is email visible?
+Public Access As String                 'Services access.
+Public Requests As Byte                 'Flood level. Goes up by 1 on each request.
+                                        'When it hits 5, a warning. 10, a kill. 20, a gline (unless >= services admin)
+                                        'Flood level goes down by 1 every 2 seconds??
+Public MsgStyle As Boolean              'True=notice false=privmsg
+Public AbuseTeam As Boolean             'Abuse Team members can use services commands that otherwise, only the services master can use.
+Public IdentifiedToNick As String       'Holds nick that user has identified to. Blank if not identified.
+Private mChannels As Channels           'Channels this user is on.
 'Some extra stuff we might get from things like
 'Unreal IRCd :P .
-Public SignOn As Long                 'Time Stamp of the user.
-Public SvsStamp As Long               '"Service stamp"
-Public UserName As String             'Ident (in USER or Identd reply).
-Public HostName As String             'User's real hostname.
-Public RealName As String             '"Real Name" of this user
-Public VirtHost As String             'Virtual Host, from stuff like GETHOST or NICKv2
-Public Server As String               'Server this user is on.
-Public BadIdentifies As Long          'Number of bad IDENTIFYs. When this hit configured limit, we KILL.
+Public TS As Long                       'Time Stamp of the user.
+Public CID As String                    'Client ID. Coming from Unreal this is just the Service Stamp.
+Public UserName As String               'Ident (in USER or Identd reply).
+Public HostName As String               'User's real hostname.
+Public RealName As String               '"Real Name" of this user
+Public VirtHost As String               'Virtual Host, from stuff like GETHOST or NICKv2
+Public Server As String                 'Server this user is on.
+Public BadIdentifies As Long            'Number of bad IDENTIFYs. When this hit configured limit, we KILL.
+Public BadIdentTimer As Single          'Number of seconds until the user is obsolved of his mistakes.
+Public NickKillTimer As Single          'Number of seconds until the user is smote by the mighty NickServ.
 'Anything else services need to store?
 Private mCustom As Collection
 

@@ -176,6 +176,10 @@ Public Sub LoadData(ByVal conn As Connection)
     Dim mDB As Collection
     Set mDB = ReadTableIntoCollection(conn, "ChanServ")
     Dim idx As Long, subcol As Collection
+    If mDB.Count <= 0 Then
+        Erase DB()
+        Exit Sub
+    End If
     ReDim DB(0 To mDB.Count - 1)
     For idx = 1 To mDB.Count
         Set subcol = mDB(idx)
@@ -369,6 +373,10 @@ Public Sub SaveData(ByVal conn As Connection)
     Fields(50) = "kick_repeat_count"
     Fields(51) = "kick_bw_list"
     Dim vals(0 To 51) As Variant, v As Variant
+    On Local Error Resume Next
+    vals(0) = UBound(DB)
+    If Err = 9 Then Exit Sub
+    On Error GoTo 0
     With rs
         Dim idx As Long, idx2 As Long
         For idx = 0 To UBound(DB)
@@ -713,6 +721,15 @@ Public Sub ChanservHandler(ByVal Cmd As String, ByVal Sender As User)
                 LockChange Sender, Channels(Parameters(1)), False, Parameters(2)
             Else
                 LockChange Sender, Channels(Parameters(1)), False, Parameters(2), Parameters(3)
+            End If
+        Case "CLEAR"
+            If UBound(Parameters) < 2 Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, SenderNick, Replies.InsufficientParameters)
+            ElseIf Not Channels.Exists(Parameters(1)) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, SenderNick, Replace(Replies.ChanServChanEmpty, "%c", Parameters(1)))
+                Call basFunctions.SendNumeric(SenderNick, 403, Parameters(1) & " :No such channel")
+            Else
+                Clear Sender, Channels(Parameters(1)), Parameters(2)
             End If
         Case "DROP"
             'DROP <channel> [<confirmation>]
@@ -2150,6 +2167,77 @@ Public Sub LockChange(ByVal Source As User, ByVal Channel As Channel, ByVal Lock
 
 End Sub
 
+Public Sub Clear(ByVal Source As User, ByVal Channel As Channel, ByVal What As String)
+    'Not doing access level checks. Give CLEAR access with care.
+    If Not HasAnyFlag(Channel.Name, Source.IdentifiedToNick, CHANSERV_CLEAR, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+        SendMessage Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions
+        Exit Sub
+    End If
+    Select Case What
+        Case "USERS"
+            If Not HasAnyFlag(Channel.Name, Source.IdentifiedToNick, CHANSERV_CANKICK, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                SendMessage Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions
+                Exit Sub
+            End If
+            'Don't want people rejoining too quickly.
+            Channel.SetChannelModes Service(SVSINDEX_CHANSERV).Nick, "+iKlb 1 *!*@*"
+            While Channel.Members.Count > 0
+                Channel.KickUser Service(SVSINDEX_CHANSERV).Nick, Channel.Members(0).Member.Nick, "CLEAR USERS from " + Source.Nick
+            Wend
+            Channel.SetChannelModes Service(SVSINDEX_CHANSERV).Nick, "-iKlb *!*@*"
+            TermChannel Channel
+        Case "BANS"
+            If Not HasAnyFlag(Channel.Name, Source.IdentifiedToNick, CHANSERV_CLEAR, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                SendMessage Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions
+                Exit Sub
+            End If
+            Notice Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, "Clearing Bans by request of " + Source.Nick
+            SendData FormatString(":{0} SVSMODE {1} -b", Service(SVSINDEX_CHANSERV).Nick, Channel.Name)
+        Case "EXEMPTS"
+            If Not HasAnyFlag(Channel.Name, Source.IdentifiedToNick, CHANSERV_CLEAR, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                SendMessage Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions
+                Exit Sub
+            End If
+            Notice Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, "Clearing Exempts by request of " + Source.Nick
+            SendData FormatString(":{0} SVSMODE {1} -e", Service(SVSINDEX_CHANSERV).Nick, Channel.Name)
+        Case "INVITES"
+            If Not HasAnyFlag(Channel.Name, Source.IdentifiedToNick, CHANSERV_CLEAR, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                SendMessage Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions
+                Exit Sub
+            End If
+            Notice Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, "Clearing Invites by request of " + Source.Nick
+            SendData FormatString(":{0} SVSMODE {1} -I", Service(SVSINDEX_CHANSERV).Nick, Channel.Name)
+        Case "OPS"
+            If Not HasAnyFlag(Channel.Name, Source.IdentifiedToNick, CHANSERV_CLEAR, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                SendMessage Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions
+                Exit Sub
+            End If
+            Notice Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, "Clearing Ops by request of " + Source.Nick
+            SendData FormatString(":{0} SVSMODE {1} -qao", Service(SVSINDEX_CHANSERV).Nick, Channel.Name)
+        Case "HALFOPS"
+            If Not HasAnyFlag(Channel.Name, Source.IdentifiedToNick, CHANSERV_CLEAR, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                SendMessage Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions
+                Exit Sub
+            End If
+            Notice Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, "Clearing HalfOps by request of " + Source.Nick
+            SendData FormatString(":{0} SVSMODE {1} -h", Service(SVSINDEX_CHANSERV).Nick, Channel.Name)
+        Case "VOICES"
+            If Not HasAnyFlag(Channel.Name, Source.IdentifiedToNick, CHANSERV_CLEAR, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                SendMessage Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions
+                Exit Sub
+            End If
+            Notice Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, "Clearing Voices by request of " + Source.Nick
+            SendData FormatString(":{0} SVSMODE {1} -b", Service(SVSINDEX_CHANSERV).Nick, Channel.Name)
+        Case "MODES"
+            If Not HasAnyFlag(Channel.Name, Source.IdentifiedToNick, CHANSERV_CLEAR, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                SendMessage Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions
+                Exit Sub
+            End If
+            Notice Service(SVSINDEX_CHANSERV).Nick, "@" + Channel.Name, "Clearing Binary Modes by request of " + Source.Nick
+            BotMode Channel.Name, False, "-l" + Split(basMain.ChannelModes2, ",")(3) + "+r"
+    End Select
+End Sub
+
 Public Sub Drop(ByVal Source As User, ByVal Channel As Channel, Optional ByVal ConfirmationCode As String)
     'Dropping the channel may only be done by the founder :) .
     Dim chptr As Long, cptr As Long
@@ -3074,6 +3162,13 @@ End Function
 
 Public Function DBIndexOf(ByVal Name As String) As Long
     Dim idx As Long
+    On Local Error Resume Next
+    idx = UBound(DB)
+    If Err = 0 Then
+        DBIndexOf = -1
+        Exit Function
+    End If
+    On Error GoTo 0
     For idx = 0 To UBound(DB)
         If DB(idx).Name = Name Then
             DBIndexOf = idx

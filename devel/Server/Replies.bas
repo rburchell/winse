@@ -90,6 +90,8 @@ Public Const SanityCheckIRCdSentQuitForServer = "HEY YOU MR. IRCD! You send SQUI
 Public Const SanityCheckNickChangeCollision = "WTF? Nick Change Collision, are we desynced?: " 'stuff goes after ": "
 Public Const SanityCheckServicesNickInUse = "Nick collision with services nick! killing... "
 Public Const SanityCheckDBIndexInvalid = "EEEEEK! %f called with invalid index %i (%n)"
+Public Const SanityCheckUnknownServer = "Unknown server! Killing new user and squitting that server."
+Public Const SanityCheckServerCollision = "Server collision on %s! Squitting..."
 
 'KILL Reasons
 Public Const KillReasonKilledService = "Do *NOT* /kill services!"

@@ -116,9 +116,19 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, "Collision: " + Args(0) + "!" + Args(2) + "@" + Args(3))
             'Overwrite the remaining fields.
         End If
+        'See if it's behind a valid server.
+        If Not basMain.Servers.Exists(Args(5)) Then
+            'Invalid Server!!!
+            basFunctions.PutQuick ":" + basMain.Config.ServerName + " KILL " + Args(0) + " :" + basMain.Config.ServerName + " (Unknown Server (" + Args(5) + "(?) <- " + basMain.Config.UplinkName + "))"
+            'Delete the unknown server.
+            basFunctions.PutQuick ":" + basMain.Config.ServerName + " SQUIT " + Args(5) + " :" + Args(5) + "(?) <- " + basMain.Config.UplinkName
+            'Send out a warning...
+            Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckServicesNickInUse + Args(0) + "!" + Args(2) + "@" + Args(3))
+            Exit Sub
+        End If
         With u
             .Nick = Args(0)
-            .SignOn = Args(2)
+            .TS = Args(2)
             .UserName = Args(3)
             .HostName = Args(4)
             .Server = Args(5)
@@ -134,7 +144,7 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             .MsgStyle = Config.DefaultMessageType
             .Password = ""
             .Requests = 0
-            .SvsStamp = 0
+            .CID = ""
             .VirtHost = ""
         End With
         basMain.Users.Add u
@@ -624,7 +634,41 @@ Public Sub CmdPass(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
 End Sub
 
 Public Sub CmdServer(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
-    'stub
+    'Add a Server.
+    'Format is:
+    ':introducing.server(or.self) SERVER server.name hops :description
+    Dim s As Server
+    Set s = New Server
+    s.ServerName = Args(0)
+    s.Hops = Args(1)
+    s.Description = Args(2)
+    s.OurServer = False
+    If Servers.Exists(Args(0)) Then
+        'AAAAAH! What can we do?
+        basFunctions.PutQuick ":" + basMain.Config.ServerName + " SQUIT " + Args(5) + " :Server Collision - " + Args(0) + " <- " + basMain.Config.UplinkName
+        If Not Servers(Args(0)).OurServer Then
+            'We just squitted an existing normal server as well probably, so we have
+            'to remove it.
+            Servers(Args(0)).Dispose
+        Else
+            'Likely the only reason that message even got to us was because the net
+            'doesn't know about this server, so re-server it.
+            Call basFunctions.PutQuick("SERVER " & Servers(Args(0)).ServerName & " 2 :" & " " & Servers(Args(0)).Description & vbCrLf)
+        End If
+    Else
+        'Otherwise, we're good. Let this server in.
+        Servers.Add s
+    End If
+End Sub
+
+Public Sub CmdSQuit(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
+    'Server quitting.
+    'Format is:
+    ':sender SQUIT server.name :reason
+    'Whether it's theirs or ours (JUPEs are not retained, so they are removed by SQUIT)
+    'we remove it.
+    If Servers.Exists(Args(0)) Then Servers(Args(0)).Dispose
+    'We should just ignore an SQUIT for an invalid server.
 End Sub
 
 Public Sub CmdNetinfo(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)

@@ -55,14 +55,14 @@ Public Function IsChanRegistered(ByVal ChanName As String) As Boolean
     Dim Password As String
     'If we have a password, we must be registered ;)
     On Error Resume Next
-    'Password = sChanServ.DB(ChanName)("Password")
+    Password = sChanServ.DB(sChanServ.DBIndexOf(ChanName)).Password
     IsChanRegistered = (Password <> "")
 End Function
 
 Public Function IsNickRegistered(ByVal NickName As String)
     Dim Password As String
     'If we have a password, we must be registered ;)
-    Password = basFileIO.GetInitEntry(App.Path & "\databases\users.db", UCase(NickName), "Password")
+    Password = sNickServ.DB(sNickServ.DBIndexOf(NickName)).Password
     IsNickRegistered = (Password <> "")
 End Function
 
@@ -292,7 +292,7 @@ Public Sub DelServer(ByVal Name As String, Optional ByVal Message As String = ""
 End Sub
 
 Public Sub AddServer(ByVal Name As String, Optional ByVal Message As String = "Winse JUPE")
-    Call basFunctions.SendData("SERVER " & Name & " 1 :" & " " & Message & vbCrLf)
+    Call basFunctions.SendData("SERVER " & Name & " 2 :" & " " & Message & vbCrLf)
 End Sub
 
 Public Sub NotifyAllUsersWithServicesAccess(ByVal Message As String)
@@ -681,4 +681,185 @@ Public Function CollToArray(ByVal col As Collection, Optional ByRef Keys As Vari
         End If
     Else: Error 13
     End If
+End Function
+
+'Source for below 3 functions:
+'http://www.motobit.com/tips/detpg_Base64.htm and http://www.motobit.com/tips/detpg_Base64Encode.htm
+'Modified to take advantage of VB6 stuff that VBS doesn't have :P .
+
+Public Function Base64Encode(ByVal inData As String) As String
+    'rfc1521
+    '2001 Antonin Foller, Motobit Software, http://Motobit.cz
+    Const Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    Dim sOut As String
+    Dim i As Long
+  
+    'For each group of 3 bytes
+    For i = 1 To Len(inData) Step 3
+        Dim nGroup As Long
+        Dim pOut As String
+        Dim sGroup As String
+    
+        'Create one long from this 3 bytes.
+        nGroup = &H10000 * Asc(Mid(inData, i, 1)) + &H100 * MyASC(Mid(inData, i + 1, 1)) + MyASC(Mid(inData, i + 2, 1))
+    
+        'Oct splits the long To 8 groups with 3 bits
+        sGroup = Oct$(nGroup)
+    
+        'Add leading zeros
+        sGroup = String$(8 - Len(sGroup), "0") & sGroup
+    
+        'Convert To base64
+        pOut = Mid$(Base64, CLng("&o" & Mid(sGroup, 1, 2)) + 1, 1) + Mid$(Base64, CLng("&o" & Mid$(sGroup, 3, 2)) + 1, 1) + Mid$(Base64, CLng("&o" & Mid$(sGroup, 5, 2)) + 1, 1) + Mid$(Base64, CLng("&o" & Mid(sGroup, 7, 2)) + 1, 1)
+    
+        'Add the part To OutPut string
+        sOut = sOut + pOut
+    
+        'Add a new line For Each 76 chars In dest (76*3/4 = 57)
+        'If (I + 2) Mod 57 = 0 Then sOut = sOut + vbCrLf
+    Next
+    Select Case Len(inData) Mod 3
+        Case 1: '8 bit final
+            sOut = Left$(sOut, Len(sOut) - 2) + "=="
+        Case 2: '16 bit final
+            sOut = Left$(sOut, Len(sOut) - 1) + "="
+    End Select
+    Base64Encode = sOut
+End Function
+
+Private Function MyASC(ByVal OneChar As String) As Integer
+    If OneChar = "" Then MyASC = 0 Else MyASC = Asc(OneChar)
+End Function
+
+' Decodes a base-64 encoded string (BSTR type).
+' 1999 - 2004 Antonin Foller, http://www.motobit.com
+' 1.01 - solves problem with Access And 'Compare Database' (InStr)
+Function Base64Decode(ByVal base64String As String) As String
+    'rfc1521
+    '1999 Antonin Foller, Motobit Software, http://Motobit.cz
+    Const Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    Dim dataLength As Long, sOut As String, groupBegin As Long
+  
+    'remove white spaces, If any
+    base64String = Replace$(base64String, vbCrLf, "")
+    base64String = Replace$(base64String, vbTab, "")
+    base64String = Replace$(base64String, " ", "")
+  
+    'The source must consists from groups with Len of 4 chars
+    dataLength = Len(base64String)
+    If dataLength Mod 4 <> 0 Then
+        Err.Raise 1, "Base64Decode", "Bad Base64 string."
+        Exit Function
+    End If
+
+  
+    ' Now decode each group:
+    For groupBegin = 1 To dataLength Step 4
+        Dim numDataBytes As Long, CharCounter As Long, thisChar As String * 1, thisData As Long, nGroup As Long, pOut As String
+        ' Each data group encodes up To 3 actual bytes.
+        numDataBytes = 3
+        nGroup = 0
+
+        For CharCounter = 0 To 3
+            ' Convert each character into 6 bits of data, And add it To
+            ' an integer For temporary storage.  If a character is a '=', there
+            ' is one fewer data byte.  (There can only be a maximum of 2 '=' In
+            ' the whole string.)
+
+            thisChar = Mid$(base64String, groupBegin + CharCounter, 1)
+
+            If thisChar = "=" Then
+                numDataBytes = numDataBytes - 1
+                thisData = 0
+            Else
+                thisData = InStr(1, Base64, thisChar, vbBinaryCompare) - 1
+            End If
+            If thisData = -1 Then
+                Err.Raise 2, "Base64Decode", "Bad character In Base64 string."
+                Exit Function
+            End If
+
+            nGroup = 64 * nGroup + thisData
+        Next
+        
+        Dim sGroup As String
+    
+        'Hex splits the long To 6 groups with 4 bits
+        sGroup = Hex$(nGroup)
+    
+        'Add leading zeros
+        sGroup = String$(6 - Len(sGroup), "0") & sGroup
+    
+        'Convert the 3 byte hex integer (6 chars) To 3 characters
+        pOut = Chr$(CByte("&H" & Mid$(sGroup, 1, 2))) + Chr$(CByte("&H" & Mid$(sGroup, 3, 2))) + Chr$(CByte("&H" & Mid$(sGroup, 5, 2)))
+    
+        'add numDataBytes characters To out string
+        sOut = sOut & Left$(pOut, numDataBytes)
+    Next
+
+    Base64Decode = sOut
+End Function
+
+'And these functions are translated from UnrealIRCd src/aln.c
+Public Function IntToB64(ByVal val As Long) As String
+    Dim map() As Variant
+    map = Array("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", _
+        "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", _
+        "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", _
+        "w", "x", "y", "z", "{", "}")
+    Static b64buf As String * 7
+    Dim i As Long
+    i = 8
+    'Unreal does some weird check to see if val is over 2^31-1, but we don't need it since Long can't do that.
+    'Unreal's check just calls abort() if it is over, which we shouldn't do.
+    Do
+        i = i - 1
+        Mid(b64buf, i, 1) = map(val And 63)
+        'Now we need to do a 6-bit right shift. Unreal's code uses a signed long, and by C's standard,
+        '>> on a signed integer performs an arithmetic shift. This will play havoc if val is < 0 but that
+        'shouldn't happen anyway.
+        val = val \ (2 ^ 6)
+    Loop While val
+    IntToB64 = Mid(b64buf, i)
+End Function
+
+Public Function B64ToInt(ByVal b64 As String) As Long
+    Dim map() As Variant
+    map = Array(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, _
+    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, -1, -1, -1, -1, -1, 36, 37, 38, 39, 40, 41, _
+    42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, -1, 63, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
+    Dim idx As Long
+    Dim v As Long
+    idx = 1
+    v = map(Asc(Mid(b64, idx, 1)))
+    idx = idx + 1
+    If idx > Len(b64) Then
+        B64ToInt = 0
+        Exit Function
+    End If
+    For idx = idx To Len(b64)
+        'Do a 6-bit left shift. Harder than a right.
+        'Mask off bits that will fall off.
+        v = v And &H3FFFFFF
+        If CDbl(v) * (2 ^ 6) > 2147483647# Then
+            v = FMod(v * (2 ^ 6), 2147483648#) + -2147483648#
+        Else
+            v = v * (2 ^ 6)
+        End If
+        v = v + map(Asc(Mid(b64, idx, 1)))
+    Next idx
+    B64ToInt = v
+End Function
+
+Public Function FMod(ByVal dividend As Double, ByVal divisor As Double) As Double
+    'Floating modulus. When the Mod operator doesn't help.
+    'Essentially, a % b == ((a / b) - iPart(a / b)) * b
+    FMod = ((dividend / divisor) - Fix(dividend / divisor)) * divisor
 End Function

@@ -26,6 +26,10 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */\
+ 28/10/2004 - aquanight
+  -[CS] [Add] Added CLEAR. :oops:
+  -[CO] [Add] Added server tracking. Server.cls and Servers.cls added to CVS.
+  -[CO] [Add] Added a base for abstracted protocols. IIRCd.cls and Unreal32.cls added to CVS.
  20/10/2004 - aquanight
   -[CS] [Add] Added enforcement of +GIVE (autovoice/halfop/etc).
   -[CS] [Add] Implemented DROP. DROP is a two stage process. First the founder uses /drop #chan,
