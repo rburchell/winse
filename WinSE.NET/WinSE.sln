@@ -11,7 +11,7 @@ Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "WinSE", "WinSE\WinSE.vbproj
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "NickServ", "..\modules\services\WinSE\NickServ\NickServ.vbproj", "{5A34DFE6-FFEC-4869-8DA9-EDD03691EE3D}"
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "NickServ", "modules\services\NickServ\NickServ.vbproj", "{5A34DFE6-FFEC-4869-8DA9-EDD03691EE3D}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
