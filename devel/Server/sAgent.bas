@@ -19,7 +19,7 @@ Option Explicit
 Public Const ModVersion = "0.0.2.4"
 Public DenyMasks As New Collection
 
-Public Sub AgentHandler(Cmd As String, Sender As Integer)
+Public Sub AgentHandler(Cmd As String, Sender As User)
     'You need not be opered, or have services access to use Agent. All you
     'need is to be on the abuse team. --w00t
     Dim Parameters() As String
@@ -31,9 +31,9 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
     Dim Spacer As Byte
     Dim Elements As Integer
     Dim i As Integer
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
 
-    If basFunctions.IsAbuseTeamMember(Sender) = False Then
+    If Sender.IsAbuseTeamMember() = False Then
         Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, Replies.ServiceRestrictedToAbuseTeam)
         Exit Sub
     End If
@@ -166,9 +166,9 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
     End Select
 End Sub
 
-Private Sub Help(Sender As Integer)
+Private Sub Help(Sender As User)
     Dim SenderNick As String
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "Agent Commands:")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, " ")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, " --Abuse Team Only--")
@@ -190,64 +190,66 @@ Private Sub Help(Sender As Integer)
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  Notice: All commands sent to Agent are logged!")
 End Sub
 
-Private Sub Version(Sender As Integer)
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, basFunctions.ReturnUserName(Sender), AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(7).Nick & "[" & sAgent.ModVersion & "]")
+Private Sub Version(Sender As User)
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(7).Nick & "[" & sAgent.ModVersion & "]")
 End Sub
 
 'damn not letting me use a keyword >:(
-Private Sub Exit_(Sender As Integer, Nick As String, Message As String)
+Private Sub Exit_(Sender As User, Nick As String, Message As String)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT EXIT " & Nick & " with message " & Message)
     basFunctions.SendData ("SVSKILL " & Nick & " :" & Message)
 End Sub
 
-Private Sub UMode(Sender As Integer, Nick As String, Modes As String)
-    Dim Target As Integer
-    Target = basFunctions.ReturnUserIndex(Nick)
+Private Sub UMode(Sender As User, Nick As String, Modes As String)
+    Dim Target As User
+    Set Target = Users(Nick)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " set modes " & Modes & " on " & Nick)
-    Call basFunctions.SetUserModes(Target, Modes)
+    Call Target.SetUserModes(Modes)
     Call basFunctions.SendData(IIf(basMain.Config.ServerType = "Unreal", "SVS2MODE ", "SVSMODE ") & Nick & " " & Modes)
 End Sub
 
-Private Sub Nick(Sender As Integer, OldNick As String, NewNick As String)
+Private Sub Nick(Sender As User, OldNick As String, NewNick As String)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT NICK " & OldNick & " " & NewNick)
     Call basFunctions.ForceChangeNick(Sender, OldNick, NewNick)
 End Sub
 
-Private Sub Kill(Sender As Integer, Nick As String, Message As String)
+Private Sub Kill(Sender As User, Nick As String, Message As String)
     Call basFunctions.LogEvent(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KILL " & Nick & " with reason " & Message)
     'Make KILL show as Quits: Nick (Ident@Host) (Killed (KillingUser (Die!)))
     ' Modified to do "Killed (Agent" if not AbuseTeamPrivacy 0
-    Call basFunctions.SendData("KILL " & Nick & " :" & basMain.Service(7).Nick & IIf(basMain.Config.AbuseTeamPrivacy = 0, "!" & basFunctions.ReturnUserName(Sender), "") & " (" & Message & ")")
+    Call basFunctions.SendData("KILL " & Nick & " :" & basMain.Service(7).Nick & IIf(basMain.Config.AbuseTeamPrivacy = 0, "!" & Sender.Nick, "") & " (" & Message & ")")
     If basMain.Config.AbuseTeamPrivacy = 1 Then basFunctions.NotifyAllUsersWithServicesAccess Users(Sender).Nick & " used Agent KILL on " & Nick
     If basMain.Config.AbuseTeamPrivacy = 2 Then basFunctions.NotifyAllUsersWithFlags AccFlagMaster, Users(Sender).Nick & " used Agent KILL on " & Nick
 End Sub
 
-Private Sub Kick(Sender As Integer, Nick As String, Channel As String, Message As String)
+Private Sub Kick(Sender As User, Nick As String, Channel As String, Message As String)
     Call basFunctions.LogEvent(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KICK " & Nick & " from " & Channel & " with reason " & Message)
-    Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KICK " & Channel & " " & Nick & " :" & Message & IIf(basMain.Config.AbuseTeamPrivacy = 0, " (" & basFunctions.ReturnUserName(Sender) & ")", ""))
+    Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KICK " & Channel & " " & Nick & " :" & Message & IIf(basMain.Config.AbuseTeamPrivacy = 0, " (" & Sender.Nick & ")", ""))
     If basMain.Config.AbuseTeamPrivacy = 1 Then basFunctions.NotifyAllUsersWithServicesAccess Users(Sender).Nick & " used Agent KICK on " & Nick & " " & Channel
     If basMain.Config.AbuseTeamPrivacy = 2 Then basFunctions.NotifyAllUsersWithFlags AccFlagMaster, Users(Sender).Nick & " used Agent KICK on " & Nick & " " & Channel
 End Sub
 
-Private Sub UnIdentify(Sender As Integer, Nick As String)
-    Dim TargetIndex As Variant
-    TargetIndex = basFunctions.ReturnUserIndex(Nick)
-    If TargetIndex = -1 Then
-        Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replies.UserDoesntExist)
+Private Sub UnIdentify(Sender As User, Nick As String)
+    Dim TargetIndex As User
+    If Users.Exists(Nick) = False Then
+        Call basFunctions.SendMessage(basMain.Service(7).Nick, Sender.Nick, Replies.UserDoesntExist)
+        Exit Sub
     End If
+    Set TargetIndex = Users(Nick)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT UNIDENTIFY " & Nick)
-    basMain.Users(TargetIndex).IdentifiedToNick = ""
-    basMain.Users(TargetIndex).Access = ""
-    basMain.Users(TargetIndex).AbuseTeam = False
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replace(Replies.AgentUserUnidentified, "%n", Nick))
+    TargetIndex.IdentifiedToNick = ""
+    TargetIndex.Access = ""
+    TargetIndex.AbuseTeam = False
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, Sender.Nick, Replace(Replies.AgentUserUnidentified, "%n", Nick))
 End Sub
 
-Private Sub DeOper(Sender As Integer, Nick As String)
-    Dim TargetIndex As Variant
-    TargetIndex = basFunctions.ReturnUserIndex(Nick)
-    If TargetIndex = -1 Then
+Private Sub DeOper(Sender As User, Nick As String)
+    Dim TargetIndex As User
+    If Users.Exists(Nick) = False Then
         Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replies.UserDoesntExist)
+        Exit Sub
     End If
+    Set TargetIndex = Users(Nick)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT DEOPER " & Nick)
     'remove their oper privilages, courtesy of Agent :)
     If basMain.Config.ServerType = "UNREAL" Then
@@ -262,91 +264,94 @@ Private Sub DeOper(Sender As Integer, Nick As String)
         'Checking and removing +Na etc is useless, since removing "o" removes
         'the lot. BTW, looking for "O" at all is pointless since locops arent
         'propegated over the network. So we just -O anyway. --w00t
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -o")
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -O")
-        Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "o", "")
+        'w00t, SVSMODE isn't quite the same as normal MODE. We can't gauruntee
+        'that all the modes would be removed. Unless you have a bahamut IRCd
+        'to test this with, I'm inclined to agree with removing all of them.
+        'Though why we check, I don't know :) .
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -OoCAaN")
+        'And why two seperate SVSMODEs? :P
+        'Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -O")
+        'Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "o", "")
+        TargetIndex.SetUserModes "-OoCAaN"
     End If
-    basMain.Users(TargetIndex).Modes = ""
-    Call basFunctions.SendData("MODE " & Nick)
     Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replace(Replies.AgentUserDeOpered, "%n", Nick))
 End Sub
 
-Private Sub FJoin(Sender As Integer, Nick As String, Channel As String)
+Private Sub FJoin(Sender As User, Nick As String, Channel As String)
     'Invite then use SVSJOIN since we are forcing them.
-    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " AGENT FJOINed " & Nick & " to " & Channel)
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, Sender.Nick & " AGENT FJOINed " & Nick & " to " & Channel)
     basFunctions.SendData ":" + basMain.Service(7).Nick + " INVITE " + Nick + " " + Channel
     Call basFunctions.SendData("SVSJOIN " & Nick & " " & Channel)
 End Sub
 
-Private Sub FPart(Sender As Integer, Nick As String, Channel As String)
+Private Sub FPart(Sender As User, Nick As String, Channel As String)
     'Use SVSPART since we are forcing them.
-    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " AGENT FPARTed " & Nick & " from " & Channel)
+    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, Sender.Nick & " AGENT FPARTed " & Nick & " from " & Channel)
     Call basFunctions.SendData("SVSPART " & Nick & " " & Channel)
 End Sub
 
-Private Sub Deny(Sender As Integer, sCommand As String, Optional sParameter As String)
-Dim SenderNick As String
-Dim l As Integer
-SenderNick = basFunctions.ReturnUserName(Sender)
+Private Sub Deny(Sender As User, sCommand As String, Optional sParameter As String)
+    Dim SenderNick As String
+    Dim l As Integer
+    SenderNick = Sender.Nick
 
-Select Case UCase(sCommand)
-  Case "HELP"
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY LIST: List Deny Masks")
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY ADD Nick!User@Host: Add a mask to the DENY list")
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY DEL #: Remove Item # from the DENY list")
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY WIPE: Clear the DENY list")
-  Case "LIST"
-    For l = 1 To DenyMasks.Count
-      Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, l & " " & DenyMasks(l))
-    Next l
-  Case "ADD"
-    DenyMasks.Add sParameter
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, sParameter & " was added to the DENY list")
-    Dim CurrentUser
-    For l = LBound(Users) To UBound(Users)
-      If Not Users(l).Nick = "" Then ' Check if there is a user occupying this id
-      ' I NEED A BETTER WAY TO DO THIS, and it has to be FAST ^
-        If IsDeny(l) And Not UCase(basMain.Users(l).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master is exempt, not HasFlag, just in case something happened
-          ' Do all denys (to remove from the newly denied)
-          With Users(l)
-            .Access = ""
-            'boiiiiing! Removed code duplication. --w00t
-            Call sAgent.DeOper(Sender, .Nick)
-          End With
-        End If
-      End If
-    Next l
-  Case "DEL"
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, DenyMasks(sParameter) & " was removed from the DENY list")
-    DenyMasks.Remove sParameter
-  Case "WIPE"
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "The DENY list was cleared")
-    For l = 1 To DenyMasks.Count
-      DenyMasks.Remove 1
-    Next l
-  Case Else
-    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "Unknown subcommand.")
-End Select
+    Select Case UCase(sCommand)
+        Case "HELP"
+            Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY LIST: List Deny Masks")
+            Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY ADD Nick!User@Host: Add a mask to the DENY list")
+            Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY DEL #: Remove Item # from the DENY list")
+            Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY WIPE: Clear the DENY list")
+        Case "LIST"
+            For l = 1 To DenyMasks.Count
+                Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, l & " " & DenyMasks(l))
+            Next l
+        Case "ADD"
+            DenyMasks.Add sParameter
+            Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, sParameter & " was added to the DENY list")
+            Dim CurrentUser
+            For l = 1 To Users.Count
+                If Not Users(l).Nick = "" Then ' Check if there is a user occupying this id
+                ' I NEED A BETTER WAY TO DO THIS, and it has to be FAST ^
+                    If IsDeny(Users(l)) And Not UCase(basMain.Users(l).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master is exempt, not HasFlag, just in case something happened
+                    ' Do all denys (to remove from the newly denied)
+                        With Users(l)
+                            .Access = ""
+                            'boiiiiing! Removed code duplication. --w00t
+                            Call sAgent.DeOper(Sender, .Nick)
+                        End With
+                    End If
+                End If
+            Next l
+        Case "DEL"
+            Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, DenyMasks(sParameter) & " was removed from the DENY list")
+            DenyMasks.Remove sParameter
+        Case "WIPE"
+            'Um....
+            While DenyMasks.Count > 0: DenyMasks.Remove 1: Wend
+            Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "The DENY list was cleared")
+        Case Else
+            Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "Unknown subcommand.")
+    End Select
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+Public Sub HandlePrefix(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -354,35 +359,37 @@ Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args
 
 End Sub
 
-Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleUserMode(ByVal User As User, ByVal bSet As Boolean, ByVal Char As String)
 ' DENY
-If bSet And InStr("oOCAaN" & IIf(basMain.Config.ServerType = "UNREAL", "vg", ""), Char) Then
-  If IsDeny(UserID) And Not UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master can OPER, not HasFlag just in case something happened
-    If basMain.Config.ServerType = "UNREAL" Then
-      If Char = "O" Then Call basFunctions.SendData("SVSO " & Users(UserID).Nick & " -")
-      ' ^ If verifys that only one SVSO is sent
-      If Char = "v" Or Char = "g" Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Users(UserID).Nick & " -" & Char)
-    Else ' SVSO Unsupported, Use SVSMODE
-      Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Users(UserID).Nick & " -" & Char)
-      Users(UserID).Modes = Replace(Users(UserID).Modes, Char, "")
+    If bSet And InStr("oOCAaN" & IIf(basMain.Config.ServerType = "UNREAL", "vg", ""), Char) Then
+        If IsDeny(User) And Not UCase(User.IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master can OPER, not HasFlag just in case something happened
+            If basMain.Config.ServerType = "UNREAL" Then
+                'You never know - some lame server might send us +O, but just for the
+                'heck of it, we're going to UCase that way both O and o are caught.
+                If UCase(Char) = "O" Then Call basFunctions.SendData("SVSO " & User.Nick & " -")
+                ' ^ If verifys that only one SVSO is sent
+                If Char = "v" Or Char = "g" Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & User.Nick & " -" & Char)
+            Else ' SVSO Unsupported, Use SVSMODE
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & User.Nick & " -" & Char)
+                User.Modes = Replace(User.Modes, Char, "")
+            End If
+        End If
     End If
-  End If
-End If
 ' END DENY
 End Sub
 
-Public Function IsDeny(UserID As Integer) As Boolean
-Dim UserHost As String, Denied As Boolean, l As Integer ' Change it to byte?
-UserHost = Users(UserID).Nick & "!" & Users(UserID).UserName & "@" & Users(UserID).HostName
-Denied = False
-'if not denymasks.Count
-For l = 1 To sAgent.DenyMasks.Count
-  If UserHost Like CStr(Replace(Replace(DenyMasks(l), "[", "[[]"), "#", "[#]")) Then
-    Denied = True
-    Exit For
-  End If
-Next l
-IsDeny = Denied
+Public Function IsDeny(UserID As User) As Boolean
+    Dim UserHost As String, Denied As Boolean, l As Integer ' Change it to byte?
+    UserHost = UserID.Nick & "!" & UserID.UserName & "@" & UserID.HostName
+    Denied = False
+    'if not denymasks.Count
+    For l = 1 To sAgent.DenyMasks.Count
+        If UserHost Like CStr(Replace(Replace(DenyMasks(l), "[", "[[]"), "#", "[#]")) Then
+            Denied = True
+            Exit For
+        End If
+    Next l
+    IsDeny = Denied
 End Function
 
 Public Sub HandleTick(ByVal Interval As Single)

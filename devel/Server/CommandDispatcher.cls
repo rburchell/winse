@@ -92,8 +92,8 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             End If
             Exit Sub
         End If
-        Dim iNick As Integer
-        iNick = FreeUserID
+        Dim u As User
+        Set u = New User 'For later
         'Now check for a collision.
         If basFunctions.IsServicesNick(Args(0)) Then
             'COLLISION!!!!!!!!
@@ -102,7 +102,7 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckServicesNickInUse + Args(0) + "!" + Args(2) + "@" + Args(3))
             Exit Sub
-        ElseIf ReturnUserIndex(Args(0)) >= 0 Then
+        ElseIf Users.Exists(Args(0)) Then
             'COLLISION!!!!!!!!
             'Now a real server would do a Timestamp
             'check and remove the one with a more
@@ -110,12 +110,12 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'connect users, and only one server, we
             'simply allow it - the IRCd wins.
             '(so theoretically, if we get here, we're fucked.)
-            iNick = basFunctions.ReturnUserIndex(Args(0))
+            Set u = Users(Args(0))
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, "Collision: " + Args(0) + "!" + Args(2) + "@" + Args(3))
             'Overwrite the remaining fields.
         End If
-        With basMain.Users(iNick)
+        With u
             .Nick = Args(0)
             .SignOn = Args(2)
             .UserName = Args(3)
@@ -125,8 +125,6 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'Initialize the remaining fields.
             .AbuseTeam = False
             .Access = 0
-            Set .Channels = New Collection
-            Set .Custom = New Collection
             .EMail = ""
             .HideEMail = False
             .IdentifiedToNick = ""
@@ -138,11 +136,12 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             .SvsStamp = 0
             .VirtHost = ""
         End With
-        basMain.TotalUsers = basMain.TotalUsers + 1
+        basMain.Users.Add u
         'send the MOTD, DADAA!!! --w00t
-        Dim Temp As New CommandDispatcher
-        Call Temp.CmdMotd(Args(0), Args(), RawCmd)
-        Set Temp = Nothing
+        'Dim Temp As New CommandDispatcher
+        Call CmdMotd(Args(0), Args(), RawCmd)
+        'WHY create a NEW CommandDispatcher when one is already available (Me)?
+        'Set Temp = Nothing
         'Thanks to command callbacks, we don't have to
         'muck with registered nicks here!
     Else
@@ -158,18 +157,17 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckServicesNickInUse + Args(0) + "!" + Args(2) + "@" + Args(3))
             Exit Sub
-        ElseIf ReturnUserIndex(Args(0)) >= 0 Then
+        ElseIf Users.Exists(Args(0)) Then
             'COLLISION!!!!!!!!
             'This is s nickchange... so all I can say
             'is... WTF?
-            Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " KILL " + Args(0) + " :" + basMain.Config.ServerName + " (Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + "))")
+            Users(Args(0)).KillUser "Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + ")", basMain.Config.ServerName
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckNickChangeCollision + Args(0) + "!" + Args(2) + "@" + Args(3))
-            'Overwrite the remaining fields.
             Exit Sub
         End If
         'Otherwise, we're ok.
-        Users(ReturnUserIndex(ExtractNickFromNUH(Source))).Nick = Args(0)
+        Users(ExtractNickFromNUH(Source)).Nick = Args(0)
         'Thanks to command callbacks, we don't have to
         'muck with registered nicks here!
     End If
@@ -204,34 +202,52 @@ Public Sub CmdPrivMsg(ByVal Source As String, ByRef Args() As String, ByVal RawC
         Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckPRIVMSGInsufficientParameters)
         Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 412 " + basMain.Config.UplinkName + " :No text to send")
     End If
+    'Now one thing we need to deal with is CTCP crap.
+    Dim sCTCP As String, sCTCPArgs As String
+    If Left(Args(1), 1) = Chr(1) Then
+        sCTCP = Mid(Args(1), 2)
+        If Right(sCTCP, 1) = Chr(1) Then sCTCP = Left(sCTCP, Len(sCTCP) - 1)
+        If InStr(sCTCP, " ") > 0 Then
+            sCTCPArgs = Mid(sCTCP, InStr(sCTCP, " ") + 1)
+            sCTCP = Left(sCTCP, InStr(sCTCP, " ") - 1)
+        End If
+        Select Case sCTCP
+            Case "PING"
+                basFunctions.LogEventWithMessage LogTypeNotice, sNick & " pinged " & Args(0) & " (" & Args(1) & ")"
+                basFunctions.Notice Args(0), sNick, Chr(1) + "PING " + Args(1) + Chr(1)
+            Case "VERSION"
+                basFunctions.LogEventWithMessage LogTypeNotice, sNick & " versioned " & Args(0) & " (" & Args(1) & ")"
+                basFunctions.Notice Args(0), sNick, Chr(1) + "NOTICE " + basMain.AppName + " " + basMain.AppVersion + "-" + basMain.AppCompileInfo + " " + basMain.AppCompileDate
+        End Select
+    End If
     'First send out the PRIVMSG.
     Select Case UCase(ExtractNickFromNUH(Args(0)))
         Case "NICKSERV"
-            sNickServ.NickservHandler Args(1), ReturnUserIndex(sNick)
+            sNickServ.NickservHandler Args(1), basMain.Users(sNick)
         Case "CHANSERV"
-            sChanServ.ChanservHandler Args(1), ReturnUserIndex(sNick)
+            sChanServ.ChanservHandler Args(1), basMain.Users(sNick)
         Case "MEMOSERV"
-            sMemoServ.MemoservHandler Args(1), ReturnUserIndex(sNick)
+            sMemoServ.MemoservHandler Args(1), basMain.Users(sNick)
         Case "OPERSERV"
-            sOperServ.OperservHandler Args(1), ReturnUserIndex(sNick)
+            sOperServ.OperservHandler Args(1), basMain.Users(sNick)
         Case "BOTSERV"
-            sBotServ.BotservHandler Args(1), ReturnUserIndex(sNick)
+            sBotServ.BotservHandler Args(1), basMain.Users(sNick)
         Case "AGENT"
-            sAgent.AgentHandler Args(1), ReturnUserIndex(sNick)
+            sAgent.AgentHandler Args(1), basMain.Users(sNick)
         Case "ADMINSERV"
-            sAdminServ.AdminservHandler Args(1), ReturnUserIndex(sNick)
+            sAdminServ.AdminservHandler Args(1), basMain.Users(sNick)
         Case "DEBUGSERV"
-            sDebugServ.DebugservHandler Args(1), ReturnUserIndex(sNick)
+            sDebugServ.DebugservHandler Args(1), basMain.Users(sNick)
         Case "HOSTSERV"
-            sHostServ.HostservHandler Args(1), ReturnUserIndex(sNick)
+            sHostServ.HostservHandler Args(1), basMain.Users(sNick)
         Case "MASSERV"
-            sMassServ.MassservHandler Args(1), ReturnUserIndex(sNick)
+            sMassServ.MassservHandler Args(1), basMain.Users(sNick)
         Case "ROOTSERV"
-            sRootServ.RootservHandler Args(1), ReturnUserIndex(sNick)
+            sRootServ.RootservHandler Args(1), basMain.Users(sNick)
         Case Else 'Bot/Channel?
     End Select
     'Now do flood crap.
-    Call CheckFloodLevel(ReturnUserIndex(sNick))
+    Call basMain.Users(sNick).CheckFloodLevel
 End Sub
 
 Public Sub CmdSMo(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
@@ -252,24 +268,25 @@ Public Sub CmdKill(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " KILL :Not enough parameters")
     End If
     'Now is it a user?
-    If ReturnUserIndex(ExtractNickFromNUH(Args(0))) >= 0 Then
-        Dim i As Integer
-        i = ReturnUserIndex(ExtractNickFromNUH(Args(0)))
+    If basMain.Users.Exists(ExtractNickFromNUH(Args(0))) Then
+        Dim u As User
+        Set u = basMain.Users(ExtractNickFromNUH(Args(0)))
         'Let admins know.
-        Call LogEventWithMessage(basMain.LogTypeNotice, "KILL: " + Users(i).Nick + "!" + Users(i).UserName + "@" + Users(i).HostName + " from " + sNick + " Path: " + Args(1))
+        Call LogEventWithMessage(basMain.LogTypeNotice, "KILL: " + u.Nick + "!" + u.UserName + "@" + u.HostName + " from " + sNick + " Path: " + Args(1))
         'Remove it.
         Dim s(0) As String
         s(0) = "KILL " + Args(1)
         Call CmdQuit(Args(0), s, RawCmd)
     ElseIf IsServicesNick(ExtractNickFromNUH(Args(0))) Then
         'ARRRGH! BAD OPER! *SPANK*
+        Dim i As Integer
         For i = 0 To basMain.TotalServices - 1
             If UCase(Args(0)) = UCase(basMain.Service(i).Nick) Then
                 Call basFunctions.IntroduceClient(basMain.Service(i).Nick, basMain.Service(i).Hostmask, basMain.Service(i).Name)
             End If
         Next
         Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, Replace(Replies.UserKilledService, "%n", sNick))
-        If Not bSrvKill Then Call KillUser(ReturnUserIndex(sNick), Replies.KillReasonKilledService)
+        If Not bSrvKill Then Call Users(sNick).KillUser(Replies.KillReasonKilledService)
     End If
 End Sub
 
@@ -289,14 +306,16 @@ Public Sub CmdQuit(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     'Emulate a JOIN 0 AKA PARTALL.
     Call CmdJoin(Source, s, RawCmd)
     'Invalidate the user record.
-    i = ReturnUserIndex(sNick)
-    If i < 0 Then
+    If Users.Exists(sNick) = False Then
         'WTF? *SPLAT*
         Call basFunctions.LogEventWithMessage(LogTypeError, Replies.SanityCheckLostUser)
         Exit Sub
     End If
-    Users(i).Nick = ""
-    Set Users(i).Channels = Nothing
+    Users.Remove sNick
+    Dim c As Channel: For Each c In Channels
+        On Error Resume Next
+        c.Members.Remove sNick
+    Next c
     'K that outta do it :)
 End Sub
 
@@ -317,10 +336,10 @@ Public Sub CmdMode(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     Dim sModeString As String
     sModeString = Join(Args, " ")
     sModeString = Mid(sModeString, InStr(sModeString, " ") + 1)
-    If ReturnUserIndex(Args(0)) >= 0 Then
-        SetUserModes ReturnUserIndex(Args(0)), sModeString
-    ElseIf ReturnChannelIndex(Args(0)) >= 0 Then
-        SetChannelModes ReturnChannelIndex(Args(0)), sModeString
+    If Users.Exists(Args(0)) Then
+        Users(Args(0)).SetUserModes sModeString
+    ElseIf Channels.Exists(Args(0)) Then
+        Channels(Args(0)).SetChannelModes sModeString
     Else
         'EEEEEEEEEEEEEEEK!
         Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckMODENonExistantEntity, "%n", Args(0)))
@@ -341,8 +360,8 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckJOINInsufficientParameters)
         Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " JOIN :Not enough parameters")
     End If
-    Dim chns As Variant, i As Integer, v As Variant
-    i = ReturnUserIndex(sNick)
+    Dim chns As Variant, i As Integer, v As Variant, u As User, c As Channel, cm As ChannelMember
+    Set u = Users(sNick)
     chns = Split(Args(0), ",")
     Dim sChan As Variant
     For Each sChan In chns
@@ -353,23 +372,19 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
                 Call CmdPart(Source, s, RawCmd)
             Next v
         Else
-            If ReturnChannelIndex(sChan) = -1 Then
+            If Channels.Exists(sChan) = False Then
                 'NEW CHANNEL!
-                With Channels(FreeChanID)
+                Set c = New Channel
+                With c
                     .Name = sChan
-                    Set .Users = New Collection
-                    Set .UsersModes = New Collection
-                    .Users.Add i, CStr(i)
-                    .UsersModes.Add "", CStr(i)
+                    Set cm = New ChannelMember
+                    Set cm.Member = u
+                    cm.Modes = ""
+                    .Members.Add cm
                     'Initialize the rest.
-                    Erase .AccessList
-                    Set .Bans = New Collection
                     .ChannelKey = ""
-                    Set .Custom = New Collection
-                    Set .Excepts = New Collection
                     .FloodProtection = ""
                     .FounderPassword = ""
-                    Set .Invites = New Collection
                     .MLock = ""
                     .Modes = ""
                     .OverflowChannel = ""
@@ -377,19 +392,19 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
                     .Topic = ""
                     .TopicSetBy = ""
                     .TopicSetOn = 0
-                    .TotalChannelUsers = .Users.Count
-                    .TotalUsersOnAccessList = 0
                 End With
+                Channels.Add c
+                u.Channels.Add c
             Else
-                With Channels(ReturnChannelIndex(sChan))
-                    If Not CollectionContains(.Users, CStr(i)) Then
-                        .Users.Add i, CStr(i)
-                        .UsersModes.Add "", CStr(i)
-                        .TotalChannelUsers = .TotalChannelUsers + 1
-                    End If
+                With Channels(sChan)
+                    Set cm = New ChannelMember
+                    On Error Resume Next
+                    Set cm.Member = u
+                    cm.Modes = ""
+                    .Members.Add cm
+                    On Error GoTo 0
                 End With
             End If
-            Users(i).Channels.Add ReturnChannelIndex(sChan), CStr(ReturnChannelIndex(sChan))
         End If
     Next sChan
 End Sub
@@ -406,22 +421,19 @@ Public Sub CmdPart(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckPARTInsufficientParameters)
         Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " PART :Not enough parameters")
     End If
-    Dim chns As Variant, i As Integer
-    i = ReturnUserIndex(sNick)
+    Dim chns As Variant, i As Integer, u As User
+    Set u = Users(sNick)
     chns = Split(Args(0), ",")
     Dim sChan As Variant
     For Each sChan In chns
-        Users(i).Channels.Remove CStr(ReturnChannelIndex(sChan))
-        With Channels(ReturnChannelIndex(sChan))
-            If CollectionContains(.Users, CStr(i)) Then
-                .Users.Remove CStr(i)
-                .UsersModes.Remove CStr(i)
-                .TotalChannelUsers = .TotalChannelUsers - 1
-            End If
-            If .Users.Count = 0 Then
+        Users(i).Channels.Remove sChan
+        With Channels(sChan)
+            On Error Resume Next
+            .Members.Remove u.Nick
+            If .Members.Count = 0 Then
                 'Invalidate the channel, as it is now
                 'empty.
-                .Name = ""
+                Channels.Remove sChan
             End If
         End With
     Next sChan
@@ -435,7 +447,7 @@ Public Sub CmdTopic(ByVal Source As String, ByRef Args() As String, ByVal RawCmd
         Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckTOPICInsufficientParameters)
         Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " TOPIC :Not enough parameters")
     ElseIf UBound(Args) = 1 Then
-        With Channels(ReturnChannelIndex(Args(0)))
+        With Channels(Args(0))
             .Topic = Args(1)
             .TopicSetBy = Source
             .TopicSetOn = basUnixTime.GetTime
@@ -444,7 +456,7 @@ Public Sub CmdTopic(ByVal Source As String, ByRef Args() As String, ByVal RawCmd
         Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckTOPICInsufficientParameters)
         Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " TOPIC :Not enough parameters")
     ElseIf UBound(Args) >= 3 Then
-        With Channels(ReturnChannelIndex(Args(0)))
+        With Channels(Args(0))
             .Topic = Args(3)
             .TopicSetBy = Args(1)
             .TopicSetOn = Args(2)
@@ -463,15 +475,15 @@ Public Sub CmdSetHost(ByVal Source As String, ByRef Args() As String, ByVal RawC
         Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckSETHOSTInsufficientParameters)
         Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " SETHOST :Not enough parameters")
     End If
-    Dim i As Integer
-    i = ReturnUserIndex(sNick)
+    Dim i As Integer, u As User
+    Set u = Users(sNick)
     If UCase(Config.ServerType) = "UNREAL" Then
-        Call SetUserModes(i, "+xt")
+        Call u.SetUserModes("+xt")
     Else
         'Are there other IRCds that do modechange with
         'SETHOST?
     End If
-    Users(i).VirtHost = Args(0)
+    u.VirtHost = Args(0)
 End Sub
 
 Public Sub CmdMotd(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
@@ -487,12 +499,12 @@ Public Sub CmdMotd(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     'Uh, that's about it. Enjoy the latest w00tCode(tm) :) --w00t
     Dim MOTDLine As String
     Dim sNick As String
-    Dim i As Integer
+    Dim i As Integer, u As User
     Dim j As Integer
     
     sNick = ExtractNickFromNUH(Source)
     
-    i = basFunctions.ReturnUserIndex(sNick)
+    Set u = Users(sNick)
     
     'this check should probably be moved to startup or something.
     j = FreeFile
@@ -505,20 +517,20 @@ Public Sub CmdMotd(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'doesnt exist yay
             Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Doesn't exist.")
             basFunctions.SendData (":" & basMain.Config.ServerName & " 425 " & basMain.Users(i).Nick & " :Services MOTD file is missing")
-            Else
-                Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Does exist, sending.")
-                basFunctions.SendData (":" & basMain.Config.ServerName & " 375 " & basMain.Users(i).Nick & " :- " & basMain.Config.ServerName & " Message of the Day")
-                Do While Not EOF(j)
-                    'This should really be cached, and refreshed on rehash, but I'll leave such things
-                    'for when aqua unw00ts this :) Hey, at least I'm coding something...
-                    Line Input #j, MOTDLine
-                    'make our nice cool stuff :P go replace!
-                    MOTDLine = Replace(MOTDLine, "%WINSEVER", basMain.AppVersion)
-                    basFunctions.SendData (":" & basMain.Config.ServerName & " 372 " & basMain.Users(i).Nick & " :- " & MOTDLine)
-                    DoEvents 'lala, I'm naughty :P
-                Loop
-                basFunctions.SendData (":" & basMain.Config.ServerName & " 376 " & basMain.Users(i).Nick & " :End of /MOTD command.")
-                Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Finished sending.")
+        Else
+            Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Does exist, sending.")
+            basFunctions.SendData (":" & basMain.Config.ServerName & " 375 " & basMain.Users(i).Nick & " :- " & basMain.Config.ServerName & " Message of the Day")
+            Do While Not EOF(j)
+                'This should really be cached, and refreshed on rehash, but I'll leave such things
+                'for when aqua unw00ts this :) Hey, at least I'm coding something...
+                Line Input #j, MOTDLine
+                'make our nice cool stuff :P go replace!
+                MOTDLine = Replace(MOTDLine, "%WINSEVER", basMain.AppVersion)
+                basFunctions.SendData (":" & basMain.Config.ServerName & " 372 " & basMain.Users(i).Nick & " :- " & MOTDLine)
+                DoEvents 'lala, I'm naughty :P
+            Loop
+            basFunctions.SendData (":" & basMain.Config.ServerName & " 376 " & basMain.Users(i).Nick & " :End of /MOTD command.")
+            Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Finished sending.")
         End If
     Close #j
     'END NEW COOL MOTD STUFF
@@ -527,10 +539,10 @@ End Sub
 Public Sub CmdVersion(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
     'Simple VERSION reply :)
     Dim sNick As String
-    Dim i As Integer
+    Dim i As Integer, u As Users
 
     sNick = ExtractNickFromNUH(Source)
-    i = basFunctions.ReturnUserIndex(sNick)
+    Set u = Users(sNick)
     basFunctions.SendData (":" & basMain.Config.ServerName & " 351 " & basMain.Users(i).Nick & " " & basMain.AppName & "[" & basMain.AppVersion & "] " & basMain.Config.ServerName & " " & basMain.AppCompileInfo & " " & basMain.AppCompileDate)
 End Sub
 

@@ -18,12 +18,12 @@ Attribute VB_Name = "sDebugServ"
 Option Explicit
 Public Const ModVersion = "1.0.0.0"
 
-Public Sub DebugservHandler(Cmd As String, Sender As Integer)
+Public Sub DebugservHandler(ByVal Cmd As String, ByVal Sender As User)
     Dim Parameters() As String
     Dim SenderNick As String
     Dim i As Variant 'i am soooo naughty >:)
     
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Parameters() = Split(Cmd, " ") 'Way better ;p
     
     Select Case UCase(Parameters(0))
@@ -32,40 +32,28 @@ Public Sub DebugservHandler(Cmd As String, Sender As Integer)
         Case "MYACCESS"
             Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, CStr(basMain.Users(Sender).Access))
         Case "MYABUSETEAMSTATUS"
-            i = basFunctions.IsAbuseTeamMember(Sender)
+            i = Sender.IsAbuseTeamMember
             Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, CStr(i))
         Case "MYMODES"
             Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, basMain.Users(Sender).Modes)
-        Case "INDEXOFUSER"
-            If UBound(Parameters) < 1 Then
-                Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, ReturnUserIndex(Parameters(SenderNick)))
-            Else
-                Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, ReturnUserIndex(Parameters(1)))
-            End If
-        Case "INDEXOFCHANNEL"
-            If UBound(Parameters) < 1 Then
-                Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "Not enough parameters.")
-            Else
-                Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, ReturnChannelIndex(Parameters(1)))
-            End If
         Case "DUMPUSER"
             If UBound(Parameters) < 1 Then
                 Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "Not enough parameters.")
             Else
-                If Not IsNumeric(Parameters(1)) Then
-                    Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "Invalid syntax.")
-                Else
-                    Call DumpUser(SenderNick, Parameters(1))
+                On Local Error Resume Next
+                Call DumpUser(SenderNick, Users(Parameters(1)))
+                If Err.Number = 9 Then
+                    Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "No such user.")
                 End If
             End If
         Case "DUMPCHANNEL"
             If UBound(Parameters) < 1 Then
                 Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "Not enough parameters.")
             Else
-                If Not IsNumeric(Parameters(1)) Then
-                    Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "Invalid syntax.")
-                Else
-                    Call DumpChannel(SenderNick, Parameters(1))
+                On Local Error Resume Next
+                Call DumpChannel(SenderNick, Channels(Parameters(1)))
+                If Err.Number = 9 Then
+                    Call basFunctions.SendMessage(basMain.Service(11).Nick, SenderNick, "No such user.")
                 End If
             End If
         Case "HELP"
@@ -154,34 +142,22 @@ Private Sub DumpUser(ByVal DumpTo As String, ByVal ID As Integer)
     DumpLine DumpTo, "End of Dump."
 End Sub
 
-Private Sub DumpChannel(ByVal DumpTo As String, ByVal ID As Integer)
-    If ID = 32767 Then
-        SendMessage Service(11).Nick, DumpTo, "No such channel."
-        Exit Sub
-    ElseIf Channels(ID).Name = "" Then
+Private Sub DumpChannel(ByVal DumpTo As String, ByVal Chan As Channel)
+    If Chan Is Nothing Then
         SendMessage Service(11).Nick, DumpTo, "No such channel."
         Exit Sub
     End If
-    With Channels(ID)
+    With Chan
         DumpLine DumpTo, "Name: " + .Name
         DumpLine DumpTo, "Topic is: " + .Topic
         DumpLine DumpTo, "Set by " + .TopicSetBy + " on " + CStr(.TopicSetOn)
         DumpLine DumpTo, "Password: " + .FounderPassword
         DumpLine DumpTo, "ModeLock: " + .MLock
-        DumpLine DumpTo, "Access List:"
         Dim i As Integer
-        On Error Resume Next
-        For i = 0 To UBound(.AccessList)
-            With .AccessList(i)
-                DumpLine DumpTo, .Nick + " flags: " + .Access
-            End With
-        Next i
-        On Error GoTo 0
-        DumpLine DumpTo, "End of Access List"
         DumpLine DumpTo, "Modes: " + .Modes
         DumpLine DumpTo, "Users on channel:"
-        For i = 1 To .Users.Count
-            DumpLine DumpTo, Users(.Users(i)).Nick + " " + .UsersModes(CStr(.Users(i)))
+        For i = 1 To .Members.Count
+            DumpLine DumpTo, .Members(i).Member.Nick + " " + .Members(i).Modes
         Next i
         DumpLine DumpTo, "End of users."
         DumpLine DumpTo, "Channel Ban List"

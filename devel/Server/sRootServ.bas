@@ -18,16 +18,16 @@ Attribute VB_Name = "sRootServ"
 Option Explicit
 Public Const ModVersion = "0.0.0.1"
 
-Public Sub RootservHandler(Cmd As String, Sender As Integer)
+Public Sub RootservHandler(ByVal Cmd As String, ByVal Sender As User)
     Dim SenderNick As String
     Dim Parameters As String
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Dim FirstSpace As String
     FirstSpace = InStr(Cmd, " ")
     Parameters = Right(Cmd, Len(Cmd) - FirstSpace)
     FirstSpace = InStr(Cmd, " ")
     If FirstSpace <> 0 Then Cmd = Left(Cmd, FirstSpace - 1)
-    If Not basFunctions.HasFlag(Sender, AccFlagCanRootServ) Then
+    If Not Sender.HasFlag(AccFlagCanRootServ) Then
         Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, Replies.RootServNeedPermissions)
         Exit Sub
     End If
@@ -47,9 +47,9 @@ Public Sub RootservHandler(Cmd As String, Sender As Integer)
     End Select
 End Sub
 
-Private Sub Help(Sender As Integer)
+Private Sub Help(ByVal Sender As User)
     Dim SenderNick As String
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "RootServ Commands:")
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, " ")
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  *CHANSNOOP  - Channel Snoop Feature")
@@ -64,86 +64,85 @@ Private Sub Help(Sender As Integer)
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  Notice: All commands sent to RootServ are logged!")
 End Sub
 
-Private Sub Version(Sender As Integer)
-    Call basFunctions.SendMessage(basMain.Service(6).Nick, basFunctions.ReturnUserName(Sender), AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(6).Nick & "[" & sRootServ.ModVersion & "]")
+Private Sub Version(ByVal Sender As User)
+    Call basFunctions.SendMessage(basMain.Service(6).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(6).Nick & "[" & sRootServ.ModVersion & "]")
 End Sub
 
-Private Sub Shutdown(Sender As Integer, Message As String)
+Private Sub Shutdown(ByVal Sender As User, Message As String)
     Call basFunctions.GlobalMessage("Services shutting down on request of " & Sender & " [" & Message & "]")
     Call basFunctions.SquitServices("SHUTDOWN Command by " + Users(Sender).Nick)
     End
 End Sub
 
-Private Sub Raw(Sender As Integer, RawString As String)
+Private Sub Raw(ByVal Sender As User, RawString As String)
     Call basFunctions.SendData(RawString)
 End Sub
 
-Private Sub Inject(Sender As Integer, sParameters As String)
-If Not basFunctions.HasFlag(Sender, AccFlagCanRootServInject) Then
-  Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServInjectNeedPermissions)
-  Exit Sub
-End If
-Dim InjectData() As String, TargetID As Integer
-InjectData = Split(sParameters, " ", 3)
-TargetID = basFunctions.ReturnUserIndex(InjectData(0))
-Select Case UCase(InjectData(1))
-  Case "NICKSERV"
-    Call sNickServ.NickservHandler(InjectData(3), TargetID)
-  Case "CHANSERV"
-    Call sChanServ.ChanservHandler(InjectData(3), TargetID)
-  Case "MEMOSERV"
-    Call sMemoServ.MemoservHandler(InjectData(3), TargetID)
-  Case "BOTSERV"
-    Call sBotServ.BotservHandler(InjectData(3), TargetID)
-End Select
-If basMain.Config.InjectToOperServices Then
-  If basFunctions.HasFlag(Sender, AccFlagCanRootServSuperInject) Then
+Private Sub Inject(ByVal Sender As User, sParameters As String)
+    If Not Sender.HasFlag(AccFlagCanRootServInject) Then
+        Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServInjectNeedPermissions)
+        Exit Sub
+    End If
+    Dim InjectData() As String, TargetID As User
+    InjectData = Split(sParameters, " ", 3)
+    TargetID = basMain.Users(InjectData(0))
     Select Case UCase(InjectData(1))
-      Case "OPERSERV"
-        Call sOperServ.OperservHandler(InjectData(3), TargetID)
-      Case "ROOTSERV"
-        Call sRootServ.RootservHandler(InjectData(3), TargetID)
-      Case "MASSSERV"
-        Call sMassServ.MassservHandler(InjectData(3), TargetID)
-      Case "HOSTSERV"
-        Call sHostServ.HostservHandler(InjectData(3), TargetID)
+        Case "NICKSERV"
+            Call sNickServ.NickservHandler(InjectData(3), TargetID)
+        Case "CHANSERV"
+            Call sChanServ.ChanservHandler(InjectData(3), TargetID)
+        Case "MEMOSERV"
+            Call sMemoServ.MemoservHandler(InjectData(3), TargetID)
+        Case "BOTSERV"
+            Call sBotServ.BotservHandler(InjectData(3), TargetID)
     End Select
-  Else
-    Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServSuperInjectNeedPermissions)
-  End If
-Else
-  Select Case UCase(InjectData(1))
-    Case "OPERSERV", "ROOTSERV", "MASSSERV", "HOSTSERV"
-      Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServSuperInjectDisabled)
-    Case "ADMINSERV", "AGENT"
-      Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServSuperInjectDisabled)
-  End Select
-End If
-Select Case UCase(InjectData(1))
-  Case "ADMINSERV", "AGENT"
-    Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServAbusiveInjectDisabled)
-End Select
+    If basMain.Config.InjectToOperServices Then
+        If Sender.HasFlag(AccFlagCanRootServSuperInject) Then
+            Select Case UCase(InjectData(1))
+                Case "OPERSERV"
+                    Call sOperServ.OperservHandler(InjectData(3), TargetID)
+                Case "ROOTSERV"
+                    Call sRootServ.RootservHandler(InjectData(3), TargetID)
+                Case "MASSSERV"
+                    Call sMassServ.MassservHandler(InjectData(3), TargetID)
+                Case "HOSTSERV"
+                    Call sHostServ.HostservHandler(InjectData(3), TargetID)
+            End Select
+        Else
+            Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServSuperInjectNeedPermissions)
+        End If
+    Else
+        Select Case UCase(InjectData(1))
+            Case "OPERSERV", "ROOTSERV", "MASSSERV", "HOSTSERV"
+                Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServSuperInjectDisabled)
+            Case "ADMINSERV", "AGENT"
+                Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServSuperInjectDisabled)
+        End Select
+    End If
+    Select Case UCase(InjectData(1))
+        Case "ADMINSERV", "AGENT"
+            Call basFunctions.SendMessage(basMain.Service(6).Nick, Users(Sender).Nick, Replies.RootServAbusiveInjectDisabled)
+    End Select
 ' None to AGENT or ADMINSERV for obvious reasons... (Not abuse team? Give yourself more access?)
 End Sub
 
-'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+Public Sub HandlePrefix(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -151,7 +150,7 @@ Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args
 
 End Sub
 
-Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleUserMode(ByVal User As User, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 

@@ -18,11 +18,11 @@ Attribute VB_Name = "sChanServ"
 Option Explicit
 Public Const ModVersion = "0.0.0.2"
 
-Public Sub ChanservHandler(Cmd As String, Sender As Integer)
+Public Sub ChanservHandler(ByVal Cmd As String, ByVal Sender As User)
     Dim Parameters() As String
     Dim SenderNick As String
     
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Parameters() = basFunctions.ParseBuffer(Cmd)
     
     Select Case UCase(Parameters(0))
@@ -63,9 +63,9 @@ Public Sub ChanservHandler(Cmd As String, Sender As Integer)
     End Select
 End Sub
 
-Private Sub Help(Sender As Integer, Cmd)
+Private Sub Help(ByVal Sender As User, Cmd)
     Dim SenderNick As String
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Select Case UCase(Cmd)
         Case Else
             Call basFunctions.SendMessage(basMain.Service(0).Nick, SenderNick, "ChanServ Commands:")
@@ -74,14 +74,14 @@ Private Sub Help(Sender As Integer, Cmd)
     End Select
 End Sub
 
-Private Sub Version(Sender As Integer)
-    Call basFunctions.SendMessage(basMain.Service(0).Nick, basFunctions.ReturnUserName(Sender), AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(0).Nick & "[" & sNickServ.ModVersion & "]")
+Private Sub Version(Sender As User)
+    Call basFunctions.SendMessage(basMain.Service(0).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(0).Nick & "[" & sNickServ.ModVersion & "]")
 End Sub
 
-Private Sub Access(Sender As Integer, Parameters() As String)
+Private Sub Access(Sender As User, Parameters() As String)
     'ACCESS #thelounge ADD w00t 80
     'Check if the chan is registered first.
-    If basFunctions.ReturnChannelIndex(Parameters(1)) = -1 Then
+    If Channels.Exists(Parameters(1)) = False Then
         Call basFunctions.NotifyAllUsersWithServicesAccess(Replies.SanityCheckLostChannel)
         Exit Sub
     End If
@@ -97,12 +97,12 @@ Private Sub Access(Sender As Integer, Parameters() As String)
     End Select
 End Sub
 
-Private Sub Register(Sender As Integer, ChannelToRegister As String, Password As String, Description As String)
+Private Sub Register(Sender As User, ChannelToRegister As String, Password As String, Description As String)
     ChannelToRegister = UCase(ChannelToRegister)
     'We need to check for registration here.
-    Dim ChanIndex As Integer
-    ChanIndex = basFunctions.ReturnChannelIndex(ChannelToRegister)
-    If ChanIndex = -1 Then
+    Dim ChanIndex As Channel
+    Set ChanIndex = Channels(ChannelToRegister)
+    If ChanIndex Is Nothing Then
         'This is a Bad Thing.
         Call basFunctions.NotifyAllUsersWithServicesAccess(Replies.SanityCheckLostChannel)
         'For the sake of not proceeding on with an
@@ -140,23 +140,23 @@ Private Sub Register(Sender As Integer, ChannelToRegister As String, Password As
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+Public Sub HandlePrefix(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -164,7 +164,7 @@ Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args
 
 End Sub
 
-Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleUserMode(ByVal User As User, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 

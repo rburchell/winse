@@ -18,11 +18,11 @@ Attribute VB_Name = "sNickServ"
 Option Explicit
 Public Const ModVersion = "0.0.2.2"
 
-Public Sub NickservHandler(Cmd As String, Sender As Integer)
+Public Sub NickservHandler(ByVal Cmd As String, ByVal Sender As User)
     Dim Parameters() As String
     Dim SenderNick As String
     
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Parameters() = basFunctions.ParseBuffer(Cmd)
     
     Select Case UCase(Parameters(0))
@@ -73,9 +73,9 @@ Public Sub NickservHandler(Cmd As String, Sender As Integer)
     End Select
 End Sub
 
-Private Sub Help(Sender As Integer, Cmd)
+Private Sub Help(Sender As User, Cmd)
     Dim SenderNick As String
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Select Case UCase(Cmd)
         Case "SET"
             Call basFunctions.SendMessage(basMain.Service(1).Nick, SenderNick, "NickServ Set:")
@@ -88,13 +88,13 @@ Private Sub Help(Sender As Integer, Cmd)
     End Select
 End Sub
 
-Private Sub Version(Sender As Integer)
-    Call basFunctions.SendMessage(basMain.Service(1).Nick, basFunctions.ReturnUserName(Sender), AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(1).Nick & "[" & sNickServ.ModVersion & "]")
+Private Sub Version(Sender As User)
+    Call basFunctions.SendMessage(basMain.Service(1).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(1).Nick & "[" & sNickServ.ModVersion & "]")
 End Sub
 
-Private Sub Set_(Sender As Integer, Cmd)
+Private Sub Set_(Sender As User, Cmd)
     Dim SenderNick As String
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Dim FirstSpace As String, Parameters As String
     FirstSpace = InStr(Cmd, " ")
     Parameters = Right(Cmd, Len(Cmd) - FirstSpace)
@@ -120,7 +120,7 @@ Private Sub Set_(Sender As Integer, Cmd)
     End Select
 End Sub
 
-Private Sub List(Sender As Integer)
+Private Sub List(Sender As User)
     Dim TotalRegisteredNicks As Double
     TotalRegisteredNicks = CDec(basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredNicks", -1))
     If TotalRegisteredNicks = -1 Then
@@ -148,7 +148,7 @@ Private Sub List(Sender As Integer)
     End If
 End Sub
 
-Private Sub Register(Sender As Integer, NickToRegister As String, EMail As String, Password As String)
+Private Sub Register(Sender As User, NickToRegister As String, EMail As String, Password As String)
     Dim Access As String
     Dim HideEMail As String
     Dim MsgStyle As String
@@ -179,7 +179,7 @@ Private Sub Register(Sender As Integer, NickToRegister As String, EMail As Strin
     Call basFileIO.SetInitEntry(App.Path & "\databases\index.db", "Nicks", "RegisteredNick" & TotalRegisteredNicks, NickToRegister)
 End Sub
 
-Public Function Identify(Sender As Integer, NickToIdentify As String, Password As String)
+Public Function Identify(Sender As User, NickToIdentify As String, Password As String)
     Dim PasswordonFile As String
     PasswordonFile = basFileIO.GetInitEntry(App.Path & "\databases\users.db", NickToIdentify, "Password")
     If PasswordonFile = "" Then
@@ -197,34 +197,34 @@ Public Function Identify(Sender As Integer, NickToIdentify As String, Password A
             .Password = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "Password")
             'Check if they are a master, just in case their permissions got fiddled with.
             If UCase(.IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
-                SetFlags Sender, "+" & AccFlagMaster ' Not AccFullAccess, He might not want to recieve Services Notices (flag g)
+                Sender.SetFlags "+" & AccFlagMaster ' Not AccFullAccess, He might not want to recieve Services Notices (flag g)
             End If
         End With
-        Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationSuccessful)
+        Call basFunctions.SendMessage(basMain.Service(1).Nick, Sender.Nick, Replies.NickServIdentificationSuccessful)
         basMain.Users(Sender).IdentifiedToNick = NickToIdentify
     Else
-        Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationBadPassword)
+        Call basFunctions.SendMessage(basMain.Service(1).Nick, Sender.Nick, Replies.NickServIdentificationBadPassword)
     End If
 End Function
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+Public Sub HandlePrefix(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -232,7 +232,7 @@ Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args
 
 End Sub
 
-Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleUserMode(ByVal User As User, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 

@@ -18,14 +18,14 @@ Attribute VB_Name = "sMassServ"
 Option Explicit
 Public Const ModVersion = "0.0.0.1"
 
-Public Sub MassservHandler(ByVal Cmd As String, ByVal Sender As Integer)
+Public Sub MassservHandler(ByVal Cmd As String, ByVal Sender As User)
 
 ' Explicit ByVals entered: .NET uses ByVal by default, VB6 uses ByRef
 ' I want any problems with a ByVal definition caught now.
 
     Dim SenderNick As String
     
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     
 '    Dim Parameters As String, FirstSpace As Integer
 '    FirstSpace = InStr(Cmd, " ")
@@ -37,15 +37,16 @@ Public Sub MassservHandler(ByVal Cmd As String, ByVal Sender As Integer)
  
     Dim Parameters As String
     If InStr(Cmd, " ") > 0 Then
-      Dim CmdParts(0 To 1) As String ' (0 To 1): Yes, I'm paranoid
-      CmdParts = Split(Cmd, " ", 2)
-      Parameters = CmdParts(1)
-      Cmd = CmdParts(0)
+        'doing that doesn't work for me. It only works when Variant is used.
+        Dim CmdParts As Variant ' (0 To 1): Yes, I'm paranoid
+        CmdParts = Split(Cmd, " ", 2)
+        Parameters = CmdParts(1)
+        Cmd = CmdParts(0)
     Else
-      Parameters = ""
+        Parameters = ""
     End If
     
-    If Not basFunctions.HasFlag(Sender, AccFlagCanMassServ) Then
+    If Not Sender.HasFlag(AccFlagCanMassServ) Then
         Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.InsufficientPermissions)
         Exit Sub
     End If
@@ -71,13 +72,13 @@ Public Sub MassservHandler(ByVal Cmd As String, ByVal Sender As Integer)
         Case "MINVITE"
             Call sMassServ.MInvite(Sender, Parameters)
         Case "MKILL"
-            If HasFlag(Sender, AccFlagCanMassKill) Then
+            If Sender.HasFlag(AccFlagCanMassKill) Then
                 Call sMassServ.MKill(Sender, Parameters)
             Else
                 Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.UnknownCommand)
             End If
         Case "CHANKILL"
-            If HasFlag(Sender, AccFlagCanMassKill) Then
+            If Sender.HasFlag(AccFlagCanMassKill) Then
                 Call sMassServ.ChanKill(Sender, Parameters)
             Else
                 Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, Replies.UnknownCommand)
@@ -87,9 +88,9 @@ Public Sub MassservHandler(ByVal Cmd As String, ByVal Sender As Integer)
     End Select
 End Sub
 
-Private Sub Help(Sender As Integer, Cmd)
+Private Sub Help(ByVal Sender As User, ByVal Cmd As String)
     Dim SenderNick As String
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "MassServ Commands:")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, " ")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  SERVJOIN     #<chan>        Make all Services bots join a channel")
@@ -103,7 +104,7 @@ Private Sub Help(Sender As Integer, Cmd)
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  MMODE   #<chan>  <mode>     Set a mode on each user on a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  MKICK   #<chan>  <reason>   Kick all users from a channel")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  MINVITE #<chans> #<chand>   Mass Invite all users in one channel to another")
-    If HasFlag(Sender, AccFlagCanMassKill) Then
+    If Sender.HasFlag(AccFlagCanMassKill) Then
       ' Begin Mass Kill Commands
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  MKILL <N!U@H> <Reason>      Kill all users matching the specified host")
     Call basFunctions.SendMessage(basMain.Service(9).Nick, SenderNick, "  CHANKILL #<chan> <Reason>   Kill all users in the specified channel")
@@ -112,143 +113,186 @@ Private Sub Help(Sender As Integer, Cmd)
     End If
 End Sub
 
-Private Sub Version(Sender As Integer)
-    Call basFunctions.SendMessage(basMain.Service(9).Nick, basFunctions.ReturnUserName(Sender), AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(9).Nick & "[" & sMassServ.ModVersion & "]")
+Private Sub Version(ByVal Sender As User)
+    Call basFunctions.SendMessage(basMain.Service(9).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(9).Nick & "[" & sMassServ.ModVersion & "]")
 End Sub
 
-Private Sub sJoin(Sender As Integer, Channel As String)
+Private Sub sJoin(ByVal Sender As User, ByVal Channel As String)
     Call basFunctions.JoinServicesToChannel(Sender, Channel)
 End Sub
 
-Private Sub sPart(Sender As Integer, Channel As String)
+Private Sub sPart(ByVal Sender As User, ByVal Channel As String)
     Call basFunctions.PartServicesFromChannel(Sender, Channel)
 End Sub
 
-Private Sub OperJoin(Sender As Integer, Channel As String)
-Dim l As Integer
-For l = LBound(Users) To UBound(Users)
-  If Not Users(l).Nick = "" Then
-    If InStr(Users(l).Modes, "o") Then
-      Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
-      Call basFunctions.SendData("SVSJOIN " & Users(l).Nick & " " & Channel)
+Private Sub OperJoin(ByVal Sender As User, ByVal Channel As String)
+    Dim l As Integer
+    For l = 1 To Users.Count
+        If Not Users(l).Nick = "" Then
+            If InStr(Users(l).Modes, "o") Then
+                Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+                Call basFunctions.SendData("SVSJOIN " & Users(l).Nick & " " & Channel)
+            End If
+        End If
+    Next l
+End Sub
+
+Private Sub OperInvite(ByVal Sender As User, ByVal Channel As String)
+    Dim l As Integer
+    For l = 1 To Users.Count
+        If Not Users(l).Nick = "" Then
+            If InStr(Users(l).Modes, "o") Then
+                Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+            End If
+        End If
+    Next l
+End Sub
+
+Private Sub AllInvite(ByVal Sender As User, ByVal Channel As String)
+    Dim l As Integer
+    For l = 1 To Users.Count
+        If Not Users(l).Nick = "" Then
+            Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
+        End If
+    Next l
+End Sub
+
+Private Sub MMode(ByVal Sender As User, ByVal Parameters As String)
+    On Local Error GoTo Fail
+    Dim Chan As Channel, Mode As String
+    Set Chan = Channels(Split(Parameters, " ")(0))
+    Mode = Split(Parameters, " ")(1)
+    Dim l As Integer, i As Integer
+    'Actually, I'm gonna make a bit of a sneaky trick here :) .
+    Dim bSet As Boolean
+    bSet = True
+    For l = 1 To Len(Mode)
+        Select Case Mid(Mode, l, 1)
+            Case "+": bSet = True
+            Case "-": bSet = False
+            Case Else
+                If bSet Then
+                    For i = 1 To Channels(Chan).Members.Count
+                        basFunctions.SendData Service(9).Nick & " MODE " & Chan.Name & " +" & Mid(Mode, l, 1) & " " & Chan.Members(i).Member.Nick
+                    Next i
+                Else
+                    If UCase(basMain.Config.ServerType) = "UNREAL" Then
+                        basFunctions.SendData Service(9).Nick & " SVSMODE " & Chan.Name & " -" & Mid(Mode, l, 1)
+                    Else
+                        For i = 1 To Channels(Chan).Members.Count
+                            basFunctions.SendData Service(9).Nick & " MODE " & Chan.Name & " -" & Mid(Mode, l, 1) & " " & Chan.Members(i).Member.Nick
+                        Next i
+                    End If
+                End If
+        End Select
+    Next l
+    Exit Sub
+Fail:
+'    Debug.Print "*** Begin Automated Error Report ***"
+'    Debug.Print "Error " & Err.Number & ": " & Err.Description
+'    Debug.Print "Error Source: " & Err.Source
+'    Debug.Print "*** End Automated Error Report ***"
+'    Stop ' Read your Immediate Window
+'WTF? LOG MAN! LOG!!!
+    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MMODE! " & Err.Number & ": " & Err.Description
+End Sub
+
+Private Sub MKick(ByVal Sender As User, ByVal Parameters As String)
+    On Local Error GoTo Fail
+    Dim Chan As Channel, Reason As String
+    Set Chan = Channels(Split(Parameters, " ", 2)(0))
+    Reason = Split(Parameters, " ", 2)(1)
+    Dim l As Integer
+    For l = 1 To Chan.Members.Count
+        Call basFunctions.SendData(":" & Service(0).Nick & " KICK " & Chan.Name & " " & Chan.Members(l).Member.Nick & " :" & Reason)
+    Next l
+    Exit Sub
+Fail:
+'Debug.Print "*** Begin Automated Error Report ***"
+'Debug.Print "Error " & Err.Number & ": " & Err.Description
+'Debug.Print "Error Source: " & Err.Source
+'Debug.Print "*** End Automated Error Report ***"
+'Stop ' Read your Immediate Window
+'WTF? LOG MAN! LOG!!!
+    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MMODE! " & Err.Number & ": " & Err.Description
+End Sub
+
+Private Sub MInvite(ByVal Sender As User, ByVal Parameters As String)
+    On Local Error GoTo Fail
+    Dim SourceChan As Channel, DestChan As String
+    Set SourceChan = Channels(Split(Parameters, " ")(0))
+    DestChan = Split(Parameters, " ")(1)
+    Dim l As Integer
+    For l = 1 To SourceChan.Members.Count
+        Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & SourceChan.Members(l).Member.Nick & " " & DestChan)
+    Next l
+    Exit Sub
+Fail:
+'Debug.Print "*** Begin Automated Error Report ***"
+'Debug.Print "Error " & Err.Number & ": " & Err.Description
+'Debug.Print "Error Source: " & Err.Source
+'Debug.Print "*** End Automated Error Report ***"
+'Stop ' Read your Immediate Window
+'WTF? LOG MAN! LOG!!!
+    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MMODE! " & Err.Number & ": " & Err.Description
+End Sub
+
+Private Sub MKill(ByVal Sender As User, ByVal Parameters As String)
+    Dim l As Integer, Mask As String, Reason As String
+    Mask = Split(Parameters, " ", 2)(0)
+    Reason = Split(Parameters, " ", 2)(1)
+    'Now check to see if the mask is too broad.
+    If Len(Replace(Replace(Replace(Replace(Mask, "?", ""), "*", ""), "@", ""), "!", "")) < 2 Then
+        LogEventWithMessage basMain.LogTypeNotice, "MassServ MKILL - " & Sender.Nick & " tried to use an overbroad mask!"
     End If
-  End If
-Next l
+    For l = 1 To Users.Count
+        With Users(l)
+            If .Nick & "!" & .UserName & "@" & .HostName Like Mask Then
+                'Use a sender of "" so that KillUser doesn't mulilate our custom path.
+                Users(l).KillUser " :" & basMain.Service(4).Nick & "!" & Sender.Nick & " (" & Reason & ")", ""
+            End If
+        End With
+    Next l
 End Sub
 
-Private Sub OperInvite(Sender As Integer, Channel As String)
-Dim l As Integer
-For l = LBound(Users) To UBound(Users)
-  If Not Users(l).Nick = "" Then
-    If InStr(Users(l).Modes, "o") Then
-      Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
-    End If
-  End If
-Next l
-End Sub
-
-Private Sub AllInvite(Sender As Integer, Channel As String)
-Dim l As Integer
-For l = LBound(Users) To UBound(Users)
-  If Not Users(l).Nick = "" Then
-    Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Users(l).Nick & " " & Channel)
-  End If
-Next l
-End Sub
-
-Private Sub MMode(Sender As Integer, Parameters As String)
-On Local Error GoTo Fail
-Dim Chan As String, Mode As String
-Chan = basFunctions.ReturnChannelIndex(Split(Parameters, " ")(0))
-Mode = Split(Parameters, " ")(1)
-Dim l As Integer
-For l = LBound(Channels(Chan).Users) To UBound(Channels(Chan).Users)
-  Call basFunctions.SendData(":" & Service(0).Nick & " MODE " & Channels(Chan) & " " & Mode & " " & Channels(Chan).Users(l) & " " & Channels(Chan).Users(l) & " " & Channels(Chan).Users(l) & " " & Channels(Chan).Users(l) & " " & Channels(Chan).Users(l) & " " & Channels(Chan).Users(l))
-Next l
+Private Sub ChanKill(ByVal Sender As User, ByVal Parameters As String)
+    On Local Error GoTo Fail
+    Dim Chan As Channel, Message As String
+    Set Chan = Channels(Split(Parameters, " ", 2)(0))
+    Message = Split(Parameters, " ", 2)(1)
+    Dim l As Integer
+    For l = 0 To Chan.Members.Count
+        Users(l).KillUser basMain.Service(4).Nick & "!" & Sender.Nick & " (" & Message & ")", ""
+    Next l
+    Exit Sub
 Fail:
-Debug.Print "*** Begin Automated Error Report ***"
-Debug.Print "Error " & Err.Number & ": " & Err.Description
-Debug.Print "Error Source: " & Err.Source
-Debug.Print "*** End Automated Error Report ***"
-Stop ' Read your Immediate Window
-End Sub
-
-Private Sub MKick(Sender As Integer, Parameters As String)
-On Local Error GoTo Fail
-Dim Chan As String, Reason As String
-Chan = basFunctions.ReturnChannelIndex(Split(Parameters, " ")(0))
-Reason = Split(Parameters, " ")(1)
-Dim l As Integer
-For l = LBound(Channels(Chan).Users) To UBound(Channels(Chan).Users)
-  Call basFunctions.SendData(":" & Service(0).Nick & " KICK " & Channels(Chan) & " " & Channels(Chan).Users(l) & ":" & Reason)
-Next l
-Fail:
-Debug.Print "*** Begin Automated Error Report ***"
-Debug.Print "Error " & Err.Number & ": " & Err.Description
-Debug.Print "Error Source: " & Err.Source
-Debug.Print "*** End Automated Error Report ***"
-Stop ' Read your Immediate Window
-End Sub
-
-Private Sub MInvite(Sender As Integer, Parameters As String)
-On Local Error GoTo Fail
-Dim SourceChan As String, DestChan As String
-SourceChan = basFunctions.ReturnChannelIndex(Split(Parameters, " ")(0))
-DestChan = Split(Parameters, " ")(1)
-Dim l As Integer
-For l = LBound(Channels(SourceChan).Users) To UBound(Channels(SourceChan).Users)
-  Call basFunctions.SendData(":" & Service(9).Nick & " INVITE " & Channels(SourceChan).Users(l) & " " & DestChan)
-Next l
-Fail:
-Debug.Print "*** Begin Automated Error Report ***"
-Debug.Print "Error " & Err.Number & ": " & Err.Description
-Debug.Print "Error Source: " & Err.Source
-Debug.Print "*** End Automated Error Report ***"
-Stop ' Read your Immediate Window
-End Sub
-
-Private Sub MKill(Sender As Integer, Parameters As String)
-Dim l As Integer
-For l = LBound(Users) To UBound(Users)
-  Call basFunctions.SendData("KILL " & Users(l).Nick & " :" & basMain.Service(4).Nick & "!" & basFunctions.ReturnUserName(Sender) & " (" & Parameters & ")")
-Next l
-End Sub
-
-Private Sub ChanKill(Sender As Integer, Parameters As String)
-On Local Error GoTo Fail
-Dim Chan As String, Message As String
-Chan = basFunctions.ReturnChannelIndex(Split(Parameters, " ")(0))
-Message = Split(Parameters, " ")(1)
-Dim l As Integer
-For l = LBound(Channels(SourceChan).Users) To UBound(Channels(SourceChan).Users)
-  Call basFunctions.SendData("KILL " & Channels(SourceChan).Users(l) & " :" & basMain.Service(4).Nick & "!" & basFunctions.ReturnUserName(Sender) & " (" & Message & ")")
-Next l
-Fail:
-Debug.Print "*** Begin Automated Error Report ***"
-Debug.Print "Error " & Err.Number & ": " & Err.Description
-Debug.Print "Error Source: " & Err.Source
-Debug.Print "*** End Automated Error Report ***"
-Stop ' Read your Immediate Window
+'Debug.Print "*** Begin Automated Error Report ***"
+'Debug.Print "Error " & Err.Number & ": " & Err.Description
+'Debug.Print "Error Source: " & Err.Source
+'Debug.Print "*** End Automated Error Report ***"
+'Stop ' Read your Immediate Window
+'WTF? LOG MAN! LOG!!!
+    basFunctions.NotifyAllUsersWithServicesAccess "Error in MassServ MMODE! " & Err.Number & ": " & Err.Description
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+Public Sub HandlePrefix(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -256,7 +300,7 @@ Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args
 
 End Sub
 
-Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleUserMode(ByVal User As User, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 

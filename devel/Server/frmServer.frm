@@ -1,5 +1,5 @@
 VERSION 5.00
-Object = "{3B7C8863-D78F-101B-B9B5-04021C009402}#1.2#0"; "RICHTX32.OCX"
+Object = "{3B7C8863-D78F-101B-B9B5-04021C009402}#1.2#0"; "richtx32.ocx"
 Begin VB.Form frmServer 
    BackColor       =   &H00000000&
    Caption         =   "#"
@@ -63,6 +63,7 @@ Begin VB.Form frmServer
       _ExtentY        =   4048
       _Version        =   393217
       BackColor       =   49152
+      Enabled         =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmServer.frx":0000
       BeginProperty Font {0BE35203-8F91-11CE-9DE3-00AA004BB851} 
@@ -271,7 +272,7 @@ End Sub
 Private Sub tmrResetFlood_Timer()
     'Lower the "flood" level of each user connected.
     Dim i As Integer
-    For i = 0 To basMain.TotalUsers
+    For i = 1 To basMain.Users.Count
         With basMain.Users(i)
             If .Requests > 0 Then
                 .Requests = .Requests - 1
@@ -315,3 +316,4 @@ Private Sub mnuMainReconnect_Click()
     tcpServer.Connect basMain.Config.UplinkHost, basMain.Config.UplinkPort
     tcpServer_Connect
 End Sub
+

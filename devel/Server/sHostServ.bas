@@ -18,6 +18,6 @@ Attribute VB_Name = "sHostServ"
 Option Explicit
 Public Const ModVersion = "0.0.0.0"
 
-Public Sub HostservHandler(Cmd As String, Sender As Integer)
+Public Sub HostservHandler(ByVal Cmd As String, ByVal Sender As User)
 
 End Sub

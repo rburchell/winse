@@ -18,20 +18,20 @@ Attribute VB_Name = "sOperServ"
 Option Explicit
 Public Const ModVersion = "0.0.0.1"
 
-Public Sub OperservHandler(Cmd As String, Sender As Integer)
+Public Sub OperservHandler(ByVal Cmd As String, ByVal Sender As User)
     Dim SenderNick As String
     Dim Parameters As String
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Dim FirstSpace As String
     FirstSpace = InStr(Cmd, " ")
     Parameters = Right(Cmd, Len(Cmd) - FirstSpace)
     FirstSpace = InStr(Cmd, " ")
     If FirstSpace <> 0 Then Cmd = Left(Cmd, FirstSpace - 1)
-    If Not basFunctions.IsOper(Sender) Then
+    If Not Sender.IsOper Then
         Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, Replies.MustBeOpered)
         Exit Sub
     End If
-    If Not basFunctions.HasFlag(Sender, AccFlagCanOperServ) Then
+    If Not Sender.HasFlag(AccFlagCanOperServ) Then
         Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, Replies.InsufficientPermissions)
         Exit Sub
     End If
@@ -47,9 +47,9 @@ Public Sub OperservHandler(Cmd As String, Sender As Integer)
     End Select
 End Sub
 
-Private Sub Help(Sender As Integer)
+Private Sub Help(ByVal Sender As User)
     Dim SenderNick As String
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "OperServ Commands:")
     Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, " ")
     Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  *AKILL      - Manipulate the AKILL list")
@@ -70,28 +70,28 @@ Private Sub Help(Sender As Integer)
     Call basFunctions.SendMessage(basMain.Service(4).Nick, SenderNick, "  ")
 End Sub
 
-Private Sub Version(Sender As Integer)
-    Call basFunctions.SendMessage(basMain.Service(4).Nick, basFunctions.ReturnUserName(Sender), AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(4).Nick & "[" & sOperServ.ModVersion & "]")
+Private Sub Version(ByVal Sender As User)
+    Call basFunctions.SendMessage(basMain.Service(4).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(4).Nick & "[" & sOperServ.ModVersion & "]")
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+Public Sub HandlePrefix(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -99,7 +99,7 @@ Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args
 
 End Sub
 
-Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleUserMode(ByVal User As User, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 

@@ -26,6 +26,12 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 09/08/2004 - aquanight
+  -[AL] [---] Changed the whole user and channel tracking mechanisms, because I got
+              sick of mucking with arrays and standard collections and what not.
+              We are now slightly more object-oriented - which we should have been
+              from the start ;p . I don't know how stable things are, so be on the
+              lookout.
  7/08/2004 - Jason
   -[AG] [---] Made DENY slightly more efficent, Added DENY ENFORCE
   -[MsS][---] Added MKILL and CHANKILL, CHANGLINE is on my ToDo list

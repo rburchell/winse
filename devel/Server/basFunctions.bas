@@ -106,18 +106,6 @@ Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal Channel As Str
     Next i
 End Sub
 
-Public Function IsAbuseTeamMember(ByVal UserID As Integer) As Boolean
-    IsAbuseTeamMember = basMain.Users(UserID).AbuseTeam
-End Function
-
-Public Function IsServicesAdmin(ByVal UserID As Integer) As Boolean
-    IsServicesAdmin = (InStr(basMain.Users(UserID).Modes, "a") <> 0)
-End Function
-
-Public Function IsOper(ByVal UserID As Integer) As Boolean
-    IsOper = (InStr(basMain.Users(UserID).Modes, "o") <> 0)
-End Function
-
 Public Sub SendData(ByVal Buffer As String)
     'With the new socket library, buffering might not
     'be needed anymore, but for now I think it's ok to
@@ -143,9 +131,8 @@ End Sub
 Public Sub SendMessage(ByVal Sender As String, ByVal Reciever As String, ByVal Message As String)
     Dim UserID As Integer
     'Wrapper for notice\privmsg. Checks which we should use, and uses it.
-    UserID = basFunctions.ReturnUserIndex(Reciever)
-    If UserID = -1 Then Exit Sub
-    Select Case basMain.Users(UserID).MsgStyle
+    On Error GoTo ForgetIt
+    Select Case Users(Sender).MsgStyle
         Case True
             'Notice
             Call basFunctions.Notice(Sender, Reciever, Message)
@@ -153,46 +140,9 @@ Public Sub SendMessage(ByVal Sender As String, ByVal Reciever As String, ByVal M
             'msg
             Call basFunctions.PrivMsg(Sender, Reciever, Message)
     End Select
+ForgetIt:
+    Exit Sub
 End Sub
-
-Public Sub KillUser(ByVal UserID As Integer, ByVal Message As String, Optional ByVal Killer As String = "Agent")
-    If UserID >= 0 Then
-        'I think some kind of validation should be put
-        'here... because we could theoretically call
-        'KillUser with a positive UserId that is still
-        'invalid. It shouldn't happen, but it'd be
-        'good to know :) . -aquanight
-        If basMain.Users(UserID).Nick = "" Then
-            'For now, I'm throwing a Bad Call Error
-            'Yes it's old fashioned, but if it where
-            'my way, it'd be Throw New... you get the
-            'idea :) . - aquanight
-            Error 5
-        End If
-        If Not Killer = "" Then
-            Message = Killer & " (" & Message & ")"
-        End If
-        basFunctions.SendData (":" + Killer + " KILL " & basMain.Users(UserID).Nick & " :" & Message)
-        With basMain.Users(UserID)
-            'Blank their record
-            .Access = ""
-            .Modes = ""
-            .Nick = ""
-            .Requests = 0
-            .MsgStyle = False
-        End With
-        If UserID = basMain.TotalUsers - 1 Then basMain.TotalUsers = basMain.TotalUsers - 1
-    Else
-        'Services dont know them :| Shouldnt happen!!!!!! --w00t
-        Call basFunctions.LogEventWithMessage(LogTypeError, Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.KillUser"))
-    End If
-End Sub
-
-Public Function ReturnUserName(ByVal UserID As Integer) As String
-    'If return "" then user doesnt exist.
-    If UserID = -1 Then Exit Function
-    ReturnUserName = basMain.Users(UserID).Nick
-End Function
 
 Public Sub GlobalMessage(ByVal Message As String)
     'I'm thinking that we should Global the easy way :)
@@ -202,54 +152,6 @@ Public Sub GlobalMessage(ByVal Message As String)
     ' - aquanight
     basFunctions.SendData ":" + Service(8).Nick + " NOTICE " + basMain.Config.GlobalTargets + " :" + Message
 End Sub
-
-Public Sub CheckFloodLevel(ByVal UserID As Integer)
-    'Flood level. Goes up by 1 on each request.
-    'When it hits 5, a warning. 10, a kill. SHUN instead?
-    With basMain.Users(UserID)
-        If .Requests >= 8 Then
-            'kill, dont specify killer so it will default to "Agent"
-            Call basFunctions.KillUser(UserID, Replies.ServiceFloodKill)
-        End If
-        If .Requests = 4 Then
-            'warn
-            Call basFunctions.SendMessage(basMain.Service(8).Nick, .Nick, Replies.ServiceFloodWarning)
-        End If
-    End With
-    'Increase flood requests
-    basMain.Users(UserID).Requests = basMain.Users(UserID).Requests + 1
-End Sub
-
-Public Function ReturnUserIndex(ByVal NickName As String) As Integer
-    Dim i As Integer
-    'Returns -1 if user doesnt exist.
-    For i = 0 To UBound(Users)
-        With basMain.Users(i)
-            If UCase(NickName) = UCase(.Nick) Then
-                ReturnUserIndex = i
-                'Blah - aquanight
-                Exit Function
-            End If
-        End With
-        DoEvents
-    Next i
-    ReturnUserIndex = -1
-End Function
-
-Public Function ReturnChannelIndex(ByVal ChannelName As String)
-    Dim i As Integer
-    'Returns -1 if chan doesnt exist.
-    For i = 0 To UBound(Channels)
-        With basMain.Channels(i)
-            If UCase(ChannelName) = UCase(.Name) Then
-                ReturnChannelIndex = i
-                Exit Function
-            End If
-        End With
-        DoEvents
-    Next i
-    ReturnChannelIndex = -1
-End Function
 
 Public Sub SquitServices(Optional ByVal Message As String = "")
     Call basFunctions.SendData("SQUIT " & basMain.Config.UplinkName & IIf(Message <> "", " :" & Message, ""))
@@ -286,50 +188,12 @@ Public Sub NotifyAllUsersWithFlags(ByVal Flag As String, ByVal Message As String
     Dim Reciever As String
     Dim Sender As String
     Sender = Service(8).Nick
-    For i = 0 To basMain.TotalUsers
-        If HasFlag(i, Flag) Then
+    For i = 0 To Users.Count
+        If basMain.Users(i).HasFlag(Flag) Then
             Reciever = basMain.Users(i).Nick
             Call basFunctions.SendMessage(Sender, Reciever, "Services Notice: " & Message)
         End If
     Next i
-End Sub
-
-Public Sub SetUserModes(ByVal UserID As Integer, ByVal Modes As String)
-  Dim l As Integer
-  Dim ModeChar As String * 1
-  Dim AddModes As Boolean
-  Dim Result As String
-  With basMain.Users(UserID)
-    Result = .Modes
-    AddModes = True
-    For l = 1 To Len(Modes)
-      ModeChar = Mid(Modes, l, 1)
-      If (Asc(ModeChar) >= 65 And Asc(ModeChar) <= 90) Or _
-         (Asc(ModeChar) >= 97 And Asc(ModeChar) <= 122) Or _
-         Asc(ModeChar) = 43 Or Asc(ModeChar) = 45 Then
-' Begin Validity Checked Code
-        If ModeChar = "+" Then
-          AddModes = True
-        ElseIf ModeChar = "-" Then
-          AddModes = False
-        Else
-          Result = Replace(Result, ModeChar, "")
-          If AddModes Then Result = Result & ModeChar
-          'Now for some callback time! -aquanight
-          sAdminServ.HandleUserMode UserID, AddModes, ModeChar
-          sAgent.HandleUserMode UserID, AddModes, ModeChar
-          sChanServ.HandleUserMode UserID, AddModes, ModeChar
-          sDebugServ.HandleUserMode UserID, AddModes, ModeChar
-          sMassServ.HandleUserMode UserID, AddModes, ModeChar
-          sNickServ.HandleUserMode UserID, AddModes, ModeChar
-          sOperServ.HandleUserMode UserID, AddModes, ModeChar
-          sRootServ.HandleUserMode UserID, AddModes, ModeChar
-        End If
-' End Validity Checked Code
-      End If
-      Next l
-      .Modes = Result
-  End With
 End Sub
 
 Public Sub ParseCmd(ByVal Incoming As String)
@@ -426,139 +290,21 @@ Public Sub ParseCmd(ByVal Incoming As String)
     sRootServ.HandleCommand sSource, sCmd, sArgs
 End Sub
 
-'BEHOLD! The NEW AND IMPROVED Channel Mode Parser! :D
-'- aquanight
-Public Function SetChannelModes(ByVal ChanID As Integer, ByVal Modes As String)
-    'Believe it or not, I like throwing errors over just
-    'sending out a scream :) .
-    If ChanID < 0 Then Err.Raise 9, , Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.SetChannelModes2")
-    'Indexes, for the character and parameter
-    Dim iChar As Integer, iParam As Integer
-    'Strings to store said character and parameter
-    Dim sChar As String, sParam As String
-    'Two arrays: one for holding the parsed mode string
-    'and the other for holding the modes that are valid.
-    Dim sMode As Variant, sValid As Variant
-    'Are we setting or unsetting a mode?
-    Dim bSet As Boolean
-    bSet = True 'Start off in + by default.
-    sMode = Split(Modes, " ") 'Parse the modes.
-    sValid = Split(basMain.ChannelModes2, ",") 'And these too.
-    iParam = 1 'Init the parameter index.
-    For iChar = 1 To Len(sMode(0))
-        sChar = Mid(sMode(0), iChar, 1) 'Get the modeflag
-        If sChar = "+" Then 'Now setting modes
-            bSet = True
-        ElseIf sChar = "-" Then 'Now unsetting modes
-            bSet = False
-        ElseIf InStr(basMain.ChanModesForAccess, sChar) > 0 Then
-            'Prefix mode: controls channel privs
-            If iParam <= UBound(sMode) Then
-                sParam = sMode(iParam)
-                iParam = iParam + 1
-                'Another extra check here - we may have
-                'killed  user that was trying to be opped
-                'via the IRCd. If that happens, then we
-                'get a -1 out of index, even though the
-                'change is supposedly valid. In this case
-                'we'll just do what Unreal does and send
-                'another KILL :P .
-                '(If we had continued onward to
-                'DispatchPrefix it would cause services
-                'to die under a very normal
-                'circumstance.)
-                If IsServicesNick(sParam) Then
-                    'It's a service spiel. We'll figure
-                    'out how to deal with this later...
-                    'For now, just do nothing so that
-                    'we don't die :/ .
-                ElseIf ReturnUserIndex(sParam) = -1 Then
-                    'Example of what this looks like:
-                    'services.winse.net KILL Ghostie :services.winse.net (Ghostie(?) <- irc.winse.net)
-                    PutQuick ":" + basMain.Config.ServerName + " KILL " + sParam + " :" + basMain.Config.ServerName + " (" + sParam + "(?) <- " + basMain.Config.UplinkName + ")"
-                Else
-                    DispatchPrefix ChanID, bSet, sChar, ReturnUserIndex(sParam)
-                End If
-            Else
-                'EEEEEEEEEK!
-                Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
-            End If
-        ElseIf InStr(sValid(0), sChar) > 0 Then
-            'Type A: Mode flag controls a list.
-            If iParam <= UBound(sMode) Then
-                sParam = sMode(iParam)
-                iParam = iParam + 1
-                DispatchModeTypeA ChanID, bSet, sChar, sParam
-            Else
-                'EEEEEEEEEK!
-                Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
-            End If
-        ElseIf InStr(sValid(1), sChar) > 0 Then
-            'Type B: Use param for set and unset.
-            If iParam <= UBound(sMode) Then
-                sParam = sMode(iParam)
-                iParam = iParam + 1
-                DispatchModeTypeB ChanID, bSet, sChar, sParam
-            ElseIf bSet = False Then
-                'Some wacky IRCd might let us get away
-                'unsetting a mode w/o parameter
-                '*coughunrealircdcough*
-                DispatchModeTypeB ChanID, False, sChar, ""
-            Else
-                'EEEEEEEEEK!
-                Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
-            End If
-        ElseIf InStr(sValid(2), sChar) > 0 Then
-            'Type C: Use param only for set
-            If bSet Then
-                If iParam <= UBound(sMode) Then
-                    sParam = sMode(iParam)
-                    iParam = iParam + 1
-                    DispatchModeTypeC ChanID, bSet, sChar, sParam
-                Else
-                    'EEEEEEEEEK!
-                    Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
-                End If
-            Else
-                DispatchModeTypeC ChanID, bSet, sChar
-            End If
-        ElseIf InStr(sValid(3), sChar) > 0 Then
-            'Type D: Never use a param
-            DispatchModeTypeD ChanID, bSet, sChar
-        Else
-            'EEEEEEEEEK!
-            Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckUnknownModeChange, "%c", IIf(bSet, "+", "-") & sChar))
-        End If
-    Next iChar
+Public Function CountArray(ByRef WhatArray As Variant) As Long
+    If Not IsArray(WhatArray) Then Error 5
+    Dim lRet As Long
+    On Error Resume Next
+    lRet = UBound(WhatArray) - LBound(WhatArray) + 1
+    'If errored, lRet will remain 0.
+    CountArray = lRet
 End Function
 
-Private Sub DispatchPrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
-    If ChanID < 0 Or Target < 0 Then
-        'Now something really went pear-shaped. :P
-        'Send out a scream.
-        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchPrefix")
-        'Reboot.
-        RestartServices "Fatal sanity check error. Forcing restart."
-    End If
-    Dim s As String
-    s = Channels(ChanID).UsersModes(CStr(Target))
-    If bSet Then
-        s = s & Char
-    Else
-        s = Replace(s, Char, "")
-    End If
-    SetItem(Channels(ChanID).UsersModes, CStr(Target)) = s
-    'Okay, now that we've updated their status, send it
-    'out :) .
-    sAdminServ.HandlePrefix ChanID, bSet, Char, Target
-    sAgent.HandlePrefix ChanID, bSet, Char, Target
-    sChanServ.HandlePrefix ChanID, bSet, Char, Target
-    sDebugServ.HandlePrefix ChanID, bSet, Char, Target
-    sMassServ.HandlePrefix ChanID, bSet, Char, Target
-    sNickServ.HandlePrefix ChanID, bSet, Char, Target
-    sOperServ.HandlePrefix ChanID, bSet, Char, Target
-    sRootServ.HandlePrefix ChanID, bSet, Char, Target
-End Sub
+Public Function IndexOfChannelMember(ByVal ChanID As Integer, ByVal UserID As Integer) As Integer
+    Dim idx As Long
+    For idx = 0 To CountArray(Channels(ChanID).Members) - 1
+        
+    Next idx
+End Function
 
 'Sometimes we have to modify an item in a collection.
 'Unfortunately, VB6's collection does not allow us to
@@ -574,7 +320,7 @@ End Sub
 Public Property Let SetItem(ByVal Collection As Collection, ByVal Index As Variant, ByVal NewValue As Variant)
     Collection.Remove Index
     If VarType(Index) = vbString Then
-        Collection.Add NewValue, Key:=Index
+        Collection.Add NewValue, key:=Index
     Else
         Collection.Add NewValue, before:=Index
     End If
@@ -583,137 +329,21 @@ End Property
 Public Property Set SetItem(ByVal Collection As Collection, ByVal Index As Variant, ByVal NewValue As Object)
     Collection.Remove Index
     If VarType(Index) = vbString Then
-        Collection.Add NewValue, Key:=Index
+        Collection.Add NewValue, key:=Index
     Else
         Collection.Add NewValue, before:=Index
     End If
 End Property
 
 'Something to tell us if a collection item exists.
-Public Function CollectionContains(ByVal Collection As Collection, ByVal Key As String) As Boolean
+Public Function CollectionContains(ByVal Collection As Collection, ByVal key As String) As Boolean
     On Error GoTo Nope
-    Call Collection.Item(Key)
+    Call Collection.Item(key)
     CollectionContains = True
     Exit Function
 Nope:
     CollectionContains = False
 End Function
-
-Private Sub DispatchModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
-    If ChanID < 0 Or Entry = "" Then
-        'Now something really went pear-shaped. :P
-        'Send out a scream.
-        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
-        'Reboot.
-        RestartServices "Fatal sanity check error. Forcing restart."
-    End If
-    Select Case Char
-        Case "b"
-            If bSet Then
-                If Not CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Bans.Add Entry, Entry
-            Else
-                If CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Bans.Remove Entry
-            End If
-        Case "e"
-            If bSet Then
-                If Not CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Excepts.Add Entry, Entry
-            Else
-                If CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Excepts.Remove Entry
-            End If
-        Case "I"
-            If bSet Then
-                If Not CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Invites.Add Entry, Entry
-            Else
-                If CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Invites.Remove Entry
-            End If
-        Case Else
-            'Don't know? Don't care.
-    End Select
-    'Now send it out :)
-    sAdminServ.HandleModeTypeA ChanID, bSet, Char, Entry
-    sAgent.HandleModeTypeA ChanID, bSet, Char, Entry
-    sChanServ.HandleModeTypeA ChanID, bSet, Char, Entry
-    sDebugServ.HandleModeTypeA ChanID, bSet, Char, Entry
-    sMassServ.HandleModeTypeA ChanID, bSet, Char, Entry
-    sNickServ.HandleModeTypeA ChanID, bSet, Char, Entry
-    sOperServ.HandleModeTypeA ChanID, bSet, Char, Entry
-    sRootServ.HandleModeTypeA ChanID, bSet, Char, Entry
-End Sub
-
-Private Sub DispatchModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
-    If ChanID < 0 Or (Entry = "" And bSet = True) Then
-        'Now something really went pear-shaped. :P
-        'Send out a scream.
-        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
-        'Reboot.
-        RestartServices "Fatal sanity check error. Forcing restart."
-    End If
-    Select Case Char
-        Case "k"
-            Channels(ChanID).ChannelKey = IIf(bSet, Entry, "")
-        Case "L"
-            Channels(ChanID).OverflowChannel = IIf(bSet, Entry, "")
-        Case "f"
-            If bSet Then
-                Channels(ChanID).FloodProtection = Entry
-            Else
-                Channels(ChanID).FloodProtection = ""
-            End If
-        Case Else
-            'Don't know? Don't care.
-    End Select
-    'Now send it out :)
-    sAdminServ.HandleModeTypeB ChanID, bSet, Char, Entry
-    sAgent.HandleModeTypeB ChanID, bSet, Char, Entry
-    sChanServ.HandleModeTypeB ChanID, bSet, Char, Entry
-    sDebugServ.HandleModeTypeB ChanID, bSet, Char, Entry
-    sMassServ.HandleModeTypeB ChanID, bSet, Char, Entry
-    sNickServ.HandleModeTypeB ChanID, bSet, Char, Entry
-    sOperServ.HandleModeTypeB ChanID, bSet, Char, Entry
-    sRootServ.HandleModeTypeB ChanID, bSet, Char, Entry
-End Sub
-
-Private Sub DispatchModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
-    If ChanID < 0 Or (Entry = "" And bSet = True) Then
-        'Now something really went pear-shaped. :P
-        'Send out a scream.
-        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
-        'Reboot.
-        RestartServices "Fatal sanity check error. Forcing restart."
-    End If
-    Select Case Char
-        Case "l"
-            Channels(ChanID).OverflowLimit = IIf(bSet, CLng(Entry), 0)
-        Case Else
-            'Don't know? Don't care.
-    End Select
-    'Now send it out :)
-    sAdminServ.HandleModeTypeC ChanID, bSet, Char, Entry
-    sAgent.HandleModeTypeC ChanID, bSet, Char, Entry
-    sChanServ.HandleModeTypeC ChanID, bSet, Char, Entry
-    sDebugServ.HandleModeTypeC ChanID, bSet, Char, Entry
-    sMassServ.HandleModeTypeC ChanID, bSet, Char, Entry
-    sNickServ.HandleModeTypeC ChanID, bSet, Char, Entry
-    sOperServ.HandleModeTypeC ChanID, bSet, Char, Entry
-    sRootServ.HandleModeTypeC ChanID, bSet, Char, Entry
-End Sub
-
-Private Sub DispatchModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
-    If ChanID < 0 Then
-        'Now something really went pear-shaped. :P
-        'Send out a scream.
-        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
-        'Reboot.
-        RestartServices "Fatal sanity check error. Forcing restart."
-    End If
-    If bSet Then
-        If InStr(Channels(ChanID).Modes, Char) = 0 Then Channels(ChanID).Modes = Channels(ChanID).Modes + Char
-    Else
-        'Don't need to check :) replace will do that for
-        'us!
-        Channels(ChanID).Modes = Replace(Channels(ChanID).Modes, Char, "")
-    End If
-End Sub
 
 'The reason all the Dispatch* procs force a restart is
 'because they should NEVER be called with illegal
@@ -735,68 +365,9 @@ Public Sub RestartServices(Optional ByVal RestartMsg As String = "Restarting..."
     End 'Splat.
 End Sub
 
-'More functions! :) - aquanight
-Public Function FreeUserID() As Integer
-    Dim i As Integer
-    For i = 0 To UBound(Users)
-        If Users(i).Nick = "" Then
-            FreeUserID = i
-            Exit Function
-        End If
-    Next i
-End Function
-
-Public Function FreeChanID() As Integer
-    Dim i As Integer
-    For i = 0 To UBound(Channels)
-        If Channels(i).Name = "" Then
-            FreeChanID = i
-            Exit Function
-        End If
-    Next i
-End Function
-
 'PHEW! :> -aquanight
 'Yes, I really should split this into other .bas files, but I cba. And hey,
 'is it worth it? --w00t
-
-Public Function HasFlag(ByVal UserID As Integer, ByVal Flag As String) As Boolean
-    HasFlag = IIf(InStr(1, Users(UserID).Access, Flag), True, False)
-End Function
-
-Public Sub SetFlags(ByVal UserID As Integer, ByVal FlagMask As String)
-    If Not Mid(FlagMask, 1, 1) = "+" And Not Mid(FlagMask, 1, 1) = "-" Then 'Absolute Flag String
-        Users(UserID).Access = FlagMask
-        Exit Sub
-    End If
-    ' Copied with few editions from my SetUserModes - Jason
-    Dim l As Integer ' I use l or i for loops usually
-    Dim ModeChar As String * 1
-    Dim AddModes As Boolean
-    Dim Result As String
-    With basMain.Users(UserID)
-        Result = .Access
-        AddModes = True
-        For l = 1 To Len(FlagMask)
-            ModeChar = Mid(FlagMask, l, 1)
-            If (Asc(ModeChar) >= 65 And Asc(ModeChar) <= 90) Or _
-             (Asc(ModeChar) >= 97 And Asc(ModeChar) <= 122) Or _
-             Asc(ModeChar) = 43 Or Asc(ModeChar) = 45 Then
-' Begin Validity Checked Code
-                If ModeChar = "+" Then
-                    AddModes = True
-                ElseIf ModeChar = "-" Then
-                    AddModes = False
-                Else
-                    Result = Replace(Result, ModeChar, "")
-                    If AddModes Then Result = Result & ModeChar
-                End If
-' End Validity Checked Code
-            End If
-        Next l
-        .Access = Result
-    End With
-End Sub
 
 'Returns True if the passed nick is a Services Nickname.
 Public Function IsServicesNick(ByVal Nick As String) As Boolean
@@ -810,7 +381,7 @@ Public Function IsServicesNick(ByVal Nick As String) As Boolean
     IsServicesNick = False
 End Function
 
-Public Function ExtractNickFromNUH(ByVal Prefix As String)
+Public Function ExtractNickFromNUH(ByVal Prefix As String) As String
     If InStr(Prefix, "!") = 0 Then
         If InStr(Prefix, "@") = 0 Then
             ExtractNickFromNUH = Prefix
@@ -822,7 +393,7 @@ Public Function ExtractNickFromNUH(ByVal Prefix As String)
     End If
 End Function
 
-Public Sub CommandHelp(Sender As Integer, Args() As String, ServicesHelpFileDir As String, ServicesID As Integer)
+Public Sub CommandHelp(ByVal Sender As User, Args() As String, ServicesHelpFileDir As String, ServicesID As Integer)
     'Contains w00tSuperDuperHelpSystem v1.1 :D
 
     'Basically, this grabs text from an external helpfile and sends it to the user.
@@ -833,7 +404,7 @@ Public Sub CommandHelp(Sender As Integer, Args() As String, ServicesHelpFileDir 
     Dim i As Integer
     Dim j As Integer
 
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     f = App.Path & "\help\" & ServicesHelpFileDir
     If UBound(Args) = 1 Then
         f = f & "\" & LCase(Args(1))
@@ -869,3 +440,10 @@ ErrNeedIndex:
     Resume
 End Sub
 
+Public Function StringRepeat(ByVal Str As String, ByVal Count As Long)
+    Dim sWork As String
+    For Count = Count To 1 Step -1
+        sWork = sWork & Str
+    Next Count
+    StringRepeat = sWork
+End Function

@@ -84,106 +84,34 @@ Public Const SuspendMLock = "+Osnt"
 Public Const SuspendTLock = "This channel is suspended."
 Public Const ForbidTLock = "This channel is forbidden."
 
-'I really think a seperate structure for user connection
-'info and user nickserv data is necessary :P .
-Public Type UserStructure
-    Nick As String              'Nickname
-    EMail As String             'User email. NOT CHECKED FOR VALIDITY!!
-    Password As String          'User password.
-    MemoID As Integer           'ID associated with memos in the memoserv database.
-    Modes As String             'Usermodes
-    HideEMail As Boolean        'Is email visible?
-    Access As String            'Services access.
-    Requests As Byte            'Flood level. Goes up by 1 on each request.
-                                'When it hits 5, a warning. 10, a kill. 20, a gline (unless >= services admin)
-                                'Flood level goes down by 1 every 2 seconds??
-    MsgStyle As Boolean         'True=notice false=privmsg
-    AbuseTeam As Boolean        'Abuse Team members can use services commands that otherwise, only the services master can use.
-    IdentifiedToNick As String  'Holds nick that user has identified to. Blank if not identified.
-    Channels As Collection      'Channels this user is on. (Use Channel ID as the value and key :) ).
-    'Some extra stuff we might get from things like
-    'Unreal IRCd :P .
-    SignOn As Long              'Time Stamp of the user.
-    SvsStamp As Long            '"Service stamp"
-    UserName As String          'Ident (in USER or Identd reply).
-    HostName As String          'User's real hostname.
-    RealName As String          '"Real Name" of this user
-    VirtHost As String          'Virtual Host, from stuff like GETHOST or NICKv2
-    Server As String            'Server this user is on.
-    'Anything else services need to store?
-    'BLAH. New in struct isn't going to port very well.
-    'Just don't let anyone forget to init it.
-    Custom As Collection
-End Type
-
-Private Type ChannelAccess
-    Nick As String
-    Access As Byte 'must be < 255.
-End Type
-
-Public Type ChannelStructure
-    Name As String
-    Topic As String
-    TopicSetBy As String
-    TopicSetOn As Long 'Not sure if this is really needed... --w00t
-    FounderPassword As String
-    MLock As String 'modes for mlock
-    TotalUsersOnAccessList As Integer
-    AccessList() As ChannelAccess
-    Modes As String
-    
-    TotalChannelUsers As Integer
-    Users As Collection
-    'Users on this channel. (Use UserID as the value and key :) ).
-    'That kind of limit is impractical, and for storing
-    'only 1-5 characters max, allocating 10 is a waste
-    'of space :P . -aquanight
-    'Ok, I basically just totally changed this :)
-    'Basically, each entry in this collection is key'd
-    'by the CStr() of the user's UserID. -aquanight
-    UsersModes As Collection
-    'Now for the extended modes that require parameters (+flL etc)
-    Bans As Collection
-    Excepts As Collection
-    Invites As Collection 'For hybrid :)
-    ChannelKey As String
-    FloodProtection As String 'chanmode +f
-    OverflowChannel As String
-    OverflowLimit As Long
-    'Anything else services need to store?
-    Custom As Collection
-End Type
-
 Public Type Service
     Nick As String
     Hostmask As String
     Name As String
 End Type
 
-
-Public NextFreeUserIndex As Integer
-Public NextFreeChannelIndex As Integer
-
-Public TotalUsers As Integer
-Public TotalChannels As Integer
 Public Const TotalServices = 12
 
 'We should eventually move to Dynamic buffers here.
 'To be honest, I think dynamic buffers would make it
 'WAY*10^7 faster to loop through stuff... *sigh*
-Public Channels(32766) As ChannelStructure
-Public Users(32766) As UserStructure
+Public Channels As New Channels
+Public Users As New Users
 Public Service(TotalServices - 1) As Service
 
 Public Buffer(32767) As String
 Public BufferElements As Integer
 
+'Database structures, for... the databases!
+Public NickDB As Database 'Nickname Records
+Public ChanDB As Database 'Channel Records
+Public MemoDB As Database 'Memo Records
+Public BotDB As Database  'BotServ Records
+
 Sub Main()
     'DO NOT REORDER THE SERVICES! eg chanserv (or whatever you call it) should be #0
     'If you change the order, you will see things like Agent setting channel topics (!)
     '--w00t
-    basMain.TotalChannels = -1
-    basMain.TotalUsers = -1
     'Let's parse our config :|
     basMain.ParseConfigurationFile (App.Path & "\winse.conf")
     
