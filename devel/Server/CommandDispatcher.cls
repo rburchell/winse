@@ -83,12 +83,12 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         'NICK nick hops TS ident host server hops? :realname
         If UBound(Args) < 7 Then
             'EEP. NOT GOOD.
-            basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! NICK user introduction message with insufficient parameters recieved! (Lame/old IRCd?)"
-            basFunctions.PutQuick ":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " NICK :Not enough parameters"
+            basFunctions.NotifyAllUsersWithServicesAccess Replies.SanityCheckNICKInsufficientParameters
+            Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " NICK :Not enough parameters")
             If UBound(Args) >= 0 Then
                 'And just for the heck of it, remove the
                 'poor user to avoid a desynch.
-                basFunctions.PutQuick ":" + basMain.Config.ServerName + " KILL + " + Args(0) + " :" + basMain.Config.ServerName + " (" + Args(0) + "(?) <- " + basMain.Config.UplinkName + ")"
+                Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " KILL + " + Args(0) + " :" + basMain.Config.ServerName + " (" + Args(0) + "(?) <- " + basMain.Config.UplinkName + ")")
             End If
             Exit Sub
         End If
@@ -100,7 +100,7 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'For services nicks, we ALWAYS win.
             basFunctions.PutQuick ":" + basMain.Config.ServerName + " KILL " + Args(0) + " :" + basMain.Config.ServerName + " (Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + "))"
             'Send out a warning...
-            basFunctions.LogEventWithMessage basMain.LogTypeNotice, "Collision with services nick: " + Args(0) + "!" + Args(2) + "@" + Args(3)
+            Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckServicesNickInUse + Args(0) + "!" + Args(2) + "@" + Args(3))
             Exit Sub
         ElseIf ReturnUserIndex(Args(0)) >= 0 Then
             'COLLISION!!!!!!!!
@@ -109,9 +109,10 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'recent stamp, but as we have no directly
             'connect users, and only one server, we
             'simply allow it - the IRCd wins.
+            '(so theoretically, if we get here, we're fucked.)
             iNick = basFunctions.ReturnUserIndex(Args(0))
             'Send out a warning...
-            basFunctions.LogEventWithMessage basMain.LogTypeNotice, "Collision: " + Args(0) + "!" + Args(2) + "@" + Args(3)
+            Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, "Collision: " + Args(0) + "!" + Args(2) + "@" + Args(3))
             'Overwrite the remaining fields.
         End If
         With basMain.Users(iNick)
@@ -138,6 +139,10 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             .VirtHost = ""
         End With
         basMain.TotalUsers = basMain.TotalUsers + 1
+        'send the MOTD, DADAA!!! --w00t
+        Dim Temp As New CommandDispatcher
+        Call Temp.CmdMotd(Args(0), Args(), RawCmd)
+        Set Temp = Nothing
         'Thanks to command callbacks, we don't have to
         'muck with registered nicks here!
     Else
@@ -151,15 +156,15 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'For services nicks, we ALWAYS win.
             basFunctions.PutQuick ":" + basMain.Config.ServerName + " KILL " + Args(0) + " :" + basMain.Config.ServerName + " (Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + "))"
             'Send out a warning...
-            basFunctions.LogEventWithMessage basMain.LogTypeNotice, "WTF? Nick Change Collision with services nick: " + Args(0) + "!" + Args(2) + "@" + Args(3) + " ARE WE DESYNCHED????"
+            Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckServicesNickInUse + Args(0) + "!" + Args(2) + "@" + Args(3))
             Exit Sub
         ElseIf ReturnUserIndex(Args(0)) >= 0 Then
             'COLLISION!!!!!!!!
             'This is s nickchange... so all I can say
             'is... WTF?
-            basFunctions.PutQuick ":" + basMain.Config.ServerName + " KILL " + Args(0) + " :" + basMain.Config.ServerName + " (Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + "))"
+            Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " KILL " + Args(0) + " :" + basMain.Config.ServerName + " (Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + "))")
             'Send out a warning...
-            basFunctions.LogEventWithMessage basMain.LogTypeNotice, "WTF? Nick Change Collision: " + Args(0) + "!" + Args(2) + "@" + Args(3) + " ARE WE DESYNCHED????"
+            Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckNickChangeCollision + Args(0) + "!" + Args(2) + "@" + Args(3))
             'Overwrite the remaining fields.
             Exit Sub
         End If
@@ -190,14 +195,14 @@ Public Sub CmdPrivMsg(ByVal Source As String, ByRef Args() As String, ByVal RawC
     ':source PRIVMSG dest :msg
     If UBound(Args) < 0 Then
         'No nickname!
-        basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! PRIVMSG message with insufficient parameters recieved! (Lame/old IRCd?)"
-        basFunctions.PutQuick ":" + basMain.Config.ServerName + " 411 " + basMain.Config.UplinkName + " :No recepient given (PRIVMSG)"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckPRIVMSGInsufficientParameters)
+        Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 411 " + basMain.Config.UplinkName + " :No recepient given (PRIVMSG)")
         Exit Sub
     End If
     If UBound(Args) < 1 Then
         'No message!
-        basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! PRIVMSG message with insufficient parameters recieved! (Lame/old IRCd?)"
-        basFunctions.PutQuick ":" + basMain.Config.ServerName + " 412 " + basMain.Config.UplinkName + " :No text to send"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckPRIVMSGInsufficientParameters)
+        Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 412 " + basMain.Config.UplinkName + " :No text to send")
     End If
     'First send out the PRIVMSG.
     Select Case UCase(ExtractNickFromNUH(Args(0)))
@@ -243,15 +248,15 @@ Public Sub CmdKill(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     End If
     If UBound(Args) < 1 Then
         'BLAH
-        basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! KILL message with insufficient parameters recieved! (Lame/old IRCd?)"
-        basFunctions.PutQuick ":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " KILL :Not enough parameters"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckKILLInsufficientParameters)
+        Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " KILL :Not enough parameters")
     End If
     'Now is it a user?
     If ReturnUserIndex(ExtractNickFromNUH(Args(0))) >= 0 Then
         Dim i As Integer
         i = ReturnUserIndex(ExtractNickFromNUH(Args(0)))
         'Let admins know.
-        LogEventWithMessage LogTypeNotice, "Received KILL message for " + Users(i).Nick + "!" + Users(i).UserName + "@" + Users(i).HostName + " from " + sNick + " Path: " + Args(1)
+        Call LogEventWithMessage(basMain.LogTypeNotice, "KILL: " + Users(i).Nick + "!" + Users(i).UserName + "@" + Users(i).HostName + " from " + sNick + " Path: " + Args(1))
         'Remove it.
         Dim s(0) As String
         s(0) = "KILL " + Args(1)
@@ -263,8 +268,8 @@ Public Sub CmdKill(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
                 Call basFunctions.IntroduceClient(basMain.Service(i).Nick, basMain.Service(i).Hostmask, basMain.Service(i).Name)
             End If
         Next
-        Call basFunctions.NotifyAllUsersWithServicesAccess(sNick & " issued a KILL for a service client!")
-        If Not bSrvKill Then KillUser ReturnUserIndex(sNick), "Do " + Chr(2) + "*NOT*" + Chr(2) + " kill services!"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, Replace(Replies.UserKilledService, "%n", sNick))
+        If Not bSrvKill Then Call KillUser(ReturnUserIndex(sNick), Replies.KillReasonKilledService)
     End If
 End Sub
 
@@ -273,7 +278,7 @@ Public Sub CmdQuit(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     sNick = ExtractNickFromNUH(Source)
     If sNick = "" Or InStr(sNick, ".") > 0 Then
         'WTF?
-        LogEventWithMessage LogTypeError, "WTF? HEY YOU MR. IRCD! IT'S SQUIT, NOT QUIT! :P "
+        Call LogEventWithMessage(LogTypeError, Replies.SanityCheckIRCdSentQuitForServer)
         Exit Sub
     End If
     Dim i As Integer
@@ -287,7 +292,7 @@ Public Sub CmdQuit(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     i = ReturnUserIndex(sNick)
     If i < 0 Then
         'WTF? *SPLAT*
-        LogEventWithMessage LogTypeError, Replies.SanityCheckLostUser
+        Call basFunctions.LogEventWithMessage(LogTypeError, Replies.SanityCheckLostUser)
         Exit Sub
     End If
     Users(i).Nick = ""
@@ -304,7 +309,7 @@ Public Sub CmdMode(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         bSrvMode = True
     End If
     If UBound(Args) < 1 Then
-        basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! MODE message with insufficient parameters recieved! (Lame/old IRCd?)"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckMODEInsufficientParameters)
         basFunctions.PutQuick ":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " MODE :Not enough parameters"
     End If
     'Otherwise, send it on it's merry way to the spiffy
@@ -318,8 +323,8 @@ Public Sub CmdMode(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         SetChannelModes ReturnChannelIndex(Args(0)), sModeString
     Else
         'EEEEEEEEEEEEEEEK!
-        LogEventWithMessage LogTypeError, "*SPLAT* Received MODE for non-existant user/channel " + Args(0) + "!"
-        PutQuick ":" + basMain.Config.ServerName + " 401 " + basMain.Config.UplinkName + " " + Args(0) + " :No such nick/channel"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckMODENonExistantEntity, "%n", Args(0)))
+        Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 401 " + basMain.Config.UplinkName + " " + Args(0) + " :No such nick/channel")
     End If
     'Ja mata! (I love stealing eggdrop quotes :P )
 End Sub
@@ -333,8 +338,8 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         Exit Sub
     End If
     If UBound(Args) < 0 Then
-        basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! JOIN message with insufficient parameters recieved! (Lame/old IRCd?)"
-        basFunctions.PutQuick ":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " JOIN :Not enough parameters"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckJOINInsufficientParameters)
+        Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " JOIN :Not enough parameters")
     End If
     Dim chns As Variant, i As Integer, v As Variant
     i = ReturnUserIndex(sNick)
@@ -398,8 +403,8 @@ Public Sub CmdPart(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         Exit Sub
     End If
     If UBound(Args) < 0 Then
-        basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! PART message with insufficient parameters recieved! (Lame/old IRCd?)"
-        basFunctions.PutQuick ":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " PART :Not enough parameters"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckPARTInsufficientParameters)
+        Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " PART :Not enough parameters")
     End If
     Dim chns As Variant, i As Integer
     i = ReturnUserIndex(sNick)
@@ -427,8 +432,8 @@ Public Sub CmdTopic(ByVal Source As String, ByRef Args() As String, ByVal RawCmd
     Dim sNick As String
     sNick = ExtractNickFromNUH(Source)
     If UBound(Args) < 1 Then
-        basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! TOPIC message with insufficient parameters recieved! (Lame/old IRCd?)"
-        basFunctions.PutQuick ":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " TOPIC :Not enough parameters"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckTOPICInsufficientParameters)
+        Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " TOPIC :Not enough parameters")
     ElseIf UBound(Args) = 1 Then
         With Channels(ReturnChannelIndex(Args(0)))
             .Topic = Args(1)
@@ -436,8 +441,8 @@ Public Sub CmdTopic(ByVal Source As String, ByRef Args() As String, ByVal RawCmd
             .TopicSetOn = basUnixTime.GetTime
         End With
     ElseIf UBound(Args) > 1 And UBound(Args) < 3 Then
-        basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! TOPIC message with insufficient parameters recieved! (Lame/old IRCd?)"
-        basFunctions.PutQuick ":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " TOPIC :Not enough parameters"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckTOPICInsufficientParameters)
+        Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " TOPIC :Not enough parameters")
     ElseIf UBound(Args) >= 3 Then
         With Channels(ReturnChannelIndex(Args(0)))
             .Topic = Args(3)
@@ -455,8 +460,8 @@ Public Sub CmdSetHost(ByVal Source As String, ByRef Args() As String, ByVal RawC
         Exit Sub
     End If
     If UBound(Args) < 0 Then
-        basFunctions.NotifyAllUsersWithServicesAccess "EEEEEK! SETHOST message with insufficient parameters recieved! (Lame/old IRCd?)"
-        basFunctions.PutQuick ":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " SETHOST :Not enough parameters"
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckSETHOSTInsufficientParameters)
+        Call basFunctions.PutQuick(":" + basMain.Config.ServerName + " 461 " + basMain.Config.UplinkName + " SETHOST :Not enough parameters")
     End If
     Dim i As Integer
     i = ReturnUserIndex(sNick)
@@ -469,4 +474,78 @@ Public Sub CmdSetHost(ByVal Source As String, ByRef Args() As String, ByVal RawC
     Users(i).VirtHost = Args(0)
 End Sub
 
+Public Sub CmdMotd(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
+    'written by w00t 31/07/2004, updated for the spiffy cmdparser 1/08/2004
+    '(see, I do contribute!)
+    
+    'NEW COOL MOTD STUFF!
+    'The following sends the services MOTD, should probably be un-w00ted by aquanight.
+    'Yes, I can think of a million config options related to this. A few:
+    'UseMOTDOnConnect: Do we send services motd on connect?
+    'UseMOTD: Do we reply to MOTD at all?
+    'The actual MOTD could also be hardcoded, or partially hardcoded (ie "running winse")
+    'Uh, that's about it. Enjoy the latest w00tCode(tm) :) --w00t
+    Dim MOTDLine As String
+    Dim sNick As String
+    Dim i As Integer
+    Dim j As Integer
+    
+    sNick = ExtractNickFromNUH(Source)
+    
+    i = basFunctions.ReturnUserIndex(sNick)
+    
+    'this check should probably be moved to startup or something.
+    j = FreeFile
+    Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Checking existance")
+    Open App.Path & "\services.motd" For Append As #j
+    Close #j
+    
+    Open App.Path & "\services.motd" For Input As #j
+        If LOF(j) = 0 Then
+            'doesnt exist yay
+            Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Doesn't exist.")
+            basFunctions.SendData (":" & basMain.Config.ServerName & " 425 " & basMain.Users(i).Nick & " :Services MOTD file is missing")
+            Else
+                Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Does exist, sending.")
+                basFunctions.SendData (":" & basMain.Config.ServerName & " 375 " & basMain.Users(i).Nick & " :- " & basMain.Config.ServerName & " Message of the Day")
+                Do While Not EOF(j)
+                    'This should really be cached, and refreshed on rehash, but I'll leave such things
+                    'for when aqua unw00ts this :) Hey, at least I'm coding something...
+                    Line Input #j, MOTDLine
+                    'make our nice cool stuff :P go replace!
+                    MOTDLine = Replace(MOTDLine, "%WINSEVER", basMain.AppVersion)
+                    basFunctions.SendData (":" & basMain.Config.ServerName & " 372 " & basMain.Users(i).Nick & " :- " & MOTDLine)
+                    DoEvents 'lala, I'm naughty :P
+                Loop
+                basFunctions.SendData (":" & basMain.Config.ServerName & " 376 " & basMain.Users(i).Nick & " :End of /MOTD command.")
+                Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Finished sending.")
+        End If
+    Close #j
+    'END NEW COOL MOTD STUFF
+End Sub
 
+Public Sub CmdVersion(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
+    'Simple VERSION reply :)
+    Dim sNick As String
+    Dim i As Integer
+
+    sNick = ExtractNickFromNUH(Source)
+    i = basFunctions.ReturnUserIndex(sNick)
+    basFunctions.SendData (":" & basMain.Config.ServerName & " 351 " & basMain.Users(i).Nick & " " & basMain.AppName & "[" & basMain.AppVersion & "] " & basMain.Config.ServerName & " " & basMain.AppCompileInfo & " " & basMain.AppCompileDate)
+End Sub
+
+Public Sub CmdProtoctl(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
+    'stub
+End Sub
+
+Public Sub CmdPass(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
+    'stub
+End Sub
+
+Public Sub CmdServer(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
+    'stub
+End Sub
+
+Public Sub CmdNetinfo(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
+    'stub
+End Sub

@@ -1,5 +1,5 @@
 VERSION 5.00
-Object = "{3B7C8863-D78F-101B-B9B5-04021C009402}#1.2#0"; "richtx32.ocx"
+Object = "{3B7C8863-D78F-101B-B9B5-04021C009402}#1.2#0"; "RICHTX32.OCX"
 Begin VB.Form frmServer 
    BackColor       =   &H00000000&
    Caption         =   "#"
@@ -63,7 +63,6 @@ Begin VB.Form frmServer
       _ExtentY        =   4048
       _Version        =   393217
       BackColor       =   49152
-      Enabled         =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmServer.frx":0000
       BeginProperty Font {0BE35203-8F91-11CE-9DE3-00AA004BB851} 
@@ -117,8 +116,6 @@ Attribute VB_Exposed = False
 ' You should have received a copy of the GNU General Public License
 ' along with this program; if not, write to the Free Software
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-'
-' Contact Maintainer: w00t[w00t@netronet.org]
 Option Explicit
 
 ' Note on this form:
@@ -163,9 +160,6 @@ Private Sub tcpServer_Close()
     tmrPingUplink.Enabled = False
     'The socket is dead now. We have to close it and
     'create a new one.
-    'To best simulate how MSWinSock worked, we will
-    'recreate the socket, but we will NOT open it. -aquanight
-        'Where do we recreate it though? You set it to Nothing...?! --w00t
     On Error Resume Next 'Any exception is non-fatal.
     tcpServer.Shutdown 2
     tcpServer.Close

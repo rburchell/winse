@@ -32,14 +32,6 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
     Dim Elements As Integer
     Dim i As Integer
     SenderNick = basFunctions.ReturnUserName(Sender)
-    
-    'Considering that Service Master (?) can probably
-    'add/remove Abuse Team members, we may as well give
-    'him automatic access here, don't you think? -aquanight
-        'Nope, cause my eventual scheme is to require diplomatic "voting" from users
-        'connected to the server... Long way off, but saves us adding a check that
-        'will eventually be removed. (maybe perhaps :P) --w00t
-        '(oh, and besides, what's the point? Since he is, he can just add himself :))
 
     If basFunctions.IsAbuseTeamMember(Sender) = False Then
         Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, Replies.ServiceRestrictedToAbuseTeam)
@@ -217,19 +209,12 @@ Private Sub UMode(Sender As Integer, Nick As String, Modes As String)
 End Sub
 
 Private Sub Nick(Sender As Integer, OldNick As String, NewNick As String)
-    'IMHO, we really ought to have a check to make sure that users cant change
-    'the nick of those with access greater than them, but that can wait for now.
-    '--w00t
-        'They're _ABUSE TEAM_. I can understand such a check
-        'for other Abuse Team members, but otherwise... -aquanight
-            'True. Belay that order. I take it you mean NON-abuse team members? --w00t
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT NICK " & OldNick & " " & NewNick)
     Call basFunctions.ForceChangeNick(Sender, OldNick, NewNick)
 End Sub
 
 Private Sub Kill(Sender As Integer, Nick As String, Message As String)
     Call basFunctions.LogEvent(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KILL " & Nick & " with reason " & Message)
-    'Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KILL " & Nick & " :" & Message & " (" & basFunctions.ReturnUserName(Sender) & ")")
     'Make KILL show as Quits: Nick (Ident@Host) (Killed (KillingUser (Die!)))
     ' Modified to do "Killed (Agent" if not AbuseTeamPrivacy 0
     Call basFunctions.SendData("KILL " & Nick & " :" & basMain.Service(7).Nick & IIf(basMain.Config.AbuseTeamPrivacy = 0, "!" & basFunctions.ReturnUserName(Sender), "") & " (" & Message & ")")
@@ -265,52 +250,30 @@ Private Sub DeOper(Sender As Integer, Nick As String)
     End If
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT DEOPER " & Nick)
     'remove their oper privilages, courtesy of Agent :)
-    If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
-      Call basFunctions.SendData("SVSO " & Nick & " -")
-      If InStr(Users(TargetIndex).Modes, "g") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -g")
-      If InStr(Users(TargetIndex).Modes, "v") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -v")
-      ' These two flags arent cleared by svso for some reason:
-      '  Recieve Infected DCC notices (v)
-      '  Can Read and Send To GLOBOPS (g)
-    Else ' SVSO Unsupported, Use SVSMODE
-      If InStr(Users(TargetIndex).Modes, "o") Then
+    If basMain.Config.ServerType = "UNREAL" Then
+        Call basFunctions.SendData("SVSO " & Nick & " -")
+        ' These two flags arent cleared by svso for some reason:
+        '  Recieve Infected DCC notices (v)
+        '  Can Read and Send To GLOBOPS (g)
+        If InStr(Users(TargetIndex).Modes, "g") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -g")
+        If InStr(Users(TargetIndex).Modes, "v") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -v")
+    Else
+        'WHY ARE WE CHECKING IF THEY ARE OPERED FFS?!
+        'Checking and removing +Na etc is useless, since removing "o" removes
+        'the lot. BTW, looking for "O" at all is pointless since locops arent
+        'propegated over the network. So we just -O anyway. --w00t
         Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -o")
-        Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "o", "")
-      End If
-      If InStr(Users(TargetIndex).Modes, "O") Then
         Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -O")
-        Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "O", "")
-      End If
-      If InStr(Users(TargetIndex).Modes, "C") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -C")
-        Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "C", "")
-      End If
-      If InStr(Users(TargetIndex).Modes, "A") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -A")
-        Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "A", "")
-      End If
-      If InStr(Users(TargetIndex).Modes, "a") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -a")
-        Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "a", "")
-      End If
-      If InStr(Users(TargetIndex).Modes, "N") Then
-        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Nick & " -N")
-        Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "N", "")
-      End If
+        Users(TargetIndex).Modes = Replace(Users(TargetIndex).Modes, "o", "")
     End If
-    'Until we clear up all this modes business, blank OUR copy of their modes
-    'and request a new one. (ie let the current parser reparse their new modes)
-    'instead of trying to remove one :/ What I would do for C flags... --w00t
     basMain.Users(TargetIndex).Modes = ""
     Call basFunctions.SendData("MODE " & Nick)
     Call basFunctions.SendMessage(basMain.Service(7).Nick, basMain.Users(Sender).Nick, Replace(Replies.AgentUserDeOpered, "%n", Nick))
 End Sub
 
 Private Sub FJoin(Sender As Integer, Nick As String, Channel As String)
-    'Use SVSJOIN since we are forcing them.
+    'Invite then use SVSJOIN since we are forcing them.
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " AGENT FJOINed " & Nick & " to " & Channel)
-    'SVSJOIN isn't enough to fjoin through +bikl. Do we
-    'want this?
     basFunctions.SendData ":" + basMain.Service(7).Nick + " INVITE " + Nick + " " + Channel
     Call basFunctions.SendData("SVSJOIN " & Nick & " " & Channel)
 End Sub
@@ -347,42 +310,8 @@ Select Case UCase(sCommand)
           ' Do all denys (to remove from the newly denied)
           With Users(l)
             .Access = ""
-            If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
-              Call basFunctions.SendData("SVSO " & .Nick & " -")
-              If InStr(.Modes, "g") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & .Nick & " -g")
-              If InStr(.Modes, "v") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & .Nick & " -v")
-              ' These two flags arent cleared by svso for some reason:
-              '  Recieve Infected DCC notices (v)
-              '  Can Read and Send To GLOBOPS (g)
-            Else ' SVSO Unsupported, Use SVSMODE
-              If InStr(.Modes, "o") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -o")
-                .Modes = Replace(.Modes, "o", "")
-              End If
-              If InStr(.Modes, "O") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -O")
-                .Modes = Replace(.Modes, "O", "")
-              End If
-              If InStr(.Modes, "C") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -C")
-                .Modes = Replace(.Modes, "C", "")
-              End If
-              If InStr(.Modes, "A") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -A")
-                .Modes = Replace(.Modes, "A", "")
-              End If
-              If InStr(.Modes, "a") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -a")
-                .Modes = Replace(.Modes, "a", "")
-              End If
-              If InStr(.Modes, "N") Then
-                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & .Nick & " -N")
-                .Modes = Replace(.Modes, "N", "")
-              End If
-              ' Get a new copy of their modes using w00t's method
-              basMain.Users(l).Modes = ""
-              Call basFunctions.SendData("MODE " & .Nick)
-            End If
+            'boiiiiing! Removed code duplication. --w00t
+            Call sAgent.DeOper(Sender, .Nick)
           End With
         End If
       End If
@@ -429,13 +358,10 @@ Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal 
 ' DENY
 If bSet And InStr("oOCAaN" & IIf(basMain.Config.ServerType = "UNREAL", "vg", ""), Char) Then
   If IsDeny(UserID) And Not UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master can OPER, not HasFlag just in case something happened
-    If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
+    If basMain.Config.ServerType = "UNREAL" Then
       If Char = "O" Then Call basFunctions.SendData("SVSO " & Users(UserID).Nick & " -")
       ' ^ If verifys that only one SVSO is sent
       If Char = "v" Or Char = "g" Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Users(UserID).Nick & " -" & Char)
-      ' These two flags arent cleared by svso for some reason:
-      '  Recieve Infected DCC notices (v)
-      '  Can Read and Send To GLOBOPS (g)
     Else ' SVSO Unsupported, Use SVSMODE
       Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVSMODE " & Users(UserID).Nick & " -" & Char)
       Users(UserID).Modes = Replace(Users(UserID).Modes, Char, "")

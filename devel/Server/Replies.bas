@@ -54,6 +54,7 @@ Public Const CommandRestrictedToAbuseTeam = "This command is restricted to abuse
 Public Const ServiceFloodWarning = "---4WARNING--- You are flooding services. Please slow down."
 Public Const ServiceFloodKill = "You were warned. Please do not flood services with requests."
 Public Const ServicesConnectedToNetwork = "Services is now connected, and has been synched with the network."
+Public Const UserKilledService = "User %n killed a service!"
 Public Const ServicesTerminatingNormally = "Services are shutting down normally :) Have a nice day!"
 Public Const ServicesTerminatingSplat = "Services have gone splat. Please restart them. :)"
 
@@ -68,12 +69,22 @@ Public Const SanityCheckLostChannel = "SANITY CHECK! We lost a channel in the ar
 Public Const SanityCheckLostUser = "SANITY CHECK! We lost a user somewhere in the array! aaiiiiiieeee! *splat* Advise a restart!"
 Public Const SanityCheckCantConnectToIRCd = "Winse was unable to establish a connection to the IRCd. Please ensure the IRCd is running?"
 Public Const SanityCheckCantRecover = "Winse encountered an error from which it was unable to recover. Terminating."
- 'Replace() %n with sub\function name eg KillUser
 Public Const SanityCheckInvalidIndex = "SANITY CHECK! Invalid index passed to %n"
-'Replace %c with the mode change (eg -k or +o)
 Public Const SanityCheckParamlessModeChange = "SANITY CHECK! Channel mode change %c requires a parameter but none was given! Are the channel modes (set in basMain) not set to match your IRCd?"
-'Same here (eg +x or -U)
 Public Const SanityCheckUnknownModeChange = "SANITY CHECK! Channel mode change %c is unknown to us! Are the channel modes (set in basMain) not set to match your IRCd?"
+Public Const SanityCheckNICKInsufficientParameters = "EEEEEK! NICK user introduction message with insufficient parameters recieved! (Lame/old IRCd?)"
+Public Const SanityCheckSETHOSTInsufficientParameters = "EEEEEK! SETHOST message with insufficient parameters recieved! (Lame/old IRCd?)"""
+Public Const SanityCheckTOPICInsufficientParameters = "EEEEEK! TOPIC message with insufficient parameters recieved! (Lame/old IRCd?)"
+Public Const SanityCheckPARTInsufficientParameters = "EEEEEK! PART message with insufficient parameters recieved! (Lame/old IRCd?)"
+Public Const SanityCheckJOINInsufficientParameters = "EEEEEK! JOIN message with insufficient parameters recieved! (Lame/old IRCd?)"
+Public Const SanityCheckMODEInsufficientParameters = "EEEEEK! MODE message with insufficient parameters recieved! (Lame/old IRCd?)"
+Public Const SanityCheckKILLInsufficientParameters = "EEEEEK! KILL message with insufficient parameters recieved! (Lame/old IRCd?)"
+Public Const SanityCheckPRIVMSGInsufficientParameters = "EEEEEK! PRIVMSG message with insufficient parameters recieved! (Lame/old IRCd?)"
+Public Const SanityCheckMODENonExistantEntity = "*SPLAT* Received MODE for non-existant user/channel %n!"
+Public Const SanityCheckIRCdSentQuitForServer = "HEY YOU MR. IRCD! You send SQUIT for a server, not QUIT!"
+Public Const SanityCheckNickChangeCollision = "WTF? Nick Change Collision, are we desynced?: " 'stuff goes after ": "
+Public Const SanityCheckServicesNickInUse = "Nick collision with services nick! killing... "
+
 
 'KILL Reasons
 Public Const KillReasonKilledService = "Do *NOT* /kill services!"

@@ -1,8 +1,4 @@
 Attribute VB_Name = "basUnixTime"
-'Yes, I stole basUnixTime from vbIRCd...
-'Renamed from something else, to fit into my project standards.
-'--w00t
-'
 ' vbIRCd - Software/Code is an IRCd(Internet Relay Chat Daemon) used to host IRC sessions
 ' Copyright (C) 2001-2002  Nathan Martin
 '
@@ -189,6 +185,3 @@ End Function
 Function GetTime() As Double
     GetTime = Mid(DateDiff("s", Now, "01/01/1970"), 2) - GetLocalTZ
 End Function
-
-'aquanight: Good to see module with explicit types :P
-'Option Strict will have no issues here, I hope!

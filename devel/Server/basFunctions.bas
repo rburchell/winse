@@ -17,22 +17,13 @@ Attribute VB_Name = "basFunctions"
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Option Explicit
 
-'Explicitly declaring our types would be nice :) Makes
-'moving to Option Strict level of coding SO much easier
-' - aquanight
-'Please explain?? Do you mean ParseBuffer() As VARIANT <--the VARIANT bit
-'btw, shouldn't ParseBuffer always return an array of strings? --w00t
 Public Function ParseBuffer(ByVal Buffer As String) As Variant
     'Splits a sentance or whatever into an array of words.
-    'Did you know a VB function can do this for you? :)
-    ' - aquanight
-    'Actually, I didnt :| VB has too many functions anyway *blush* --w00t
     ParseBuffer = Split(Buffer, " ")
 End Function
 
 Public Sub LogEvent(ByVal Header As String, ByVal Message As String)
     'Logs given event to file.
-
     'Header eg "BUG"
     'Message eg "basMisc.Ident given null Username var."
     
@@ -57,7 +48,6 @@ Public Sub LogEventWithMessage(ByVal Header As String, ByVal Message As String)
 End Sub
 
 Public Sub ForceChangeNick(ByVal Sender As Integer, ByVal OldNick As String, ByVal NewNick As String)
-    'Now uses unix timestamp --w00t
     Dim TimeStamp As Long
     TimeStamp = basUnixTime.GetTime
     Call basFunctions.SendData("SVSNICK " & OldNick & " " & NewNick & " " & TimeStamp)
@@ -67,8 +57,6 @@ Public Function IsChanRegistered(ByVal ChanName As String) As Boolean
     Dim Password As String
     'If we have a password, we must be registered ;)
     Password = basFileIO.GetInitEntry(App.Path & "\databases\channels.db", UCase(ChanName), "Password")
-    'Booleans rock :) - aquanight
-    'I always have to look at them for a few seconds to understand them :( :P --w00t
     IsChanRegistered = (Password <> "")
 End Function
 
@@ -76,7 +64,6 @@ Public Function IsNickRegistered(ByVal NickName As String)
     Dim Password As String
     'If we have a password, we must be registered ;)
     Password = basFileIO.GetInitEntry(App.Path & "\databases\users.db", UCase(NickName), "Password")
-    'Booleans rock :) - aquanight
     IsNickRegistered = (Password <> "")
 End Function
 
@@ -94,10 +81,8 @@ Public Sub IntroduceClient(ByVal Nick As String, ByVal Host As String, ByVal Nam
 End Sub
 
 Public Sub JoinServicesToChannel(ByVal Sender As Integer, ByVal Channel As String)
-    'aquanight: This may need to be bumped to a larger
-    'type to satisify Option Strict when we .NET-ize it :) .
-        'Argh, dont prefix comments... I thought I said that at first :|
-        'Anyhow, you're the .NET expert. --w00t
+    'This may need to be bumped to a larger
+    'type to satisify Option Strict when we .NET-ize it :) --aquanight
     Dim i As Byte
     Dim Nick, Host, Name As String
     For i = 0 To basMain.TotalServices - 1
@@ -122,14 +107,10 @@ Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal Channel As Str
 End Sub
 
 Public Function IsAbuseTeamMember(ByVal UserID As Integer) As Boolean
-    'Don't you love Booleans? :D - aquanight
-    'God, what was I on!!! duh... it's already boolean... so why did I check? --w00t
     IsAbuseTeamMember = basMain.Users(UserID).AbuseTeam
 End Function
 
 Public Function IsServicesAdmin(ByVal UserID As Integer) As Boolean
-    'ick. I have to think when I see things like that :( :P
-    'Go the booleans aquanight! --w00t
     IsServicesAdmin = (InStr(basMain.Users(UserID).Modes, "a") <> 0)
 End Function
 
@@ -174,8 +155,6 @@ Public Sub SendMessage(ByVal Sender As String, ByVal Reciever As String, ByVal M
     End Select
 End Sub
 
-'Changing Message to ByVal because we need to
-'do some multiliation to it to send KILLs properly. -aquanight
 Public Sub KillUser(ByVal UserID As Integer, ByVal Message As String, Optional ByVal Killer As String = "Agent")
     If UserID >= 0 Then
         'I think some kind of validation should be put
@@ -188,17 +167,8 @@ Public Sub KillUser(ByVal UserID As Integer, ByVal Message As String, Optional B
             'Yes it's old fashioned, but if it where
             'my way, it'd be Throw New... you get the
             'idea :) . - aquanight
-                'Ick, I used to just make 'em functions and return, like -1 for an error...
-                'I never got the hand of errors. I like Try... catch... End try blocks :P --w00t
             Error 5
         End If
-        'Ever heard of kill paths? Yep, we need to
-        'specify the Killer :) . - aquanight
-            'You'll really have to explain this to me :| --w00t
-        'Well... we're supposed to include the killer
-        'in a kill path. But further research with
-        'Unreal reveals that we actually do NOT include
-        'the server name :).
         If Not Killer = "" Then
             Message = Killer & " (" & Message & ")"
         End If
@@ -214,10 +184,6 @@ Public Sub KillUser(ByVal UserID As Integer, ByVal Message As String, Optional B
         If UserID = basMain.TotalUsers - 1 Then basMain.TotalUsers = basMain.TotalUsers - 1
     Else
         'Services dont know them :| Shouldnt happen!!!!!! --w00t
-            'In that case, let's throw an error. -aquanight
-        'Error 5
-        'And say something went pear-shaped. --w00t
-            'Sending a notice certainly is better :) .
         Call basFunctions.LogEventWithMessage(LogTypeError, Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.KillUser"))
     End If
 End Sub
@@ -239,13 +205,7 @@ End Sub
 
 Public Sub CheckFloodLevel(ByVal UserID As Integer)
     'Flood level. Goes up by 1 on each request.
-    'When it hits 5, a warning. 10, a kill. 20, a gline (unless >= services admin)
-    'Flood level goes down by 1 every 5 seconds?? --w00t
-    'The GLINE'ing aspect will be pretty...
-    'wierd considering that you KILL the user before you
-    'get to the GLINE stage, but I don't see this
-    'implemented anywhere, so that's ok :) --aquanight
-    'Ahem. I realised that after I tried to implement it once :P --w00t
+    'When it hits 5, a warning. 10, a kill. SHUN instead?
     With basMain.Users(UserID)
         If .Requests >= 8 Then
             'kill, dont specify killer so it will default to "Agent"
@@ -309,11 +269,6 @@ Public Sub SquitServices(Optional ByVal Message As String = "")
     frmServer.tcpServer.Close
 End Sub
 
-'A routine for if w00t gets around to doing OperServ
-'JUPE. It can use this to make sure the JUPE'd server
-'is not linked. It can also use this to indicate
-'removal of a JUPE'd server. -aquanight
-    'renamed DelServer cause I like that better. --w00t
 Public Sub DelServer(ByVal Name As String, Optional ByVal Message As String = "")
     Call basFunctions.SendData("SQUIT " & Name & " :" & IIf(Message <> "", " :" & Message, ""))
 End Sub
@@ -323,7 +278,7 @@ Public Sub AddServer(ByVal Name As String, Optional ByVal Message As String = "W
 End Sub
 
 Public Sub NotifyAllUsersWithServicesAccess(ByVal Message As String)
-NotifyAllUsersWithFlags AccFlagGetServNotices, Message
+    Call NotifyAllUsersWithFlags(AccFlagGetServNotices, Message)
 End Sub
 
 Public Sub NotifyAllUsersWithFlags(ByVal Flag As String, ByVal Message As String)
@@ -340,7 +295,7 @@ Public Sub NotifyAllUsersWithFlags(ByVal Flag As String, ByVal Message As String
 End Sub
 
 Public Sub SetUserModes(ByVal UserID As Integer, ByVal Modes As String)
-  Dim l As Integer ' I use l or i for loops usually
+  Dim l As Integer
   Dim ModeChar As String * 1
   Dim AddModes As Boolean
   Dim Result As String
@@ -450,7 +405,10 @@ Public Sub ParseCmd(ByVal Incoming As String)
     'See CommandDispatcher.cls for more info.
     Call CallByName(cd, "Cmd" + sCmd, VbMethod, sSource, sArgs, Incoming)
     If Err.Number <> 0 Then
-        Debug.Print Err.Number, Err.Description
+        'Debug.Print Err.Number, Err.Description
+        'FOR GODS SAKE... LOGGING!!! --w00t
+        Call basFunctions.LogEvent(basMain.LogTypeDebug, "ParseCmd: " & Incoming)
+        Call basFunctions.LogEvent(basMain.LogTypeError, "ParseCmd: " & Err.Number & " " & Err.Description)
         Exit Sub
     End If
     'OK so now we need to send it on it's merry way to
@@ -523,7 +481,7 @@ Public Function SetChannelModes(ByVal ChanID As Integer, ByVal Modes As String)
                 End If
             Else
                 'EEEEEEEEEK!
-                NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+                Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
             End If
         ElseIf InStr(sValid(0), sChar) > 0 Then
             'Type A: Mode flag controls a list.
@@ -533,7 +491,7 @@ Public Function SetChannelModes(ByVal ChanID As Integer, ByVal Modes As String)
                 DispatchModeTypeA ChanID, bSet, sChar, sParam
             Else
                 'EEEEEEEEEK!
-                NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+                Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
             End If
         ElseIf InStr(sValid(1), sChar) > 0 Then
             'Type B: Use param for set and unset.
@@ -548,7 +506,7 @@ Public Function SetChannelModes(ByVal ChanID As Integer, ByVal Modes As String)
                 DispatchModeTypeB ChanID, False, sChar, ""
             Else
                 'EEEEEEEEEK!
-                NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+                Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
             End If
         ElseIf InStr(sValid(2), sChar) > 0 Then
             'Type C: Use param only for set
@@ -559,7 +517,7 @@ Public Function SetChannelModes(ByVal ChanID As Integer, ByVal Modes As String)
                     DispatchModeTypeC ChanID, bSet, sChar, sParam
                 Else
                     'EEEEEEEEEK!
-                    NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+                    Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
                 End If
             Else
                 DispatchModeTypeC ChanID, bSet, sChar
@@ -569,7 +527,7 @@ Public Function SetChannelModes(ByVal ChanID As Integer, ByVal Modes As String)
             DispatchModeTypeD ChanID, bSet, sChar
         Else
             'EEEEEEEEEK!
-            NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckUnknownModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+            Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckUnknownModeChange, "%c", IIf(bSet, "+", "-") & sChar))
         End If
     Next iChar
 End Function

@@ -26,6 +26,29 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 01/08/2004 - w00t
+  Yes, I actually work occasionally :)
+  --- A few notes and observations ---  
+    -I am having problems with the removal of channels... join a chan,
+     connect services, disconnect and then reconnect services. Errors.
+    -USE LOGGING FFS. Don't just NotifyAllUsersWithAccess, LogEventWithMessage does that AND logs! since I
+     really want us to USE THE FSCKING LOGS! I am tired of not getting errors, since I am not identified...
+     Besides, what if nobody is connected! I am sorry, but this really irks me... While on the subject of
+     logging, we need more debug logging detailing what gets sent where, so if it DOES error, we can 
+     guess why. Rant over.
+    -Don't use debug.print, use LOGGING! that's why it's there! I don't have an immediate window!
+    -Create replies for stuff, don't use english anywhere! We want language independance!!
+    -Jason: We already have Config.UplinkType, was it necessary to create Config.ServerType to do the same thing?
+     as well as that, I specify Unreal32 as future versions may use a different protocol.
+    Err, right. That's about it. Sorry if this breaks your CVS, but it really had to be done :)
+  --- End Notes (rants) ---
+  -[AL] [---] Added CODING_GUIDELINES.txt, read it.
+  -[CO] [---] Added VERSION support, means /version services.* does something.
+  -[CO] [---] Added MOTD support, sent on new user connect and on /motd services.*
+  -[CO] [---] Removed old shit (comments etc), indented code.
+  -[CO] [Fix] Added LOADS of replies, used them.
+  -[CO] [Fix] Fixed loads of 438 errors on the command dispatcher.
+  -[AG] [Fix] Fixed some braindead Jason stuff, like checking for locops, removing netadmin
  30/07/2004 - aquanight
   -[CO] [---] Moved ParseConfigurationFile to basMain.
   -[DB] [---] Added a few things to the DB API.

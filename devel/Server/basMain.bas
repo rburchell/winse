@@ -49,10 +49,7 @@ Public Type ConfigVars
     UplinkPassword As String
     UplinkType As String
     ServerName As String
-    'If it could be byte... I don't care, but NUMERICs
-    'really should be... numeric. :P - aquanight
     ServerNumeric As Byte
-    ' Changed to byte, 255 is the max, so there is no need for anything higher - Jason
     ServerDescription As String
     ServicesMaster  As String
     DefaultMessageType As Boolean
@@ -70,45 +67,11 @@ Public Const AppVersion = "0.0.4.0"
 Public Const AppCompileInfo = "sense_datum"
 Public Const AppCompileDate = "2004/06/25-1400hours"
 
-'UserModes is used so basFunctions.SetUserModes doesnt give a user an illegal mode.
-'Yes, its a huge hack, but I cant think of another way to do it. NEED another way,
-'as instr() is VERY VERY slow. --w00t
-'Well, a few things:
-'1) We want to be IRCd independent, and thus can't
-'   really say what's "illegal".
-    'True. --w00t
-'2) My new parser idea is probably going to be a little
-'   better than what is being used now :) . One thing
-'   I plan on is a service callback to ask what should
-'   be done about this mode. That way, a user getting +o
-'   can receive OPER NEWS, and NickServ can unset +r on
-'   those that aren't supposed to have it :) .
-    'Bet that won't come till .NET. I'd like to try callbacks in vb6... --w00t
-'Also, I'll get rid of the need for those ugly +, -,
-'space thingies. -aquanight
 Public Const UserModes = "iowghraAsORTVSxNCWqBzvdHtGp"
-'My new parser idea is going to need these to be comma
-'seperated like they are in 005 CHANMODES. I've
-'provided a commented out version of what this will
-'look like. And is the +/-/space _really_ necessary?
-    'They are, I think. Can't remember why though. --w00t
-'When it gets done, there will NEED to be 3 commas here
-'and the +, -, and space won't be needed. - aquanight
 Public Const ChannelModes2 = "be,fkL,l,psmntirRcOAQKVGCuzNSMT"
 Public Const ChannelModes = "psmntirRcOAQKVGCuzNSMTbekfLl"
-'and those that give permissions :P --w00t
-    'We need to remember that in Unreal, +qa are treated as
-    'lists, not prefixes. Plus, not all IRCds have them
-    'defined. Thus we should have seperate variables for
-    'defining modes to be given to Founders, SOPs, AOPs,
-    'HOPs, and VOPs, and whatever else :) . - aquanight
-    'Update: we don't need that yucky + character in
-    'there, so out it goes :) .
 Public Const ChanModesForAccess = "qaohv"
-'Determining how many parameters to send is easy,
-'simply use Len(*Privs) - 1. But let me warn you that
-'the String() function won't work for this :) .
-    'eh? Why not? Just use Len() and then mid starting at 1...? --w00t
+
 Public Const FounderPrivs = "+qo"
 Public Const CFounderPrivs = "+ao" 'or should we +q?
 Public Const SOPPrivs = "+ao"
@@ -116,10 +79,6 @@ Public Const AOPPrivs = "+o"
 Public Const HOPPrivs = "+h"
 Public Const VOPPrivs = "+v"
 
-'An idea I had if we decide to allow SUSPEND or FORBID
-'of channels. When a channel is SUSPENDed or FORBIDden,
-'it is effectively MLOCK'd and TopicLocked to the
-'values set below.
 Public Const SuspendMLock = "+Osnt"
 Public Const SuspendTLock = "This channel is suspended."
 Public Const ForbidTLock = "This channel is forbidden."
@@ -160,34 +119,21 @@ Private Type ChannelAccess
     Nick As String
     Access As Byte 'must be < 255.
 End Type
-'bekfLl
 
 Public Type ChannelStructure
     Name As String
-    
-    'Someone care to tell me why these were commented? -aquanight
-        'Cause nothing to do with them had been implemented yet, and why does Topic
-        'stuff need to be _tracked_ by services? Surely they can check if topicchange
-        'is valid on the fly...--w00t
-    'Topic Retention :) - aquanight
     Topic As String
     TopicSetBy As String
     TopicSetOn As Long 'Not sure if this is really needed... --w00t
     FounderPassword As String
     MLock As String 'modes for mlock
-    
-    'access list stored in db only...
-    'Better off caching it in memory. - aquanight
-        'ok, but you're writing that bit :| --w00t
     TotalUsersOnAccessList As Integer
     AccessList() As ChannelAccess
-    
     Modes As String
     
     TotalChannelUsers As Integer
-    'Users() tracks the userid of users on a channel. -Dont need to track here,
-    'rather in User structure.
-    Users As Collection 'Users on this channel. (Use UserID as the value and key :) ).
+    Users As Collection
+    'Users on this channel. (Use UserID as the value and key :) ).
     'That kind of limit is impractical, and for storing
     'only 1-5 characters max, allocating 10 is a waste
     'of space :P . -aquanight
@@ -196,23 +142,12 @@ Public Type ChannelStructure
     'by the CStr() of the user's UserID. -aquanight
     UsersModes As Collection
     'Now for the extended modes that require parameters (+flL etc)
-    'We dont need to store them just now. --w00t
-        'Oh what the heck, define them anyway :) -aquanight
-    'I'm turning these arrays to collections because
-    'messing with resizing arrays and what not is just
-    'to bulky for my tastes :P . Declaring them New
-    'should make sure we don't forget to init them, but
-    '.NET isn't going to like it very much ;p .
-    ' - aquanight
-    'BLAH. FUDGE IT. Just don't let anyone forget to
-    'init these in the channel create sections.
     Bans As Collection
     Excepts As Collection
     Invites As Collection 'For hybrid :)
     ChannelKey As String
     FloodProtection As String 'chanmode +f
     OverflowChannel As String
-    'This can be bigger than you think :) - aquanight
     OverflowLimit As Long
     'Anything else services need to store?
     Custom As Collection
@@ -224,44 +159,21 @@ Public Type Service
     Name As String
 End Type
 
+
+Public NextFreeUserIndex As Integer
+Public NextFreeChannelIndex As Integer
+
+Public TotalUsers As Integer
+Public TotalChannels As Integer
+Public Const TotalServices = 12
+
 'We should eventually move to Dynamic buffers here.
 'To be honest, I think dynamic buffers would make it
 'WAY*10^7 faster to loop through stuff... *sigh*
 Public Channels(32766) As ChannelStructure
 Public Users(32766) As UserStructure
-' Made one smaller so that you can loop through them with a integer
-
-Public NextFreeUserIndex As Integer
-Public NextFreeChannelIndex As Integer
-
-'32767 users total of services. Greater than this,
-'and we die :/ Solution: Get a decent services package ;)
-'One day, if I can be arsed, I will go around and change all occurences of
-'total users being integer to long or something... but seriously, I doubt that
-'this application could function on a net with > 200 users. --w00t
-    'You'd be surprised what VB can do :) -aquanight
-Public TotalUsers As Integer
-'For channels, 32K is not very practical. Consider:
-'32K users, 10 chans per users, 320K channels, overflow
-'not good :) . But I'm not going to change it right now
-'considering that the VB6 -> .NET move is going to keep
-'these declared Integer (which is 4 bytes in .NET, which
-'means 2 billion + max). Even the big dudes don't have
-'even half of 2 billion USERS yet :P . - aquanight
-    'Also, who is going to use winse who has 320K channels?!?! --w00t
-Public TotalChannels As Integer 'again, 32767 limit :P should be plenty...
-
-'This should be 1 > than the UBound of your array.
-    'When I wrote stuff with totalservices and stuff like that, I didnt know about UBound :P --w00t
-Public Const TotalServices = 12
-'Since Option Base 0 applies, we're allocating extra space here. - aquanight
-    'Yay dynamics. --w00t
 Public Service(TotalServices - 1) As Service
 
-'Again, I think this is better off as a dynamic buffer. -aquanight
-    'Probably, but seriously. Who is ever going to get to 32767 elements? It would
-    'take pretty serious services hammering to get there considering the buffers are
-    'cleared once a second. --w00t
 Public Buffer(32767) As String
 Public BufferElements As Integer
 
