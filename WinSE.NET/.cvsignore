@@ -1,2 +1,13 @@
-*.suo
-*.vbproj.user
+WinSE.suo
+modules/protocol/unreal/unreal.vbproj.user
+modules/services/AdminServ/AdminServ.vbproj.user
+modules/services/Agent/Agent.vbproj.user
+modules/services/BotServ/BotServ.vbproj.user
+modules/services/ChanServ/ChanServ.vbproj.user
+modules/services/DebugServ/DebugServ.vbproj.user
+modules/services/MassServ/MassServ.vbproj.user
+modules/services/MemoServ/MemoServ.vbproj.user
+modules/services/NickServ/NickServ.vbproj.user
+modules/services/OperServ/OperServ.vbproj.user
+WinSE/WinSE.vbproj.user
+WinSECore/WinSECore.vbproj.user
