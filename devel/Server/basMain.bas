@@ -58,6 +58,7 @@ Public Type ConfigVars
     DefaultMessageType As Boolean
     GlobalTargets As String 'What Global sends to send something to everyone.
     InjectToOperServices As Boolean
+    AbuseTeamPrivacy As Byte
 End Type
 
 Public Config As ConfigVars

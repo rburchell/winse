@@ -170,6 +170,7 @@ Public Sub ParseConfigurationFile(File As String)
     Directives.Add "DEFAULTMESSAGETYPE"
     Directives.Add "GLOBALTARGETS"
     Directives.Add "INJECTTOOPERSERVICES"
+    Directives.Add "ABUSETEAMPRIVACY"
     
     Call basFunctions.LogEvent(basMain.LogTypeDebug, "Checking conf existance")
     fd = FreeFile
@@ -249,6 +250,19 @@ NextLine:
                                 basMain.Config.InjectToOperServices = True
                             Case "no"
                                 basMain.Config.InjectToOperServices = False
+                            Case Else
+                                Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
+                                basMain.Config.InjectToOperServices = False
+                        End Select
+                    Case "ABUSETEAMPRIVACY"
+                        'Defines the default for users().msgstyle True=notice false=privmsg
+                        Select Case LCase(DirectiveVal)
+                            Case "none"
+                                basMain.Config.AbuseTeamPrivacy = 0
+                            Case "partial"
+                                basMain.Config.AbuseTeamPrivacy = 1
+                            Case "full"
+                                basMain.Config.AbuseTeamPrivacy = 2
                             Case Else
                                 Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
                                 basMain.Config.InjectToOperServices = False

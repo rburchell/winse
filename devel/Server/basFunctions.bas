@@ -384,14 +384,17 @@ Public Sub AddServer(ByVal Name As String, Optional ByVal Message As String = "W
     Call basFunctions.SendData("SERVER " & Name & " 1 :" & " " & Message & vbCrLf)
 End Sub
 
-
 Public Sub NotifyAllUsersWithServicesAccess(Message As String)
+NotifyAllUsersWithFlags AccFlagGetServNotices, Message
+End Sub
+
+Public Sub NotifyAllUsersWithFlags(Flag As String, Message As String)
     Dim i As Integer
     Dim Reciever As String
     Dim Sender As String
     Sender = Service(8).Nick
     For i = 0 To basMain.TotalUsers
-        If HasFlag(i, AccFlagGetServNotices) Then ' Modified to only send to users with the ServNotices flag
+        If HasFlag(i, Flag) Then
             Reciever = basMain.Users(i).Nick
             Call basFunctions.SendMessage(Sender, Reciever, "Services Notice: " & Message)
         End If

@@ -27,6 +27,9 @@ Services:
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
  28/07/2004 - Jason
+  -[CO] [---] Made basFuncitons.NotifyAllUsersWithFlags(Flag As String, Message As String)
+              Only takes one flag
+  -[AG] [---] Made Config Directive AbuseTeamPrivacy (Read comments in the config)
   -[CO] [Fix] Typos in SetFlags
   -[AS] [Fix] Security fix in AdminServ ACCESS
   -[AS] [Fix] Duplicate declarations in AdminServ ACCESS
