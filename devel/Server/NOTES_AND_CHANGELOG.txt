@@ -39,6 +39,11 @@ Services:
              All [AL]
 [-----------------------------------]
 
+24/07/2004 - Jason
+ -[AG] [---] Bugfix for DENY on Unreal
+ -[AG] [---] Bugfix for DENY on other systems
+ -[--] [---] Yes, Those two ^ were seperate bugs.
+ -[AG] [---] Services Master was already exempt from access=0, made him exempt from oper deny restrictions
 23/07/2004 - Jason
  -[AG] [---] Added a DENY feature, Hostmask based deny keeps services access 0
              durring NS IDENTIFY and immediately reverses any OPERs

@@ -341,13 +341,17 @@ End Sub
 
 Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
 ' DENY
-If bSet And InStr("oCAaN", Char) Then
-  If IsDeny(UserID) Then
+If bSet And InStr("oCAaN" & IIf(basMain.Config.ServerType = "UNREAL", "vg", ""), Char) Then
+  If IsDeny(UserID) And Not UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master can OPER
     If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
       If Char = "o" Then Call basFunctions.SendData("SVSO " & Nick & " -")
       ' ^ If verifys that only one SVSO is sent
+      If Char = "v" Or Char = "g" Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -" & Char)
+      ' These two flags arent cleared by svso for some reason:
+      '  Recieve Infected DCC notices (v)
+      '  Can Read and Send To GLOBOPS (g)
     Else ' SVSO Unsupported, Use SVS2MODE
-      Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -o")
+      Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -" & Char)
       Users(UserID).Modes = Replace(Users(UserID).Modes, ModeChar, "")
     End If
   End If
