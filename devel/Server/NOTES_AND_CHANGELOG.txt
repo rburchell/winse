@@ -38,6 +38,9 @@ Services:
              All [AL]
 [-----------------------------------]
 
+27/06/2004 - w00t
+ -[CO] [Fix] Added config file support, needs EXTENSIVE testing. (this was fun! :D)
+ -[CO] [---] Changed a lot of references to fully qualified names, eg ServerName -> basMain.Config.ServerName
 26/06/2004 - w00t
  -[AS] [Fix] JUPE added, needs testing. [update: now should check for "fishy" names :o]
  -[CO] [Fix] KillServer renamed DelServer since I like it better! :P

@@ -135,7 +135,7 @@ Private Sub Form_Load()
     frmServer.Show
 On Error GoTo NoConnect
     Call basFunctions.LogEvent(basMain.LogTypeNotice, "Connecting...")
-    tcpServer.Connect basMain.UplinkHost, basMain.UplinkPort
+    tcpServer.Connect basMain.Config.UplinkHost, basMain.Config.UplinkPort
     tcpServer_Connect
     Exit Sub
 NoConnect:
@@ -176,8 +176,8 @@ Private Sub tcpServer_Connect()
     tmrEoS.Enabled = True
     Me.Caption = AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - Connected"
     rtbStatusWindow.Text = ""
-    Call tcpServer.Send("PASS :" & UplinkPassword & vbCrLf)
-    Call tcpServer.Send("SERVER " & ServerName & " 1 :" & " " & ServerDescription & vbCrLf)
+    Call tcpServer.Send("PASS :" & basMain.Config.UplinkPassword & vbCrLf)
+    Call tcpServer.Send("SERVER " & basMain.Config.ServerName & " 1 :" & " " & basMain.Config.ServerDescription & vbCrLf)
 End Sub
 
 Private Sub tcpServer_DataArrival()
@@ -234,7 +234,7 @@ Private Sub tcpServer_DataArrival()
                 'add user to our array
                 With basMain.Users(NextFreeUserIndex)
                     .Nick = Parameters(1)
-                    .MsgStyle = basMain.DefaultServiceMessageType
+                    .MsgStyle = basMain.Config.DefaultMessageType
                 End With
                 basMain.TotalUsers = basMain.TotalUsers + 1
                 i = basFunctions.ReturnUserIndex(Parameters(1))
@@ -477,7 +477,7 @@ Disable:
 End Sub
 
 Private Sub tmrPingUplink_Timer()
-    Call basFunctions.SendData("PING :" & ServerName)
+    Call basFunctions.SendData("PING :" & basMain.Config.ServerName)
 End Sub
 
 Private Sub tmrPollSocket_Timer()

@@ -21,14 +21,16 @@ Public Const ModVersion = "0.0.2.4"
 Public Sub AgentHandler(Cmd As String, Sender As Integer)
     'You need not be opered, or have services access to use Agent. All you
     'need is to be on the abuse team. --w00t
-    Dim Message As String
-    Dim i As Integer
-
     Dim Parameters() As String
-    Dim SenderNick As String
+    Dim Message As String
+    ReDim Parameters(0) As String
+    Dim Cmdcopy As String
     
+    Dim SenderNick As String
+    Dim Spacer As Byte
+    Dim Elements As Integer
+    Dim i As Integer
     SenderNick = basFunctions.ReturnUserName(Sender)
-    Parameters() = basFunctions.ParseBuffer(Cmd)
     
     'Considering that Service Master (?) can probably
     'add/remove Abuse Team members, we may as well give

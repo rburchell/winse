@@ -21,25 +21,25 @@ Option Explicit
 '"NONE" disables logging to file. (really really not recommended!)
 Public Const LoggingType = "DEBUG"
 'the types of logging (for headers)
-Public Const LogTypeNotice = "NOTICE"
-Public Const LogTypeDebug = "DEBUG"
 Public Const LogTypeBug = "BUG"
 Public Const LogTypeError = "ERROR"
+Public Const LogTypeWarn = "WARN"
+Public Const LogTypeNotice = "NOTICE"
+Public Const LogTypeDebug = "DEBUG"
 
+Type ConfigVars
+    UplinkHost As String
+    UplinkName As String
+    UplinkPort As String
+    UplinkPassword As String
+    ServerName As String
+    ServerNumeric As String 'Could be byte??
+    ServerDescription As String
+    ServicesMaster  As String
+    DefaultMessageType As Boolean
+End Type
 
-'Defines the default for users().msgstyle True=notice false=privmsg
-Public Const DefaultServiceMessageType = True
-
-'We really need to make these into just plain config
-'file entries... but let's get it stable first :> -aquanight
-Public Const UplinkHost = "127.0.0.1"
-Public Const UplinkName = "irc.symmetic.net"
-Public Const UplinkPort = "6667"
-Public Const UplinkPassword = "dragonserv"
-
-Public Const ServerName = "services.symmetic.net"
-Public Const ServerNumeric = "100"
-Public Const ServerDescription = "WinSe IRC Services"
+Public Config As ConfigVars
 
 'WinSe: WINdows SErvices, also a "pune" or "play on words" (wince, geddit??)
 '... hasn't made me wince yet ^.- - aquanight
@@ -47,8 +47,6 @@ Public Const AppName = "winse"
 Public Const AppVersion = "0.0.4.0"
 Public Const AppCompileInfo = "sense_datum"
 Public Const AppCompileDate = "2004/06/25-1400hours"
-
-Public ServicesMaster As String   'The first services root.
 
 'UserModes is used so basFunctions.SetUserModes doesnt give a user an illegal mode.
 'Yes, its a huge hack, but I cant think of another way to do it. NEED another way,
@@ -115,6 +113,7 @@ Private Type ChannelAccess
     Access As Byte 'must be < 255.
 End Type
 'bekfLl
+
 Public Type ChannelStructure
     Name As String
     
@@ -205,6 +204,9 @@ Sub Main()
     '--w00t
     basMain.TotalChannels = -1
     basMain.TotalUsers = -1
+    'Let's parse our config :|
+    basFileIO.ParseConfigurationFile (App.Path & "\winse.conf")
+    
     'Note that you CAN have custom hostmasks (a sethost is issued) but I choose not to.
     'actually for aliases to work, the
     'hostname should generally be the same as the server
@@ -212,53 +214,52 @@ Sub Main()
         'Who uses aliases, really. :P Besides, people like changing stuff. --w00t
     'I think a seperate RealName field would be nice :) -aquanight
         'Perhaps, but I cba atm :P --w00t
-    basMain.ServicesMaster = "aquanight" 'Config anyone?
     Service(0).Nick = "ChanServ"
-    Service(0).Hostmask = ServerName '"channel-services." & DomainName
+    Service(0).Hostmask = Config.ServerName '"channel-services." & DomainName
     Service(0).Name = "channel"
     
     Service(1).Nick = "NickServ" 'aka "the service that unreal loves to kill for no reason"
-    Service(1).Hostmask = ServerName '"nick-services." & DomainName
+    Service(1).Hostmask = Config.ServerName '"nick-services." & DomainName
     Service(1).Name = "nickname"
     
     Service(2).Nick = "HostServ"
-    Service(2).Hostmask = ServerName '"hostmask-services." & DomainName
+    Service(2).Hostmask = Config.ServerName '"hostmask-services." & DomainName
     Service(2).Name = "hostmask"
     
     Service(3).Nick = "BotServ"
-    Service(3).Hostmask = ServerName '"automation-services." & DomainName
+    Service(3).Hostmask = Config.ServerName '"automation-services." & DomainName
     Service(3).Name = "automation"
     
     Service(4).Nick = "OperServ"
-    Service(4).Hostmask = ServerName '"operator-services." & DomainName
+    Service(4).Hostmask = Config.ServerName '"operator-services." & DomainName
     Service(4).Name = "dictator"
     
     Service(5).Nick = "AdminServ"
-    Service(5).Hostmask = ServerName '"administrator-services." & DomainName
+    Service(5).Hostmask = Config.ServerName '"administrator-services." & DomainName
     Service(5).Name = "overlord"
     
     Service(6).Nick = "RootServ"
-    Service(6).Hostmask = ServerName '"master-services." & DomainName
+    Service(6).Hostmask = Config.ServerName '"master-services." & DomainName
     Service(6).Name = "master"
     
     Service(7).Nick = "Agent"
-    Service(7).Hostmask = ServerName '"blackglasses." & DomainName
+    Service(7).Hostmask = Config.ServerName '"blackglasses." & DomainName
     Service(7).Name = "smith"
     
     Service(8).Nick = "Global"
-    Service(8).Hostmask = ServerName '"noticer." & DomainName
+    Service(8).Hostmask = Config.ServerName '"noticer." & DomainName
     Service(8).Name = "noticer"
     
     Service(9).Nick = "MassServ"
-    Service(9).Hostmask = ServerName '"mass-services." & DomainName
+    Service(9).Hostmask = Config.ServerName '"mass-services." & DomainName
     Service(9).Name = "wmd"
     
     Service(10).Nick = "MemoServ"
-    Service(10).Hostmask = ServerName '"memo-services." & DomainName
+    Service(10).Hostmask = Config.ServerName '"memo-services." & DomainName
     Service(10).Name = "mailman"
     
     Service(11).Nick = "DebugServ"
-    Service(11).Hostmask = ServerName '"services." & DomainName
+    Service(11).Hostmask = Config.ServerName '"services." & DomainName
     Service(11).Name = "INVISIBLE"
     frmServer.Show
 End Sub

@@ -196,7 +196,7 @@ Public Function Identify(Sender As Integer, NickToIdentify As String, Password A
             .MsgStyle = basFileIO.GetInitEntry("users.db", .Nick, "MsgStyle")
             .Password = basFileIO.GetInitEntry("users.db", .Nick, "Password")
             'Check if they are a master, just in case their permissions got fiddled with.
-            If UCase(basMain.Users(UserId).IdentifiedToNick) = UCase(basMain.ServicesMaster) Then
+            If UCase(basMain.Users(UserId).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
                 .Access = 100
             End If
         End With

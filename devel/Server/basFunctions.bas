@@ -28,9 +28,6 @@ Public Function ParseBuffer(ByVal Buffer As String) As Variant
     ' - aquanight
     'Actually, I didnt :| VB has too many functions anyway *blush* --w00t
     ParseBuffer = Split(Buffer, " ")
-    'If Left(Buffer, 1) = ":" Then
-    '    Buffer = Right(Buffer, Len(Buffer) - 1)
-    'End If
 End Function
 
 Public Sub LogEvent(Header As String, Message As String)
@@ -89,8 +86,8 @@ Public Sub IntroduceClient(Nick As String, Host As String, Name As String, Optio
     Dim MyTime As String
     MyTime = basUnixTime.GetTime
     'we directly send the nick and user commands, as buffering stuffs things up. --w00t
-    Call frmServer.tcpServer.Send("NICK " & Nick & " 1 " & MyTime & " " & Name & " " & Host & " " & ServerName & " " & Nick & vbCrLf)
-    Call frmServer.tcpServer.Send("USER " & Nick & " " & Name & " " & ServerName & " " & Name & vbCrLf)
+    Call frmServer.tcpServer.Send("NICK " & Nick & " 1 " & MyTime & " " & Name & " " & Host & " " & basMain.Config.ServerName & " " & Nick & vbCrLf)
+    Call frmServer.tcpServer.Send("USER " & Nick & " " & Name & " " & basMain.Config.ServerName & " " & Name & vbCrLf)
     'Don't send SVSMODE for clients on your server.
     'SVSMODE suggests forcefully changing modes for
     'other clients, which isn't necessary. - aquanight
@@ -142,7 +139,7 @@ Public Function ReturnUserServicesPermissions(UserId As Integer) As Byte
         Exit Function
     End If
     'If they are identified to services master nick, access=100
-    If UCase(basMain.Users(UserId).IdentifiedToNick) = UCase(basMain.ServicesMaster) Then
+    If UCase(basMain.Users(UserId).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
         ReturnUserServicesPermissions = 100
         Exit Function
     End If

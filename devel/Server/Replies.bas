@@ -37,6 +37,12 @@ Public Const ServicesConnectedToNetwork = "Services is now connected, and has be
 Public Const ServicesTerminatingNormally = "Services are shutting down normally :) Have a nice day!"
 Public Const AccessTooHigh = "You specified an access level too high. Use a value less than 255."
 
+'Config file errors.
+Public Const ConfigFileDoesntExist = "winse.conf doesnt exist! We need a configuration file to start."
+Public Const ConfigFileUnknownDirective = "Invalid directive in winse.conf: %n"
+Public Const ConfigFileUnexpectedConfVersion = "Unexpected ConfigVer given! Cannot continue!"
+Public Const ConfigFileInvalidMessageType = "Unexpected DefaultMessageType, MUST be 'N' or 'P', assuming 'N'"
+
 'Sanity Checks - When things go badly wrong.
 Public Const SanityCheckLostChannel = "SANITY CHECK! We lost a channel in the array! aaaargh!!!! Advise a restart!"
 Public Const SanityCheckLostUser = "SANITY CHECK! We lost a user somewhere in the array! aaiiiiiieeee! *splat* Advise a restart!"
