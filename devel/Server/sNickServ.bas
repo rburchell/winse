@@ -238,9 +238,50 @@ Public Sub HandleUserMode(ByVal User As User, ByVal bSet As Boolean, ByVal Char 
 End Sub
 
 Public Sub HandleTick(ByVal Interval As Single)
-
+    Static NextGuest As Long
+    If NextGuest < 1000000 Or NextGuest > 9999999 Then NextGuest = 1000000
+    Dim oldc As Single, c As Single, u As User
+    For Each u In Users
+        On Error GoTo NoCountDown
+        oldc = u.Custom("NickKillCountdown")
+        c = oldc - Interval
+        If c <= 40! And oldc > 40! Then
+            'Dropped below 40 seconds, send the 40 second warning.
+            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceIn40
+        ElseIf c <= 20! And oldc > 20! Then
+            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceIn20
+        ElseIf c <= 0! And oldc > 0! Then
+            'IDENTIFY TIMEOUT!
+            LogEventWithMessage LogTypeNotice, "User " + u.Nick + " did not identify."
+            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforceImmed
+            SendMessage Service(SVSINDEX_NICKSERV).Nick, u.Nick, Replies.NickServEnforcingNick
+            u.ForceChangeNick "Guest" & NextGuest
+            NextGuest = NextGuest + 1
+        End If
+NoCountDown:
+        On Error GoTo 0
+    Next u
 End Sub
 
 Public Sub HandleEvent(ByVal Source As String, ByVal EventName As String, Parameters() As Variant)
-
+    Dim sptr As User, newnick As String
+    Select Case EventName
+        Case basEvents.UserConnect
+            Set sptr = Parameters(0)
+            newnick = sptr.Nick
+        Case basEvents.UserNickChange
+            Set sptr = Parameters(0)
+            newnick = Parameters(2)
+    End Select
+    'If there's an existing countdown, destroy it.
+    On Error GoTo NoCountDown
+    sptr.Custom.Remove "NickKillCountdown"
+NoCountDown:
+    On Error GoTo 0
+    If sptr.IdentifiedToNick <> newnick Then
+        'Begin the countdown.
+        sptr.Custom.Add 60!, "NickKillCountdown"
+        basFunctions.SendMessage Service(SVSINDEX_NICKSERV).Nick, newnick, Replies.NickServNickRegistered
+        basFunctions.SendMessage Service(SVSINDEX_NICKSERV).Nick, newnick, Replies.NickServEnforceIn60
+    End If
 End Sub

@@ -25,7 +25,15 @@ Services:
              All [AL]
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-/* 0.0.4.0-sense_datum */
+/* 0.0.4.0-sense_datum */\
+ 20/10/2004 - aquanight
+  -[CS] [Add] Added enforcement of +GIVE (autovoice/halfop/etc).
+  -[CS] [Add] Implemented DROP. DROP is a two stage process. First the founder uses /drop #chan,
+              upon which he receives a hash code of some interesting information. He then uses
+              /drop #chan <code> to actually drop the channel.
+  -[CS] [Add] Implemented SET. Now the MLOCK isn't +ntr or -r anymore! :)
+  -[CO] [Add] Added MD5.bas for computing the MD5 hash. Soon passwords will be processed and
+              stored as MD5 hashes in the databases, rather than plaintext.
  13/10/2004 - aquanight
   -[CS] [Add] Implemented ACCESS, AKICK, EXEMPTS, INVITES, and {V|H|A|S}OP and CFOUNDER.
   -[CS] [Add] Implemented [DE]{VOICE|[HALF]OP|PROTECT|OWNER}.

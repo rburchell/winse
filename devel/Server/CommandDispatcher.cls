@@ -164,7 +164,10 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'COLLISION!!!!!!!!
             'This is s nickchange... so all I can say
             'is... WTF?
-            Users(Args(0)).KillUser "Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + ")", basMain.Config.ServerName
+            'UPDATE: Also drop our old record for this user
+            Users(sNick).KillUser "Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + ")", basMain.Config.ServerName
+            'Double check this, becuase removing the old record might cause fun effects here.
+            If Users.Exists(Args(0)) Then Users(Args(0)).KillUser "Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + ")", basMain.Config.ServerName
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckNickChangeCollision + Args(0) + "!" + Args(2) + "@" + Args(3))
             Exit Sub

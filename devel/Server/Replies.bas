@@ -129,13 +129,13 @@ Public Const NickServEnforceIn20 = "You now have 20 seconds to change your nick.
 Public Const NickServEnforceIn20Kill = "You now have 20 seconds to change your nick. If you do not comply, I will disconnect you from the network. This is your final warning."
  'Use this for SET KILL/ENFORCE QUICK - aquanight
 Public Const NickServEnforceQuick = "Your nick will be changed in 20 seconds if you do not comply."
-Public Const NickServEnforceQuickKill = "You will be disconnected from this in 20 seconds if you do not comply."
+Public Const NickServEnforceQuickKill = "You will be disconnected from the network in 20 seconds if you do not comply."
  'Use this for SET KILL/ENFORCE IMMED if you implement it -aquanight
 Public Const NickServEnforceImmed = "This nickname is registered and protected. You may not use it."
  'Forbidden nicks.
 Public Const NickServEnforceForbid = "This nickname is forbidden. You may not use it."
  'Use this when using SVSNICK. Replace() %n with the target nick (Guest???????) - aquanight
-Public Const NickServEnforcingNick = "Your nick has been changed to %n."
+Public Const NickServEnforcingNick = "Your nick has been changed to %n. The nick you were using is owned by another user."
 Public Const NickServEnforcingNickKill = "You are now being disconnected. The nick you were using is registered to another user. Please reconnect with a different nick."
 Public Const NickServIdentificationSuccessful = "Password accepted, you are now identified."
 Public Const NickServIdentificationBadPassword = "Your password is incorrect."
@@ -157,6 +157,8 @@ Public Const NickServRelaseNotHeld = "Nick " + MIRC_BOLD + "%n" + MIRC_BOLD + " 
 Public Const AuthServAccountRegistered = "The account name you requested is already registered. If it is yours, type " + MIRC_BOLD + "/msg AuthServ IDENTIFY %a " + MIRC_UNDERLINE + "password" + MIRC_UNDERLINE + MIRC_BOLD + ". Other, choose a different name."
 Public Const AuthServNotRegistered = "No such account " + MIRC_BOLD + "%a" + MIRC_BOLD + "."
 Public Const AuthServNotIdentified = "You are not identified to an account. You must identify to an account for this command to be useful."
+Public Const AuthServIdentifyNoHost = "No access for your host. If this is your account, please ask an IRCop to add your hostmask %u to this account."
+Public Const AuthServIdentifyAutoHost = "Password accepted. Your hostmask %u has automatically been added to your account."
 
 'Might this be a good idea? - aquanight
     'Indeed. --w00t

@@ -112,7 +112,7 @@ Public Sub SetChannelModes(ByVal Source As String, ByVal Modes As String)
                 'circumstance.)
                 If IsServicesNick(sParam) Then
                     'It's a service.
-                    RaiseCustomEvent Me.Name, basEvents.ServiceChanModeChanged, Me, IIf(bSet, "+", "-") & sChar, sParam
+                    RaiseCustomEvent Me.Name, basEvents.ServiceChanModeChanged, Me, Source, IIf(bSet, "+", "-") & sChar, sParam
                 ElseIf Users.Exists(sParam) Then
                     DispatchPrefix Source, bSet, sChar, basMain.Users(sParam)
                 End If
