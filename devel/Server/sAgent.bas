@@ -262,8 +262,36 @@ Private Sub DeOper(Sender As Integer, Nick As String)
     'remove their oper privilages, courtesy of Agent :)
     If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
       Call basFunctions.SendData("SVSO " & Nick & " -")
+      If InStr(Users(Sender).Modes, "g") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -g")
+      If InStr(Users(Sender).Modes, "v") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -v")
+      ' These two flags arent cleared by svso for some reason:
+      '  Recieve Infected DCC notices (v)
+      '  Can Read and Send To GLOBOPS (g)
     Else ' SVSO Unsupported, Use SVS2MODE
-      Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -o")
+      If InStr(.Modes, "o") Then
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -o")
+        .Modes = Replace(.Modes, "o", "")
+      End If
+      If InStr(.Modes, "O") Then
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -O")
+        .Modes = Replace(.Modes, "O", "")
+      End If
+      If InStr(.Modes, "C") Then
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -C")
+        .Modes = Replace(.Modes, "C", "")
+      End If
+      If InStr(.Modes, "A") Then
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -A")
+        .Modes = Replace(.Modes, "A", "")
+      End If
+      If InStr(.Modes, "a") Then
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -a")
+        .Modes = Replace(.Modes, "a", "")
+      End If
+      If InStr(.Modes, "N") Then
+        Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -N")
+        .Modes = Replace(.Modes, "N", "")
+      End If
     End If
     'Until we clear up all this modes business, blank OUR copy of their modes
     'and request a new one. (ie let the current parser reparse their new modes)
@@ -303,6 +331,55 @@ Select Case UCase(sCommand)
   Case "ADD"
     DenyMasks.Add sParameter
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, sParameter & " was added to the DENY list")
+    Dim CurrentUser
+    Dim l As Integer
+    For l = LBound(Users) To UBound(Users)
+      If Not Users(l).Nick = "" Then ' Check if there is a user occupying this id
+      ' I NEED A BETTER WAY TO DO THIS, and it has to be FAST ^
+        If IsDeny(l) And Not UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master is exempt
+          ' Do all denys (to remove from the newly denied)
+          With Users(l)
+            .Access = 0
+            If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
+              Call basFunctions.SendData("SVSO " & Nick & " -")
+              If InStr(.Modes, "g") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -g")
+              If InStr(.Modes, "v") Then Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -v")
+              ' These two flags arent cleared by svso for some reason:
+              '  Recieve Infected DCC notices (v)
+              '  Can Read and Send To GLOBOPS (g)
+            Else ' SVSO Unsupported, Use SVS2MODE
+              If InStr(.Modes, "o") Then
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -o")
+                .Modes = Replace(.Modes, "o", "")
+              End If
+              If InStr(.Modes, "O") Then
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -O")
+                .Modes = Replace(.Modes, "O", "")
+              End If
+              If InStr(.Modes, "C") Then
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -C")
+                .Modes = Replace(.Modes, "C", "")
+              End If
+              If InStr(.Modes, "A") Then
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -A")
+                .Modes = Replace(.Modes, "A", "")
+              End If
+              If InStr(.Modes, "a") Then
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -a")
+                .Modes = Replace(.Modes, "a", "")
+              End If
+              If InStr(.Modes, "N") Then
+                Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -N")
+                .Modes = Replace(.Modes, "N", "")
+              End If
+              ' Get a new copy of their modes using w00t's method
+              basMain.Users(TargetIndex).Modes = ""
+              Call basFunctions.SendData("MODE " & Nick)
+            End If
+          End With
+        End If
+      End If
+    Next l
   Case "DEL"
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, DenyMasks(sParameter) & " was removed from the DENY list")
     DenyMasks.Remove sParameter
@@ -341,7 +418,7 @@ End Sub
 
 Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
 ' DENY
-If bSet And InStr("oCAaN" & IIf(basMain.Config.ServerType = "UNREAL", "vg", ""), Char) Then
+If bSet And InStr("oOCAaN" & IIf(basMain.Config.ServerType = "UNREAL", "vg", ""), Char) Then
   If IsDeny(UserID) And Not UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then ' <-- Make sure a Master can OPER
     If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
       If Char = "o" Then Call basFunctions.SendData("SVSO " & Nick & " -")
