@@ -67,6 +67,8 @@ Public Type ConfigVars
     InjectToOperServices As Boolean
     AbuseTeamPrivacy As Byte
     ConnectString As String 'We need this to connect to the database. Must include provider and everything.
+    BadPassLimit As Integer 'This could be anything really.
+    BadPassTimeout As Integer 'Yes ridiculous limit/timeouts like 32767 each could be what an admin wants :P .
 End Type
 
 Public Config As ConfigVars
@@ -213,30 +215,12 @@ Public Sub ParseConfigurationFile(File As String)
     'wont work.
     
     'The directives.
-    Dim Directives As Collection 'This should make things easier :) - aquanight
-    Set Directives = New Collection
     Dim fd As Integer 'hope so :|
     Dim i As Integer
     Dim ConfigLine As String
     Dim ConfigCopy As String
+    Dim DirectiveName As String
     Dim DirectiveVal As String
-    
-    'Initialise directives.
-    Directives.Add "CONFIGVER"
-    Directives.Add "SERVERTYPE"
-    Directives.Add "UPLINKHOST"
-    Directives.Add "UPLINKPORT"
-    Directives.Add "UPLINKNAME"
-    Directives.Add "UPLINKPASSWORD"
-    Directives.Add "UPLINKTYPE"
-    Directives.Add "SERVERNAME"
-    Directives.Add "SERVERDESCRIPTION"
-    Directives.Add "SERVERNUMERIC"
-    Directives.Add "SERVICESMASTER"
-    Directives.Add "DEFAULTMESSAGETYPE"
-    Directives.Add "GLOBALTARGETS"
-    Directives.Add "INJECTTOOPERSERVICES"
-    Directives.Add "ABUSETEAMPRIVACY"
     
     Call basFunctions.LogEvent(basMain.LogTypeDebug, "Checking conf existance")
     fd = FreeFile
@@ -263,82 +247,83 @@ NextLine:
             'if its a comment, ignore. (update: also ignore blank lines :P)
             GoTo NextLine
         End If
+        'Right time to unw00t this :) .
+        DirectiveName = Split(ConfigLine, "=", 2)(0)
+        DirectiveVal = Split(ConfigLine, "=", 2)(1)
         'Ok, now we need to :|:| try get stuff. Make a copy of the line in
-        'ConfigCopy so we can mutilate it. (make it ucase for searching)
-        ConfigCopy = UCase(ConfigLine)
-        'See what directive we have...
-        For i = 1 To Directives.Count
-            If Left(ConfigCopy, Len(Directives(i))) = Directives(i) Then
-                'We have a match!
-                DirectiveVal = Right(ConfigLine, Len(ConfigLine) - (Len(Directives(i)) + 1))
-                Select Case Directives(i)
-                    Case "CONFIGVER"
-                        If DirectiveVal <> "1.0.0.0" Then
-                            Call basFunctions.LogEvent(basMain.LogTypeError, Replies.ConfigFileUnexpectedConfVersion)
-                        End If
-                    Case "SERVERTYPE"
-                        basMain.Config.ServerType = UCase(DirectiveVal)
-                    Case "UPLINKHOST"
-                        basMain.Config.UplinkHost = DirectiveVal
-                    Case "UPLINKPORT"
-                        basMain.Config.UplinkPort = DirectiveVal
-                    Case "UPLINKNAME"
-                        basMain.Config.UplinkName = DirectiveVal
-                    Case "UPLINKPASSWORD"
-                        basMain.Config.UplinkPassword = DirectiveVal
-                    Case "UPLINKTYPE"
-                        basMain.Config.UplinkType = DirectiveVal
-                    Case "SERVERNAME"
-                        basMain.Config.ServerName = DirectiveVal
-                    Case "SERVERDESCRIPTION"
-                        basMain.Config.ServerDescription = DirectiveVal
-                    Case "SERVERNUMERIC"
-                        basMain.Config.ServerNumeric = DirectiveVal
-                    Case "SERVICESMASTER"
-                        basMain.Config.ServicesMaster = DirectiveVal
-                    Case "GLOBALTARGETS"
-                        basMain.Config.GlobalTargets = DirectiveVal
-                    Case "DEFAULTMESSAGETYPE"
-                        'Defines the default for users().msgstyle True=notice false=privmsg
-                        Select Case DirectiveVal
-                            Case "P", "p"
-                                basMain.Config.DefaultMessageType = False
-                            Case "N", "n"
-                                basMain.Config.DefaultMessageType = True
-                            Case Else
-                                Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
-                                basMain.Config.DefaultMessageType = True
-                        End Select
-                    Case "INJETTOOPERSERVICES"
-                        'Defines the default for users().msgstyle True=notice false=privmsg
-                        Select Case LCase(DirectiveVal)
-                            Case "yes"
-                                basMain.Config.InjectToOperServices = True
-                            Case "no"
-                                basMain.Config.InjectToOperServices = False
-                            Case Else
-                                Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
-                                basMain.Config.InjectToOperServices = False
-                        End Select
-                    Case "ABUSETEAMPRIVACY"
-                        'Defines the default for users().msgstyle True=notice false=privmsg
-                        Select Case LCase(DirectiveVal)
-                            Case "none"
-                                basMain.Config.AbuseTeamPrivacy = 0
-                            Case "partial"
-                                basMain.Config.AbuseTeamPrivacy = 1
-                            Case "full"
-                                basMain.Config.AbuseTeamPrivacy = 2
-                            Case Else
-                                Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
-                                basMain.Config.InjectToOperServices = False
-                        End Select
+        Select Case UCase(DirectiveName)
+            Case "CONFIGVER"
+                If DirectiveVal <> "1.0.0.0" Then
+                    Call basFunctions.LogEvent(basMain.LogTypeError, Replies.ConfigFileUnexpectedConfVersion)
+                End If
+            Case "SERVERTYPE"
+                basMain.Config.ServerType = UCase(DirectiveVal)
+            Case "UPLINKHOST"
+                basMain.Config.UplinkHost = DirectiveVal
+            Case "UPLINKPORT"
+                basMain.Config.UplinkPort = DirectiveVal
+            Case "UPLINKNAME"
+                basMain.Config.UplinkName = DirectiveVal
+            Case "UPLINKPASSWORD"
+                basMain.Config.UplinkPassword = DirectiveVal
+            Case "UPLINKTYPE"
+                basMain.Config.UplinkType = DirectiveVal
+            Case "SERVERNAME"
+                basMain.Config.ServerName = DirectiveVal
+            Case "SERVERDESCRIPTION"
+                basMain.Config.ServerDescription = DirectiveVal
+            Case "SERVERNUMERIC"
+                basMain.Config.ServerNumeric = DirectiveVal
+            Case "SERVICESMASTER"
+                basMain.Config.ServicesMaster = DirectiveVal
+            Case "GLOBALTARGETS"
+                basMain.Config.GlobalTargets = DirectiveVal
+            Case "DEFAULTMESSAGETYPE"
+                'Defines the default for users().msgstyle True=notice false=privmsg
+                Select Case DirectiveVal
+                    Case "P", "p"
+                        basMain.Config.DefaultMessageType = False
+                    Case "N", "n"
+                        basMain.Config.DefaultMessageType = True
+                    Case Else
+                        Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
+                        basMain.Config.DefaultMessageType = True
                 End Select
-                GoTo NextLine
-            End If
-        Next i
-        'No match. Warn and continue.
-        Call basFunctions.LogEvent(basMain.LogTypeWarn, Replace(Replies.ConfigFileUnknownDirective, "%n", ConfigLine))
+            Case "INJECTTOOPERSERVICES"
+                'Defines the default for users().msgstyle True=notice false=privmsg
+                Select Case LCase(DirectiveVal)
+                    Case "yes"
+                        basMain.Config.InjectToOperServices = True
+                    Case "no"
+                        basMain.Config.InjectToOperServices = False
+                    Case Else
+                        Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
+                        basMain.Config.InjectToOperServices = False
+                End Select
+            Case "ABUSETEAMPRIVACY"
+                'Defines the default for users().msgstyle True=notice false=privmsg
+                Select Case LCase(DirectiveVal)
+                    Case "none"
+                        basMain.Config.AbuseTeamPrivacy = 0
+                    Case "partial"
+                        basMain.Config.AbuseTeamPrivacy = 1
+                    Case "full"
+                        basMain.Config.AbuseTeamPrivacy = 2
+                    Case Else
+                        Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
+                        basMain.Config.InjectToOperServices = False
+                End Select
+            Case "CONNECTSTRING"
+                basMain.Config.ConnectString = DirectiveVal 'Let ADO validate it ;p .
+            Case "BADPASSLIMIT"
+                basMain.Config.BadPassLimit = DirectiveVal
+            Case "BADPASSTIMEOUT"
+                basMain.Config.BadPassTimeout = DirectiveVal
+            '<-- ADD NEW DIRECTIVES ABOVE THIS LINE! MUY IMPORTANTE! -->'
+            Case Else
+                'No match. Warn and continue.
+                Call basFunctions.LogEvent(basMain.LogTypeWarn, Replace(Replies.ConfigFileUnknownDirective, "%n", ConfigLine))
+        End Select
     Loop
     Close #fd
 End Sub

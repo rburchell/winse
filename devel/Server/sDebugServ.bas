@@ -151,8 +151,6 @@ Private Sub DumpChannel(ByVal DumpTo As String, ByVal Chan As Channel)
         DumpLine DumpTo, "Name: " + .Name
         DumpLine DumpTo, "Topic is: " + .Topic
         DumpLine DumpTo, "Set by " + .TopicSetBy + " on " + CStr(.TopicSetOn)
-        DumpLine DumpTo, "Password: " + .FounderPassword
-        DumpLine DumpTo, "ModeLock: " + .MLock
         Dim i As Integer
         DumpLine DumpTo, "Modes: " + .Modes
         DumpLine DumpTo, "Users on channel:"

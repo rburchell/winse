@@ -18,6 +18,7 @@ Public EMail As String                'User email. NOT CHECKED FOR VALIDITY!!
 Public Password As String             'User password.
 Public MemoID As Integer              'ID associated with memos in the memoserv database.
 Public Modes As String                'Usermodes
+Private mMemos As Memos
 Public HideEMail As Boolean           'Is email visible?
 Public Access As String               'Services access.
 Public Requests As Byte               'Flood level. Goes up by 1 on each request.
@@ -36,12 +37,19 @@ Public HostName As String             'User's real hostname.
 Public RealName As String             '"Real Name" of this user
 Public VirtHost As String             'Virtual Host, from stuff like GETHOST or NICKv2
 Public Server As String               'Server this user is on.
+Public BadIdentifies As Long          'Number of bad IDENTIFYs. When this hit configured limit, we KILL.
 'Anything else services need to store?
 Private mCustom As Collection
 
 Private Sub Class_Initialize()
+    Set mMemos = New Memos
     Set mCustom = New Collection
+    Set mChannels = New Channel
 End Sub
+
+Public Property Get Memos() As Memos
+    Set Memos = mMemos
+End Property
 
 Public Property Get Custom() As Collection
     Set mChannels = New Channels
@@ -96,6 +104,7 @@ Public Sub Dispose()
         If c.Members.Count = 0 Then
             Channels.Remove c
         End If
+        c.IdentifedUsers.Remove Nick
     Next c
     Access = ""
     Modes = ""

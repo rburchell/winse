@@ -26,6 +26,10 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 29/08/2004 - aquanight
+  -[CO] [Fix] Unw00ted the config parser. Yay.
+  -[CO] [Fix] Fixed a nick tracking issue in user collections.
+  -[MS] [Fix] Unw00ted it a bit. It used the old user stuffs. It has been updated.
  29/08/2004 - w00t
   -[MS] [Add] I BRING THEE MEMOSERV. In really basic form ;p. Doesn't have database stuff yet.
               This is probably going to break CVS until we fix userstructure, etc to work with it.

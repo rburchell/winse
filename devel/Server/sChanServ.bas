@@ -544,20 +544,47 @@ Public Sub Register(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
         newcol.Add "", "KickBWList"
         'Now do what we need to do :).
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServREGISTEROK, "%c", Channel.Name))
-        JoinBot Channel, Service(SVSINDEX_CHANSERV)
-        Call basFunctions.SendData(":" & Service(SVSINDEX_CHANSERV) & " MODE " & Channel.Name & " +nrtq " & Source.Nick)
+        JoinBot Channel, Service(SVSINDEX_CHANSERV).Nick
+        Call basFunctions.SendData(":" & Service(SVSINDEX_CHANSERV).Nick & " MODE " & Channel.Name & " +nrtq " & Source.Nick)
         Channel.SetChannelModes "+nrtq " & Source.Nick
-        Call basFunctions.SendData(":" & Service(SVSINDEX_CHANSERV) & " TOPIC " & Channel.Name & " " & newcol("TopicSetBy") & " " & newcol("TopicSetOn") & newcol("LastTopic"))
+        Call basFunctions.SendData(":" & Service(SVSINDEX_CHANSERV).Nick & " TOPIC " & Channel.Name & " " & newcol("TopicSetBy") & " " & newcol("TopicSetOn") & newcol("LastTopic"))
     End If
 End Sub
 
 Public Sub Identify(ByVal Source As User, ByVal Channel As Channel, ByVal Password As String)
     If Not IsChanRegistered(Channel.Name) Then
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServChannelNotRegistered, "%c", Channel.Name))
+    'Already identified, or already has cofounder access?
     ElseIf CollectionContains(Channel.IdentifedUsers, Source.Nick) Then
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyAlreadyIDd, "%c", Channel.Name))
-    ElseIf HasFlag(Channel.Name, Source.Nick, "+f") Then
+    ElseIf HasFlag(Channel.Name, Source.Nick, "+" + CHANSERV_COFOUNDER) Then
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyAlreadyIDd, "%c", Channel.Name))
+    'Banned from the channel (via AKICK or +K flag)?
+    ElseIf GetFirstAKick(Channel.Name, Source) <> "" Or HasFlag(Channel.Name, Source.Nick, "+" + CHANSERV_AUTOKICK) Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyBanned, "%c", Channel.Name))
+    'Is the channel restricted, and the user not on the ACL (thus effectively +K'd)?
+    ElseIf DB(Channel.Name)("Restricted") And AllFlags(Channel.Name, Source.Nick) = "" Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", Channel.Name))
+    'Is the channel +A, +O, or +z, and the user is not?
+    ElseIf (InStr(Channel.Modes, "A") > 0 And InStr(Source.Modes, "A") = 0) Or (InStr(Channel.Modes, "O") > 0 And InStr(Source.Modes, "o") = 0) Or (InStr(Channel.Modes, "z") > 0 And InStr(Source.Modes, "z") = 0) Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", Channel.Name))
+    'Is the password correct?
+    ElseIf Password <> DB(Channel.Name)("Password") Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.ChanServIdentifyBadPass)
+        Source.BadIdentifies = Source.BadIdentifies + 1
+        If Source.BadIdentifies >= basMain.Config.BadPassLimit Then
+            Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.ChanServIdentifyBadPassLimit)
+            Source.KillUser Replies.KillReasonPasswordLimit, Service(SVSINDEX_CHANSERV).Nick
+            Exit Sub 'Make absolutely sure we bail out.
+        End If
+    Else
+        'All validations pass (or did I forget any?)... so mark him as identified.
+        Channel.IdentifedUsers.Add Source
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyOK, "%c", Channel.Name))
+        If Channel.Members.Exists(Source) Then
+            Call basFunctions.SendData(":" + Service(SVSINDEX_CHANSERV).Nick + " MODE " + Channel.Name + " +ao " + Source.Nick + " " + Source.Nick)
+            Channel.SetChannelModes "+ao " + Source.Nick + " " + Source.Nick
+        End If
     End If
 End Sub
 
@@ -760,4 +787,229 @@ End Property
 
 Public Sub DelAllFlags(ByVal Channel As String, ByVal User As String)
     AllFlags(Channel, User) = ""
+End Sub
+
+Public Function GetFirstAKick(ByVal Channel As String, ByVal User As User) As String
+    Dim sAK As String, vAK As Variant
+    sAK = DB(Channel)("AKicks")
+    vAK = Split(sAK, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vAK)
+        vEntry = Split(vAK(idx), " ", 3)
+        If NUHMaskIsMatch(User, vEntry(0)) Then
+            GetFirstAKick = vEntry(0)
+            Exit Function
+        End If
+    Next idx
+    GetFirstAKick = ""
+End Function
+
+Public Property Get AKickReason(ByVal Channel As String, ByVal AKickMask As String) As String
+    Dim sAK As String, vAK As Variant
+    sAK = DB(Channel)("AKicks")
+    vAK = Split(sAK, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vAK)
+        vEntry = Split(vAK(idx), " ", 3)
+        If vEntry(0) = AKickMask Then
+            AKickReason = vEntry(2)
+            Exit Function
+        End If
+    Next idx
+    AKickReason = ""
+End Property
+
+Public Property Get AKickExpiry(ByVal Channel As String, ByVal AKickMask As String) As Double
+    Dim sAK As String, vAK As Variant
+    sAK = DB(Channel)("AKicks")
+    vAK = Split(sAK, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vAK)
+        vEntry = Split(vAK(idx), " ", 3)
+        If vEntry(0) = AKickMask Then
+            AKickExpiry = CDbl(vEntry(1))
+            Exit Property
+        End If
+    Next idx
+    AKickExpiry = -1
+End Property
+
+Public Property Let AKickExpiry(ByVal Channel As String, ByVal AKickMask As String, ByVal NewExpiry As Double)
+    Dim sAK As String, vAK As Variant
+    sAK = DB(Channel)("AKicks")
+    vAK = Split(sAK, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vAK)
+        vEntry = Split(vAK(idx), " ", 3)
+        If AKickMask = vEntry(0) Then
+            vEntry(1) = CStr(NewExpiry)
+            vAK(idx) = Join(vEntry, " ")
+            sAK = Join(vAK, vbCrLf)
+            DB(Channel)("AKicks") = sAK
+        End If
+    Next idx
+End Property
+
+Public Sub AddAKick(ByVal Channel As String, ByVal AKickMask As String, ByVal Expiry As Double, ByVal Reason As String)
+    If AKickExpiry(Channel, AKickMask) >= 0 Then Exit Sub
+    Dim sResult As String
+    sResult = DB(Channel)("AKicks")
+    sResult = sResult & vbCrLf & AKickMask & " " & CStr(Expiry) & " " & Reason
+    DB(Channel)("AKick") = sResult
+End Sub
+
+Public Sub DelAKick(ByVal Channel As String, ByVal AKickMask As String)
+    Dim sResult As String, vSplit As Variant
+    sResult = DB(Channel)("AKicks")
+    vSplit = Split(sResult, vbCrLf)
+    Dim idx As Long
+    For idx = 0 To UBound(vSplit)
+        If Split(vSplit(idx), " ", 3)(0) = AKickMask Then
+            vSplit(idx) = ""
+        End If
+    Next idx
+    'Now rejoin them
+    sResult = Join(vSplit, vbCrLf)
+    'Removed items will be vbCrLf vbCrLf
+    While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
+End Sub
+
+Public Function GetFirstExempt(ByVal Channel As String, ByVal User As User) As String
+    Dim sExempt As String, vExempt As Variant
+    sExempt = DB(Channel)("Exempts")
+    vExempt = Split(sExempt, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vExempt)
+        vEntry = Split(vExempt(idx), " ", 3)
+        If NUHMaskIsMatch(User, vEntry(0)) Then
+            GetFirstExempt = vEntry(0)
+            Exit Function
+        End If
+    Next idx
+    GetFirstExempt = ""
+End Function
+
+Public Property Get ExemptExpiry(ByVal Channel As String, ByVal ExemptMask As String) As Double
+    Dim sExempt As String, vExempt As Variant
+    sExempt = DB(Channel)("Exempts")
+    vExempt = Split(sExempt, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vExempt)
+        vEntry = Split(vExempt(idx), " ", 3)
+        If vEntry(0) = ExemptMask Then
+            ExemptExpiry = CDbl(vEntry(1))
+            Exit Property
+        End If
+    Next idx
+    ExemptExpiry = -1
+End Property
+
+Public Property Let ExemptExpiry(ByVal Channel As String, ByVal ExemptMask As String, ByVal NewExpiry As Double)
+    Dim sExempt As String, vExempt As Variant
+    sExempt = DB(Channel)("Exempts")
+    vExempt = Split(sExempt, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vExempt)
+        vEntry = Split(vExempt(idx), " ", 3)
+        If ExemptMask = vEntry(0) Then
+            vEntry(1) = CStr(NewExpiry)
+            vExempt(idx) = Join(vEntry, " ")
+            sExempt = Join(vExempt, vbCrLf)
+            DB(Channel)("Exempts") = sExempt
+        End If
+    Next idx
+End Property
+
+Public Sub AddExempt(ByVal Channel As String, ByVal ExemptMask As String, ByVal Expiry As Double)
+    If ExemptExpiry(Channel, ExemptMask) >= 0 Then Exit Sub
+    Dim sResult As String
+    sResult = DB(Channel)("Exempts")
+    sResult = sResult & vbCrLf & ExemptMask & " " & CStr(Expiry)
+    DB(Channel)("Exempt") = sResult
+End Sub
+
+Public Sub DelExempt(ByVal Channel As String, ByVal ExemptMask As String)
+    Dim sResult As String, vSplit As Variant
+    sResult = DB(Channel)("Exempts")
+    vSplit = Split(sResult, vbCrLf)
+    Dim idx As Long
+    For idx = 0 To UBound(vSplit)
+        If Split(vSplit(idx), " ", 3)(0) = ExemptMask Then
+            vSplit(idx) = ""
+        End If
+    Next idx
+    'Now rejoin them
+    sResult = Join(vSplit, vbCrLf)
+    'Removed items will be vbCrLf vbCrLf
+    While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
+End Sub
+
+Public Function GetFirstInvite(ByVal Channel As String, ByVal User As User) As String
+    Dim sInvite As String, vInvite As Variant
+    sInvite = DB(Channel)("Invites")
+    vInvite = Split(sInvite, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vInvite)
+        vEntry = Split(vInvite(idx), " ", 3)
+        If NUHMaskIsMatch(User, vEntry(0)) Then
+            GetFirstInvite = vEntry(0)
+            Exit Function
+        End If
+    Next idx
+    GetFirstInvite = ""
+End Function
+
+Public Property Get InviteExpiry(ByVal Channel As String, ByVal InviteMask As String) As Double
+    Dim sInvite As String, vInvite As Variant
+    sInvite = DB(Channel)("Invites")
+    vInvite = Split(sInvite, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vInvite)
+        vEntry = Split(vInvite(idx), " ", 3)
+        If vEntry(0) = InviteMask Then
+            InviteExpiry = CDbl(vEntry(1))
+            Exit Property
+        End If
+    Next idx
+    InviteExpiry = -1
+End Property
+
+Public Property Let InviteExpiry(ByVal Channel As String, ByVal InviteMask As String, ByVal NewExpiry As Double)
+    Dim sInvite As String, vInvite As Variant
+    sInvite = DB(Channel)("Invites")
+    vInvite = Split(sInvite, vbCrLf)
+    Dim idx As Long, vEntry As Variant
+    For idx = 0 To UBound(vInvite)
+        vEntry = Split(vInvite(idx), " ", 3)
+        If InviteMask = vEntry(0) Then
+            vEntry(1) = CStr(NewExpiry)
+            vInvite(idx) = Join(vEntry, " ")
+            sInvite = Join(vInvite, vbCrLf)
+            DB(Channel)("Invites") = sInvite
+        End If
+    Next idx
+End Property
+
+Public Sub AddInvite(ByVal Channel As String, ByVal InviteMask As String, ByVal Expiry As Double)
+    If InviteExpiry(Channel, InviteMask) >= 0 Then Exit Sub
+    Dim sResult As String
+    sResult = DB(Channel)("Invites")
+    sResult = sResult & vbCrLf & InviteMask & " " & CStr(Expiry)
+    DB(Channel)("Invite") = sResult
+End Sub
+
+Public Sub DelInvite(ByVal Channel As String, ByVal InviteMask As String)
+    Dim sResult As String, vSplit As Variant
+    sResult = DB(Channel)("Invites")
+    vSplit = Split(sResult, vbCrLf)
+    Dim idx As Long
+    For idx = 0 To UBound(vSplit)
+        If Split(vSplit(idx), " ", 3)(0) = InviteMask Then
+            vSplit(idx) = ""
+        End If
+    Next idx
+    'Now rejoin them
+    sResult = Join(vSplit, vbCrLf)
+    'Removed items will be vbCrLf vbCrLf
+    While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
 End Sub

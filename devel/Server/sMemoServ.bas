@@ -24,15 +24,9 @@ Public Const MS_TOTALMEMOS = 19 'max of 20. (0-19) Should make user configurable
 'Memos(MS_TOTALMEMOS) As Memo           'Each user can have a max of 20 memos. (in userstructure)
 
 'I put the memo type here for some reason...
-Public Type Memo
-    strSenderNick As String
-    dblTimeSent As Double   'who knows, this may be useful... Probably not ;p
-    strMemoText As String
-    bllRead As Boolean
-End Type
 Public Const ModVersion = "0.0.0.0"
 
-Public Sub MemoservHandler(Cmd As String, Sender As Integer)
+Public Sub MemoservHandler(ByVal Cmd As String, ByVal Sender As User)
     'moo, memoserv yay.
     'created (screwed up) by w00t on 14/08/2004
     'Worked on 28/08/2004 again by w00t, since he got lazy on the 14th.
@@ -56,7 +50,7 @@ Public Sub MemoservHandler(Cmd As String, Sender As Integer)
     Dim SenderNick As String
     Dim i As Integer
     
-    SenderNick = basFunctions.ReturnUserName(Sender)
+    SenderNick = Sender.Nick
     Parameters() = Split(Cmd, " ")
     
     'Check that the nick is registered and identified.
@@ -76,18 +70,20 @@ Public Sub MemoservHandler(Cmd As String, Sender As Integer)
             End If
             If UBound(Parameters) = 2 Then
                 'Reading another persons memos.
-                If Not basFunctions.HasFlag(Sender, AccFlagCanMemoServAdmin) Then
+                If Not Sender.HasFlag(AccFlagCanMemoServAdmin) Then
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "I SPIT AT YOU THUSLY!")
                     Exit Sub
                 End If
-                Sender = basFunctions.ReturnUserIndex(Parameters(1))
-                If Sender = -1 Or Not basFunctions.IsNickRegistered(Parameters(1)) Then
+                On Error Resume Next
+                Sender = Users(Parameters(1))
+                If Sender Is Nothing Or Not basFunctions.IsNickRegistered(Parameters(1)) Then
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Either the nick doesnt exist, or they are not registered. Moo.")
                     Exit Sub
                 End If
+                On Error GoTo 0
             End If
-            With basMain.Users(Sender)
-                If .Memos(CByte(Parameters(2))).strSenderNick <> "" Then
+            With Sender
+                If .Memos.Exists(CByte(Parameters(2))) Then
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo from " & .Memos(CByte(Parameters(2))).strSenderNick & ":")
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "" & .Memos(CByte(Parameters(2))).strMemoText)
                     'I guess we dont want them not to have an unread memo that appears read...
@@ -104,9 +100,9 @@ Public Sub MemoservHandler(Cmd As String, Sender As Integer)
                 Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, Replies.InsufficientParameters)
                 Exit Sub
             End If
-            Dim TargetID As Integer
+            Dim TargetID As User
             Dim MemoBody As String
-            TargetID = basFunctions.ReturnUserIndex(Parameters(1))
+            Set TargetID = Users(Parameters(1))
             If TargetID = -1 Or Not basFunctions.IsNickRegistered(Parameters(1)) Then
                 Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Either the nick doesnt exist, or they are not registered. Moo.")
                 Exit Sub
@@ -116,21 +112,23 @@ Public Sub MemoservHandler(Cmd As String, Sender As Integer)
             Next i
             'really shouldnt use trim, but im too lazy to redisign a loop ;p
             i = sMemoServ.AddMemo(TargetID, SenderNick, Trim(MemoBody))
-            Call basFunctions.SendMessage(basMain.Service(10).Nick, basFunctions.ReturnUserName(TargetID), "You have recieved a new memo from " & SenderNick & ". Use /msg memoserv read " & i & " to read it.")
+            Call basFunctions.SendMessage(basMain.Service(10).Nick, TargetID.Nick, "You have recieved a new memo from " & SenderNick & ". Use /msg memoserv read " & i & " to read it.")
             Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Hmm. Memo sent, we hope.")
         Case "LIST"
             Dim SentOne As Boolean
             If UBound(Parameters) = 1 Then
                 'Listing P(1)'s memos
-                If Not basFunctions.HasFlag(Sender, AccFlagCanMemoServAdmin) Then
+                If Not Sender.HasFlag(AccFlagCanMemoServAdmin) Then
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "I SPIT AT YOU THUSLY!")
                     Exit Sub
                 End If
-                Sender = basFunctions.ReturnUserIndex(Parameters(1))
-                If Sender = -1 Or Not basFunctions.IsNickRegistered(Parameters(1)) Then
+                On Error Resume Next
+                Set Sender = Users(Parameters(1))
+                If Sender Is Nothing Or Not basFunctions.IsNickRegistered(Parameters(1)) Then
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Either the nick doesnt exist, or they are not registered. Moo.")
                     Exit Sub
                 End If
+                On Error GoTo 0
             End If
             'Ok. If we are listing ours, sender points to us. Else Sender is now the id of
             'the nick to list. Got it? ;p (yes, this could be done in the IF--ELSE statement,
@@ -158,12 +156,12 @@ Public Sub MemoservHandler(Cmd As String, Sender As Integer)
                 Exit Sub
             End If
             If UBound(Parameters) = 2 Then
-                If Not basFunctions.HasFlag(Sender, AccFlagCanMemoServAdmin) Then
+                If Not Sender.HasFlag(AccFlagCanMemoServAdmin) Then
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "I SPIT AT YOU THUSLY!")
                     Exit Sub
                 End If
-                Sender = basFunctions.ReturnUserIndex(Parameters(1))
-                If Sender = -1 Or Not basFunctions.IsNickRegistered(Parameters(1)) Then
+                Set Sender = Users(Parameters(1))
+                If Sender Is Nothing Or Not basFunctions.IsNickRegistered(Parameters(1)) Then
                     Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Either the nick doesnt exist, or they are not registered. Moo.")
                     Exit Sub
                 End If
@@ -175,7 +173,7 @@ Public Sub MemoservHandler(Cmd As String, Sender As Integer)
                 End If
                 With basMain.Users(Sender)
                     If .Memos(CByte(Parameters(2))).strSenderNick <> "" Then
-                        Call sMemoServ.DelMemo(Sender, CByte(Parameters(2)))
+                        Call sMemoServ.DelMemo(Sender, CInt(Parameters(2)))
                         Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo " & Parameters(1) & " has been deleted.")
                     Else
                         Call basFunctions.SendMessage(basMain.Service(10).Nick, SenderNick, "Memo " & Parameters(1) & " does not exist.")
@@ -202,51 +200,38 @@ Public Sub MemoservHandler(Cmd As String, Sender As Integer)
     End Select
 End Sub
 
-Public Function AddMemo(UserID As Integer, SenderNick As String, MemoBody As String) As Integer
+Public Function AddMemo(ByVal UserID As User, ByVal SenderNick As String, ByVal MemoBody As String) As Memo
     Dim i As Integer
     'Add a memo to UserID from SenderNick (NOT ID SO SERVICES CAN SEND MEMOS!)
     'Returns memoid on success.
-    
-    With basMain.Users(UserID)
-        For i = 0 To MS_TOTALMEMOS
-            If .Memos(i).dblTimeSent = 0 Then
-                'Free memo slot! Yay!
-                .Memos(i).bllRead = False
-                .Memos(i).dblTimeSent = basUnixTime.GetTime
-                .Memos(i).strMemoText = MemoBody
-                .Memos(i).strSenderNick = SenderNick
-                AddMemo = i
-                Exit Function
-            End If
-        Next i
+    Dim m As Memo
+    Set m = New Memo
+    With m
+        .bllRead = False
+        .dblTimeSent = basUnixTime.GetTime
+        .strMemoText = MemoBody
+        .strSenderNick = SenderNick
+        Set AddMemo = m
     End With
-    'If we get here, they have no free memos. Bummer.
-    AddMemo = -1
+    If UserID.Memos.Count > MS_TOTALMEMOS + 1 Then
+        'If we get here, they have no free memos. Bummer.
+        Set AddMemo = Nothing
+    Else
+        UserID.Memos.Add m
+    End If
 End Function
 
-Public Function DelMemo(UserID As Integer, MemoID As Byte) As Integer
+Public Function DelMemo(ByVal UserID As User, ByVal MemoID As Variant) As Integer
     Dim i As Integer
-    'Delete a memo with id MemoID from user UserID. If MemoID=255, then delete all memos
+    'Delete a memo with id MemoID from user UserID. If MemoID=-1, then delete all memos
     'for target user.
     
     'At the moment, no checking is done and therefore no errors will be returned.
     'In the future, 1 will indicate success, any other value indicates some kind of error.
-    If MemoID <> 255 Then
-        With basMain.Users(UserID)
-            .Memos(MemoID).bllRead = False
-            .Memos(MemoID).dblTimeSent = 0
-            .Memos(MemoID).strMemoText = ""
-            .Memos(MemoID).strSenderNick = ""
-        End With
+    If MemoID <> -1 Then
+        UserID.Memos.Remove MemoID
     Else
-        For i = 0 To MS_TOTALMEMOS
-            With basMain.Users(UserID)
-                .Memos(i).bllRead = False
-                .Memos(i).dblTimeSent = 0
-                .Memos(i).strMemoText = ""
-                .Memos(i).strSenderNick = ""
-            End With
-        Next i
+        While UserID.Memos.Count > 0: UserID.Memos.Remove 1: Wend
     End If
     'Yay!
     DelMemo = 1

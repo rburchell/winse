@@ -27,7 +27,7 @@ Public ChannelKey As String
 Public FloodProtection As String            'chanmode +f
 Public OverflowChannel As String
 Public OverflowLimit As Long
-Private mIdentifedUsers As Collection       'Users who have IDENTIFYed.
+Private mIdentifedUsers As Users            'Users who have IDENTIFYed.
 'Anything else services need to store?
 Private mCustom As Collection
 
@@ -59,7 +59,7 @@ Public Property Get Invites() As Collection
     Set Invites = mInvites
 End Property
 
-Public Property Get IdentifedUsers() As Collection
+Public Property Get IdentifedUsers() As Users
     Set IdentifedUsers = mIdentifedUsers
 End Property
 

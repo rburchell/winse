@@ -201,6 +201,8 @@ Public Const ChanServIdentifyBadPassLimit = "You have incorrectly identified too
 Public Const ChanServIdentifyAlreadyIDd = "You are already identified to %c, or already have +" & CHANSERV_COFOUNDER & " access."
 'I don't think banned lamers should be able to try and crack the password and get around it :) .
 Public Const ChanServIdentifyBanned = "You can't identify to %c because you are banned."
+'For RESTRICTED and MLOCK +AOz.
+Public Const ChanServIdentifyRestricted = "You can't identify to %c because you aren't permitted to use it."
 'Some more responses we could use.
  'For ChanServ KICKs. This is prefixed to the reason
  '(and possibly nickname).
@@ -221,6 +223,7 @@ Public Const ChanServAKICKPerm = "User has been permanently banned from %c. (%n:
  'non-admin joins a channel MLOCK'd +A.
  '(We could theoretically send a 481 too :P )
  ':services.* 481 Lamer :Permission denied - you are not an IRC Operator.
+ 'This will also be used for RESTRICTED.
 Public Const ChanServKickNotOper = "You are not permitted to enter this channel."
  'Whe a non-SSL joins an SSL channel (MLOCK'd +z).
  'We could probably also send whatever num Unreal/etc

@@ -34,6 +34,7 @@ Attribute Item.VB_UserMemId = 0
         If TypeOf idx Is Channel Then
             LogEventWithMessage LogTypeWarn, "Deprected use of Channels(index)! Update code ASAP!"
             Set Item = idx
+            Exit Function
         End If
     End If
     Set Item = mData(idx)

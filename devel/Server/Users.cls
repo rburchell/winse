@@ -20,11 +20,11 @@ Private Sub Class_Initialize()
 End Sub
 
 Public Sub Add(ByVal u As User)
-    mData.Add u, u.Nick
+    mData.Add u
 End Sub
 
 Public Sub Remove(ByVal idx As Variant)
-    mData.Remove idx
+    mData.Remove IIf(VarType(idx) = vbString, KeyToIndex(idx), idx)
 End Sub
 
 Public Function Item(ByVal idx As Variant) As User
@@ -34,9 +34,13 @@ Attribute Item.VB_UserMemId = 0
         If TypeOf idx Is User Then
             LogEventWithMessage LogTypeWarn, "Deprected use of Users(index)! Update code ASAP!"
             Set Item = idx
+            Exit Function
         End If
+    ElseIf VarType(idx) = vbString Then
+        Set Item = mData(KeyToIndex(idx))
+    Else
+        Set Item = mData(idx)
     End If
-    Set Item = mData(idx)
 End Function
 
 Public Function Count() As Long
@@ -53,3 +57,12 @@ Public Function Exists(ByVal idx As Variant) As Boolean
     Exists = Not Item(idx) Is Nothing
 End Function
 
+Private Function KeyToIndex(ByVal Key As String) As Long
+    Dim idx As Long
+    For idx = 1 To mData.Count
+        If mData(idx).Nick = Key Then
+            KeyToIndex = idx
+            Exit Function
+        End If
+    Next idx
+End Function

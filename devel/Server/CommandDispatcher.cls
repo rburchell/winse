@@ -397,8 +397,6 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
                     'Initialize the rest.
                     .ChannelKey = ""
                     .FloodProtection = ""
-                    .FounderPassword = ""
-                    .MLock = ""
                     .Modes = ""
                     .OverflowChannel = ""
                     .OverflowLimit = 0

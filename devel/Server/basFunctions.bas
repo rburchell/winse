@@ -496,3 +496,12 @@ End Function
 Public Function MakeCTCP(ByVal Text As String)
     MakeCTCP = MIRC_CTCP & Text & MIRC_CTCP
 End Function
+
+Public Function NUHMaskIsMatch(ByVal User As User, ByVal Mask As String) As Boolean
+    Dim sMask As String
+    sMask = Mask
+    '# and [ need to be "unspecialed" here.
+    sMask = Replace(sMask, "[", "[[]")
+    sMask = Replace(sMask, "#", "[#]")
+    NUHMaskIsMatch = (User.Nick & "!" & User.UserName & "@" & User.HostName Like Mask)
+End Function
