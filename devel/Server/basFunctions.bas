@@ -86,26 +86,11 @@ Public Sub IntroduceClient(ByVal Nick As String, ByVal Host As String, ByVal Nam
     Dim MyTime As String
     MyTime = basUnixTime.GetTime
     'we directly send the nick and user commands, as buffering stuffs things up. --w00t
-    Call frmServer.tcpServer.Send("NICK " & Nick & " 1 " & MyTime & " " & Name & " " & Host & " " & basMain.Config.ServerName & " " & Nick & vbCrLf)
-    Call frmServer.tcpServer.Send("USER " & Nick & " " & Name & " " & basMain.Config.ServerName & " " & Name & vbCrLf)
-    'Don't send SVSMODE for clients on your server.
-    'SVSMODE suggests forcefully changing modes for
-    'other clients, which isn't necessary. - aquanight
-        'Whoops. Also, nice use of "Not" rather than a messy If statement aquanight! --w00t
+    basFunctions.PutQuick "NICK " & Nick & " 1 " & MyTime & " " & Name & " " & Host & " " & basMain.Config.ServerName & " " & Nick & vbCrLf
+    basFunctions.PutQuick "USER " & Nick & " " & Name & " " & basMain.Config.ServerName & " " & Name & vbCrLf
     basFunctions.SendData ":" & Nick & " MODE " & Nick & " +qS"
     If Not IsBot Then basFunctions.SendData ":" & Nick & " MODE " & Nick & " +d"
-    'I've added an optional parameter to give extra
-    'modes. That way OperServ, DebugServ, AdminServ,
-    'Global, and RootServ can be invisible to non-IRCops
-    '(like they should be). Also, maybe make OperServ
-    '+o just for the fun of it ;p .
     If ExtraModes <> "" Then basFunctions.SendData ":" & Nick & " MODE " & Nick & " +" & ExtraModes
-    'This actually causes Unreal to set +xt for the user
-    'which may not be what we want. Since we send our
-    '"vhost" as the real host in User, why is this
-    'necessary anyway? - aquanight
-        'I was thinking bots, but you are right about the USER thing. Unnecessary. --w00t
-    'Call basFunctions.SendData(":" & Nick & " SETHOST " & Host)
 End Sub
 
 Public Sub JoinServicesToChannel(ByVal Sender As Integer, ByVal Channel As String)
@@ -136,24 +121,6 @@ Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal Channel As Str
     Next i
 End Sub
 
-Public Function ReturnUserServicesPermissions(ByVal UserID As Integer) As Byte
-Err.Raise vbObjectError, "ReturnUserServicesPermissions(" & UserID & ")", "This function is outdated since flag based permissions, use HasFlag(UserID As Integer,Flag As String) ONLY ONE FLAG AT A TIME!"
-'    'Determines services permissions through a number of different factors.
-'
-'    'If the userindex given doesnt exist, tell them that.
-'    If basMain.Users(UserID).Nick = "" Then
-'        ReturnUserServicesPermissions = -1
-'        Exit Function
-'    End If
-'    'If they are identified to services master nick, they have
-'    If UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
-'        ReturnUserServicesPermissions = 100
-'        Exit Function
-'    End If
-'    'else return their given permissions.
-'    ReturnUserServicesPermissions = basMain.Users(UserID).Access
-End Function
-
 Public Function IsAbuseTeamMember(ByVal UserID As Integer) As Boolean
     'Don't you love Booleans? :D - aquanight
     'God, what was I on!!! duh... it's already boolean... so why did I check? --w00t
@@ -168,39 +135,6 @@ End Function
 
 Public Function IsOper(ByVal UserID As Integer) As Boolean
     IsOper = (InStr(basMain.Users(UserID).Modes, "o") <> 0)
-End Function
-
-Public Function GetTarget(ByVal Buffer As String) As String
-    'What the heck? I've never seen this command before - aquanight
-        'I've had problems with On--Resume next taking precedence in other proceedures.
-        '"Local" seems to combat that. (perhaps some description of VB bug) --w00t
-    'On Local Error Resume Next
-    'Dim s As Variant
-    's = Split(Buffer, " ")
-    'GetTarget = IIf(Left(s(0), 1) = ":", s(2), s(1))
-    
-    'See my comment on GetSender. --w00t
-    Dim FirstSpace As Byte
-    Dim SecondSpace As Byte
-    Dim Cmd As String
-    On Local Error Resume Next
-    FirstSpace = InStr(Buffer, " ") - 1
-    SecondSpace = InStr(FirstSpace + 2, Buffer, " ")
-    Cmd = Right(Buffer, Len(Buffer) - SecondSpace)
-    FirstSpace = InStr(Cmd, " ") - 1
-    GetTarget = Left(Cmd, FirstSpace)
-End Function
-
-Public Function GetSender(ByVal Buffer As String) As String
-    'Your way stuffed up PRIVMSG handling, you can look into it if you want. For now,
-    'the old code is back, yours is commented. --w00t
-    'Dim s As Variant
-    's = Split(Buffer, " ")
-    'GetSender = IIf(Left(s(0), 1) = ":", s(0), "")
-    
-    Dim FirstSpace As Byte
-    FirstSpace = InStr(Buffer, " ") - 1
-    GetSender = Right(Left(Buffer, FirstSpace), Len(Left(Buffer, FirstSpace)))
 End Function
 
 Public Sub SendData(ByVal Buffer As String)
@@ -284,7 +218,7 @@ Public Sub KillUser(ByVal UserID As Integer, ByVal Message As String, Optional B
         'Error 5
         'And say something went pear-shaped. --w00t
             'Sending a notice certainly is better :) .
-        Call basFunctions.NotifyAllUsersWithServicesAccess(Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.KillUser"))
+        Call basFunctions.LogEventWithMessage(LogTypeError, Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.KillUser"))
     End If
 End Sub
 
@@ -301,16 +235,6 @@ Public Sub GlobalMessage(ByVal Message As String)
     'with $target PRIVMSGs (in status: (nick) message).
     ' - aquanight
     basFunctions.SendData ":" + Service(8).Nick + " NOTICE " + basMain.Config.GlobalTargets + " :" + Message
-'    Dim i As Integer
-'    Dim Reciever As String
-'    Dim Sender As String
-'    Sender = Service(8).Nick
-'
-'    For i = 0 To basMain.TotalUsers
-'        Reciever = basMain.Users(i).Nick
-'        Call basFunctions.SendMessage(Sender, Reciever, Message)
-'        DoEvents
-'    Next i
 End Sub
 
 Public Sub CheckFloodLevel(ByVal UserID As Integer)
@@ -375,7 +299,7 @@ Public Sub SquitServices(Optional ByVal Message As String = "")
     For i = 0 To basMain.BufferElements
         DoEvents
         DoEvents
-        If basMain.Buffer(i) <> "" Then Call tcpServer.Send(basMain.Buffer(i))
+        If basMain.Buffer(i) <> "" Then Call frmServer.tcpServer.Send(basMain.Buffer(i))
         DoEvents
         DoEvents
         basMain.Buffer(i) = ""
@@ -452,71 +376,6 @@ Public Sub SetUserModes(ByVal UserID As Integer, ByVal Modes As String)
       .Modes = Result
   End With
 End Sub
-
-'Based on the chatroom convos, I guess it's time to
-'retire this function... - aquanight
-'Public Function SetChannelModes(ChanID As Integer, Modes As String)
-'    Dim Modes2 As String
-'    Dim j As Byte 'better not > 255 :|
-'    Dim ModeChar As String * 1
-'    Dim RemoveModes As Boolean
-'    Dim Result As Byte
-'    'Copied from SetUserModes.
-'    Modes = basFunctions.ReturnChannelOnlyModes(Modes)
-'    With basMain.Channels(ChanID)
-'        If Modes2 = "" Then Modes2 = .Modes
-'        For j = 1 To Len(Modes)
-'            ModeChar = Mid(Modes, j, 1)
-'            If Asc(ModeChar) < 65 Or Asc(ModeChar) > 90 Then
-'                If Asc(ModeChar) < 97 Or Asc(ModeChar) > 122 Then
-'                    'Ignore as is invalid mode char. ie is not alphabet char.
-'                    If ModeChar = "-" Then
-'                        RemoveModes = True
-'                    ElseIf ModeChar = "+" Then
-'                        RemoveModes = False
-'                    End If
-'                    ModeChar = ""
-'                End If
-'            End If
-'DontClearMode:
-'            If ModeChar = "" Then GoTo Skip
-'            Select Case RemoveModes
-'                Case True
-'                    'remove mode
-'                    Result = InStr(Modes2, ModeChar)
-'                    If Result <> 0 Then
-'                        'remove that damn mode.
-'                        'Mid just looks so much better. -aquanight
-'                        Modes2 = Left(Modes2, Result - 1) & Mid(Modes2, Result + 1)
-'                    End If
-'                Case False
-'                    'assume addmode
-'                    'If we havent got it...
-'                    If InStr(Modes2, ModeChar) = 0 Then
-'                        'add it
-'                        If InStr(ModeChar, basMain.ChannelModes) = 0 Then
-'                            Modes2 = Modes2 & ModeChar
-'                        End If
-'                    End If
-'            End Select
-'Skip:
-'        Next j
-'        .Modes = Modes2
-'    End With
-'End Function
-
-Public Function ReturnChannelOnlyModes(ByVal ChannelModes As String)
-    'Takes a given string of modes eg +pmoi and returns +pmi (ie those not
-    'related to channel access.
-    Dim j As Byte
-    Dim ModeChar As String
-    For j = 1 To Len(ChannelModes)
-        ModeChar = Mid(ChannelModes, j, 1)
-        If InStr(basMain.ChannelModes, ModeChar) <> 0 Then
-            ReturnChannelOnlyModes = ReturnChannelOnlyModes & ModeChar
-        End If
-    Next
-End Function
 
 Public Sub ParseCmd(ByVal Incoming As String)
     If Incoming = "" Then Exit Sub

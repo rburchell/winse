@@ -131,7 +131,7 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             .IdentifiedToNick = ""
             .MemoID = 0
             .Modes = ""
-            .MsgStyle = False
+            .MsgStyle = Config.DefaultMessageType
             .Password = ""
             .Requests = 0
             .SvsStamp = 0

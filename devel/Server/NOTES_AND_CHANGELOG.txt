@@ -27,6 +27,8 @@ Services:
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
  29/07/2004 - aquanight
+  -[--] [---] Did some more cleanup, removing code that was no longer
+              used.
   -[CO] [---] Added a new event for services - every so often (can be
               adjusted by changing tmrSVSTick.Interval) a callback
               procedure can be called in each of the services modules.

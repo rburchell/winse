@@ -344,45 +344,5 @@ Public Sub IntroduceUsers()
     Next i
 End Sub
 
-Public Sub HandlePrivateMessage(Buffer As String)
-    Dim Message As String
-    Dim Target As String
-    Dim Sender As Integer
-    Dim FirstColon As Integer
-    Dim SecondColon As Integer
-    Sender = basFunctions.ReturnUserIndex(basFunctions.GetSender(Buffer))
-    
-    If Sender = -1 Then
-        Call basFunctions.NotifyAllUsersWithServicesAccess(Replace(Replies.SanityCheckInvalidIndex, "%n", "frmServer.tcpServer_DataArrival"))
-        Exit Sub
-    End If
-    Target = basFunctions.GetTarget(Buffer)
-    
-    FirstColon = InStr(Buffer, ":")
-    'SecondColon = InStr(FirstColon + 1, Buffer, ":")
-    Message = Right(Buffer, Len(Buffer) - FirstColon)
-    'Message = Left(Message, Len(Message))
-
-    Select Case UCase(Target)
-        Case "DEBUGSERV"
-            Call sDebugServ.DebugservHandler(Message, Sender)
-        Case "CHANSERV"
-            Call sChanServ.ChanservHandler(Message, Sender)
-        Case "NICKSERV"
-            Call sNickServ.NickservHandler(Message, Sender)
-        Case "HOSTSERV"
-        Case "BOTSERV"
-        Case "OPERSERV"
-            Call sOperServ.OperservHandler(Message, Sender)
-        Case "ADMINSERV"
-            Call sAdminServ.AdminservHandler(Message, Sender)
-        Case "ROOTSERV"
-            Call sRootServ.RootservHandler(Message, Sender)
-        Case "AGENT"
-            Call sAgent.AgentHandler(Message, Sender)
-        Case "MASSSERV"
-            Call sMassServ.MassservHandler(Message, Sender)
-    End Select
-ExitSub:
-'If we get an error, it is likely due to a messageflood that led to a kill.
-End Sub
+'HandlePrivMsg is no longer needed. It's work is now
+'done in CommandDispatcher.CmdPrivMsg.

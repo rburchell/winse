@@ -1,7 +1,7 @@
 frmServer = 63, 34, 588, 431, C, 66, 42, 535, 355, C
 basMain = 53, 66, 683, 417, C
 basFileIO = 0, 0, 631, 335, C
-basFunctions = 18, 140, 696, 461, C
+basFunctions = 18, 140, 696, 461, Z
 sRootServ = 22, 29, 676, 328, C
 sAdminServ = 44, 58, 856, 595, C
 sOperServ = 66, 87, 697, 435, C
