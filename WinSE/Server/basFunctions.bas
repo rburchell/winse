@@ -432,7 +432,7 @@ Public Sub SetUserModes(UserId As Integer, Modes As String)
     Result = .Modes
     AddModes = True
     For l = 1 To Len(Modes)
-      ModeChar = Mid(Modes, j, 1)
+      ModeChar = Mid(Modes, l, 1)
       If (Asc(ModeChar) >= 65 And Asc(ModeChar) <= 90) Or _
          (Asc(ModeChar) >= 97 And Asc(ModeChar) <= 122) Or _
          Asc(ModeChar) = 43 Or Asc(ModeChar) = 45 Then
