@@ -22,11 +22,24 @@ Public Class NickServ
 		If Not TypeOf Source Is WinSECore.User Then Return
 		c.API.ExecCommand(sc.CmdHash, DirectCast(Source, WinSECore.User), Message)
 	End Sub
-	Private Function CmdHelp(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
-		c.API.SendHelp(Source, "NickServ", Args)
-	End Function
-
 	Public Overrides Function GetHelpDirectory() As System.IO.DirectoryInfo
 
+	End Function
+
+	'Callbacks go below here.
+	Private Function SendMsg_PRIVMSG(ByVal Source As WinSECore.IRCNode, ByVal Dest As WinSECore.User, ByVal Message As String) As Boolean
+		c.protocol.SendMessage(Source, Dest, Message, False)
+	End Function
+	Private Function SendMsg_NOTICE(ByVal Source As WinSECore.IRCNode, ByVal Dest As WinSECore.User, ByVal Message As String) As Boolean
+		c.protocol.SendMessage(Source, Dest, Message, True)
+	End Function
+	Private Function SendMsg_304(ByVal Source As WinSECore.IRCNode, ByVal Dest As WinSECore.User, ByVal Message As String) As Boolean
+		c.protocol.SendNumeric(Source, Dest, 304, ":{0}: {1}", Source.Name, Message)
+	End Function
+	Private Function SendMsg_SNOTICE(ByVal Source As WinSECore.IRCNode, ByVal Dest As WinSECore.User, ByVal Message As String) As Boolean
+		c.protocol.SendMessage(c.Services, Dest, String.Format(":*** {0}: {1}", Source.Name, Message), True)
+	End Function
+	Private Function CmdHelp(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
+		c.API.SendHelp(Source, "NickServ", Args)
 	End Function
 End Class

@@ -30,11 +30,13 @@ Public NotInheritable Class Core
 	'The configuration.
 	Public Conf As Configuration
 	'Our side of the IRC Map.
-	Public ServicesMap As Server
+	Public Services As Server
 	'Uplink side of the IRC Map.
 	Public IRCMap As Server
 	'The IRCd Protocol Class.
 	Public protocol As IRCd
+	'CHANNELS!
+	Public ReadOnly Channels As New Channels
 	'SOCKET!
 	Public sck As System.Net.Sockets.Socket
 	'The instance of our Event sink.
@@ -76,7 +78,13 @@ Public Structure Password
 	Public Overloads Overrides Function Equals(ByVal obj As Object) As Boolean
 		If TypeOf obj Is Password Then
 			With DirectCast(obj, Password)
-				Return Me.PassPhrase = .PassPhrase AndAlso Me.CryptMethod.Equals(.CryptMethod)
+				If Me.CryptMethod Is Nothing Then
+					Return Me.PassPhrase = .PassPhrase AndAlso .CryptMethod Is Nothing
+				ElseIf .CryptMethod Is Nothing Then
+					Return False
+				Else
+					Return Me.PassPhrase = .PassPhrase AndAlso Me.CryptMethod.Equals(.CryptMethod)
+				End If
 			End With
 		ElseIf TypeOf obj Is String Then
 			Return HashPassword(DirectCast(obj, String), Me.CryptMethod) = Me.PassPhrase
@@ -97,7 +105,7 @@ Public Structure Configuration
 	Public ServerDesc As String
 	Public ServerNumeric As Integer
 	Public UplinkName As String
-	Public UplinkPort As Short
+	Public UplinkAddress As System.Net.IPEndPoint
 	Public SendPass As String
 	Public RecvPass As Password
 End Structure

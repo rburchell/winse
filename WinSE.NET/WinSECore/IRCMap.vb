@@ -27,6 +27,8 @@ Public MustInherit Class IRCNode
 	Public Name As String
 	Public Info As String
 	Public Numeric As Integer
+	Public ReadOnly Custom As New Hashtable
+	Protected ReadOnly c As WinSECore.Core
 	Protected Overrides Sub Finalize()
 		Dispose(False)
 	End Sub
@@ -34,7 +36,9 @@ Public MustInherit Class IRCNode
 		Dispose(True)
 		GC.SuppressFinalize(Me)
 	End Sub
-	Protected Overridable Sub Dispose(ByVal disposing As Boolean)
+	Protected MustOverride Sub Dispose(ByVal disposing As Boolean)
+	Protected Sub New(ByVal c As WinSECore.Core)
+		Me.c = c
 	End Sub
 End Class
 
@@ -145,6 +149,8 @@ Public NotInheritable Class Nodes
 	End Sub
 End Class
 
+Public Delegate Function SendMsgProc(ByVal Source As IRCNode, ByVal Dest As User, ByVal Message As String) As Boolean
+
 Public NotInheritable Class User
 	Inherits IRCNode
 	Public Property Nick() As String
@@ -157,6 +163,7 @@ Public NotInheritable Class User
 	End Property
 	Public Username As String
 	Public Hostname As String
+	Public IP As System.Net.IPAddress
 	Public Property RealName() As String
 		Get
 			Return Info
@@ -166,25 +173,139 @@ Public NotInheritable Class User
 		End Set
 	End Property
 	Public Usermodes As String
+	Public Flags As String, AbuseTeam As Boolean
+	Public Since As Integer
 	Public ReadOnly Identifies As New StringCollection
 	Public AwayMessage As String
 	Public TS As Integer
 	Public VHost As String
 	Public Server As Server
 	Public SWhois As String
-	Public ReadOnly Custom As New Hashtable
+	Public SendMessage As SendMsgProc
 	Public ReadOnly Channels As New Channels
 	Protected Overloads Overrides Sub Dispose(ByVal disposing As Boolean)
+		Dim chptr As Channel = Channels(0)
 		While Channels.Count > 0
-			Channels(0).UserList.Remove(Channels(0).UserList(Me))
+			chptr = Channels(0)
+			chptr.UserList.Remove(chptr.UserList(Me))
+			If chptr.Identifies.Contains(Me) Then chptr.Identifies.Remove(Me)
 			Channels.RemoveAt(0)
+			c.Events.FireClientPart(Me, chptr, "Client Quit")
+			If chptr.UserList.Count = 0 Then c.Channels.Remove(chptr)
 		End While
+		If Not Server Is Nothing AndAlso Server.SubNodes.Contains(Me) Then
+			Server.SubNodes.Remove(Me)
+			Server = Nothing
+		End If
 	End Sub
+	Public Sub New(ByVal c As Core)
+		MyBase.New(c)
+	End Sub
+	Public Sub SetUserModes(ByVal Modes As String, Optional ByVal Source As WinSECore.IRCNode = Nothing)
+		Dim bSet As Boolean
+		Dim ch As Char
+		If Server Is Nothing Then Throw New ObjectDisposedException(Name)
+		For idx As Integer = 0 To Modes.Length - 1
+			ch = Modes.Chars(idx)
+			Select Case ch
+				Case "+"c : bSet = True
+				Case "-"c : bSet = False
+				Case Else
+					If bSet AndAlso Usermodes.IndexOf(ch) < 0 Then
+						Usermodes += ch
+					ElseIf (Not bSet) AndAlso Usermodes.IndexOf(ch) >= 0 Then
+						Usermodes = Usermodes.Replace(ch.ToString(), "")
+					End If
+					c.Events.FireUserModeChange(DirectCast(IIf(Source Is Nothing, Me, Source), WinSECore.IRCNode), Me, ch, bSet)
+			End Select
+		Next
+	End Sub
+	Public Sub ForceUserModes(ByVal Source As WinSECore.IRCNode, ByVal Modes As String)
+		If Server Is Nothing Then Throw New ObjectDisposedException(Name)
+		c.protocol.ForceUMode(Source, Name, Modes)
+		SetUserModes(Modes, Source)
+	End Sub
+	Public Sub KillUser(ByVal Source As IRCNode, ByVal Reason As String)
+		If Server Is Nothing Then Throw New ObjectDisposedException(Name)
+		c.protocol.KillUser(Source, Name, Reason)
+		Dispose()
+	End Sub
+	Public Sub SVSKillUser(ByVal Source As IRCNode, ByVal Reason As String)
+		If Server Is Nothing Then Throw New ObjectDisposedException(Name)
+		c.protocol.KillUser(Source, Name, Reason, True)
+		If (c.protocol.SupportFlags And IRCdSupportFlags.QUIRK_SUPERKILL_ACKNOWLEDGE) = 0 Then
+			Dispose()
+		End If
+	End Sub
+	Public Sub AddFloodPoint()
+		Dim ts As Integer = API.GetTS()
+		If Server Is Nothing Then Throw New ObjectDisposedException(Name)
+		If Since < ts Then
+			Since = ts
+		End If
+		Since += 2
+		If (Since - ts) >= 20 Then
+			KillUser(c.Services, "Excess Flood")
+		End If
+	End Sub
+	Public Sub SetFlags(ByVal FlagChange As String)
+		Dim bSet As Boolean
+		Dim ch As Char
+		If Server Is Nothing Then Throw New ObjectDisposedException(Name)
+		For idx As Integer = 0 To FlagChange.Length - 1
+			ch = FlagChange.Chars(idx)
+			Select Case ch
+				Case "+"c : bSet = True
+				Case "-"c : bSet = False
+				Case Else
+					If bSet AndAlso Flags.IndexOf(ch) >= 0 Then
+						Flags += ch
+					ElseIf (Not bSet) AndAlso Flags.IndexOf(ch) < 0 Then
+						Flags = Flags.Replace(ch.ToString(), "")
+					End If
+			End Select
+		Next
+	End Sub
+	Public Function HasFlag(ByVal flag As Char) As Boolean
+		If Server Is Nothing Then Throw New ObjectDisposedException(Name)
+		Return Flags.IndexOf(flag) >= 0
+	End Function
 End Class
 
 Public NotInheritable Class Server
 	Inherits IRCNode
+	Public Parent As Server
 	Public ReadOnly SubNodes As New Nodes
+	Public Function HasClient(ByVal cptr As WinSECore.IRCNode, Optional ByVal RecursiveSearch As Boolean = True) As Boolean
+		If SubNodes.Contains(cptr) Then Return True
+		If RecursiveSearch Then
+			For Each n As WinSECore.IRCNode In SubNodes
+				If TypeOf n Is WinSECore.Server Then
+					If DirectCast(n, WinSECore.Server).HasClient(cptr, True) Then
+						Return True
+					End If
+				End If
+			Next
+		End If
+		Return False
+	End Function
+	Protected Overloads Overrides Sub Dispose(ByVal disposing As Boolean)
+		If Not Parent Is Nothing AndAlso Parent.SubNodes.Contains(Me) Then
+			Parent.SubNodes.Remove(Me)
+			Parent = Nothing
+		End If
+		For Each n As IRCNode In SubNodes
+			If TypeOf n Is Server Then
+				c.Events.FireServerQuit(DirectCast(n, Server), "Lost in the netsplit")
+			Else
+				c.Events.FireClientQuit(DirectCast(n, User), "Lost in the netsplit")
+			End If
+			n.Dispose()
+		Next
+	End Sub
+	Public Sub New(ByVal c As Core)
+		MyBase.New(c)
+	End Sub
 End Class
 
 Public NotInheritable Class ListModeTable
@@ -418,11 +539,136 @@ End Class
 
 Public NotInheritable Class Channel
 	Public Name As String
-	Public Topic As String
+	Public TS As Integer
+	Public Topic As String, TopicWho As String, TopicTS As Integer
+	Public ReadOnly Custom As New Hashtable
 	Public ParamlessModes As String
+	Protected ReadOnly c As WinSECore.Core
 	Public ReadOnly ParamedModes As New StringDictionary	'Key = modechar, value = modevalue
 	Public ReadOnly ListModes As New ListModeTable	'Key = = modechar, value = StringCollection
 	Public ReadOnly UserList As New Members
+	Public ReadOnly Identifies As New Nodes	'Users who have identified as a founder.
+	Public Sub New(ByVal c As Core)
+		Me.c = c
+	End Sub
+	'FromSJOIN makes SetModes not whine about invalid users and just ignore them. Why do we need to do that?
+	'Well recall that SJOIN will be a combinition of joining and modeing. A user that joins in SJOIN could
+	'get kicked in response by ChanServ, but then the mode portion of SJOIN is parsed which may send info about
+	'an invalid user. We would normally complain. FromSJOIN will make this see that invalid users could have been
+	'recently joined and subsequently kicked.
+	Public Sub SetModes(ByVal Source As IRCNode, ByVal ModeChange As String, Optional ByVal FromSJOIN As Boolean = False)
+		Dim bSet As Boolean
+		Dim ch As Char, acptr As ChannelMember
+		Dim mode() As String = Split(ModeChange, " ")
+		Dim validmodes() As String = Split(c.protocol.ChanModes, ",")
+		For iParam As Integer = 0 To UBound(mode)
+			bSet = True
+			If IsNumeric(mode(iParam)) Then
+				c.Events.FireLogMessage("Protocol", "NOTICE", "Hmmm, mode list appears to contain a timestamp.")
+				'Since this should only ever be the last parameter, we can probably break here.
+				Return
+			End If
+			For idx As Integer = 0 To mode(iParam).Length - 1
+				ch = mode(iParam).Chars(idx)
+				If ch = "+"c Then
+					bSet = True
+				ElseIf ch = "-"c Then
+					bSet = False
+				ElseIf validmodes(0).IndexOf(ch) >= 0 Then
+					'Status mode. Parameter names a valid user (or at least, it should
+					iParam += 1
+					If iParam > UBound(mode) Then
+						c.Events.FireLogMessage("Protocol", "ERROR", String.Format("Missing parameter for Status Mode {0} (MODE {1} {2})", ch, Name, ModeChange))
+					ElseIf Not UserList.Contains(mode(iParam)) Then
+						If Not FromSJOIN Then
+							c.Events.FireLogMessage("Protocol", "ERROR", String.Format("Non-existant user (or user not in channel) for Status Mode {0} (MODE {1} {2})", ch, Name, ModeChange))
+						End If
+					Else
+						acptr = UserList(mode(iParam))
+						If bSet AndAlso acptr.Status.IndexOf(ch) < 0 Then
+							acptr.Status += ch
+						ElseIf (Not bSet) AndAlso acptr.Status.IndexOf(ch) >= 0 Then
+							acptr.Status = acptr.Status.Replace(ch.ToString(), "")
+						End If
+						c.Events.FireChannelStatusChange(Source, Me, ch, acptr, bSet)
+					End If
+				ElseIf validmodes(1).IndexOf(ch) >= 0 Then
+					'List mode.
+					iParam += 1
+					If iParam > UBound(mode) Then
+						c.Events.FireLogMessage("Protocol", "ERROR", String.Format("Missing parameter for List Mode {0} (MODE {1} {2})", ch, Name, ModeChange))
+					Else
+						If Not ListModes.Contains(ch) Then
+							ListModes.Add(ch)
+						End If
+						If bSet AndAlso Not ListModes(ch).Contains(mode(iParam)) Then
+							ListModes(ch).Add(mode(iParam))
+						ElseIf (Not bSet) AndAlso ListModes(ch).Contains(mode(iParam)) Then
+							ListModes(ch).Remove(mode(iParam))
+						End If
+						c.Events.FireChannelListChange(Source, Me, ch, mode(iParam), bSet)
+					End If
+				ElseIf validmodes(2).IndexOf(ch) >= 0 Then
+					'Parametered Mode. Take parameter even when unsetting.
+					iParam += 1
+					If bSet Then
+						If iParam > UBound(mode) Then
+							c.Events.FireLogMessage("Protocol", "ERROR", String.Format("Missing parameter for Mode {0} (MODE {1} {2})", ch, Name, ModeChange))
+						ElseIf ParamedModes.ContainsKey(ch) Then
+							ParamedModes(ch) = mode(iParam)
+						Else
+							ParamedModes.Add(ch, mode(iParam))
+						End If
+					Else
+						'We don't care about the parameter, we just have to eat it.
+						If ParamedModes.ContainsKey(ch) Then
+							ParamedModes.Remove(ch)
+						End If
+					End If
+				ElseIf validmodes(3).IndexOf(ch) >= 0 Then
+					'Parametered mode. Don't take parameter when unsetting.
+					If bSet Then
+						'Eat parameter only when +.
+						iParam += 1
+						If iParam > UBound(mode) Then
+							c.Events.FireLogMessage("Protocol", "ERROR", String.Format("Missing parameter for Mode {0} (MODE {1} {2})", ch, Name, ModeChange))
+						ElseIf ParamedModes.ContainsKey(ch) Then
+							ParamedModes(ch) = mode(iParam)
+						Else
+							ParamedModes.Add(ch, mode(iParam))
+						End If
+					Else
+						If ParamedModes.ContainsKey(ch) Then
+							ParamedModes.Remove(ch)
+						End If
+					End If
+				ElseIf validmodes(4).IndexOf(ch) >= 0 Then
+					'Paramless mode.
+					If bSet AndAlso ParamlessModes.IndexOf(ch) < 0 Then
+						ParamlessModes += ch
+					ElseIf (Not bSet) AndAlso ParamlessModes.IndexOf(ch) >= 0 Then
+						ParamlessModes = ParamlessModes.Replace(ch.ToString(), "")
+					End If
+				Else
+					'EEEEEEEEEEEEEEEEEEEEEEEEK!
+					c.Events.FireLogMessage("Protocol", "ERROR", String.Format("Unknown MODE character {0} (MODE {1} {2}) (Assuming Type D)", ch, Name, ModeChange))
+					If bSet AndAlso ParamlessModes.IndexOf(ch) < 0 Then
+						ParamlessModes += ch
+					ElseIf (Not bSet) AndAlso ParamlessModes.IndexOf(ch) >= 0 Then
+						ParamlessModes = ParamlessModes.Replace(ch.ToString(), "")
+					End If
+				End If
+			Next
+		Next
+	End Sub
+	Public Sub SendModes(ByVal Source As IRCNode, ByVal ModeChange As String)
+		c.protocol.SetChMode(Source, Name, ModeChange)
+		SetModes(Source, ModeChange)
+	End Sub
+	Public Sub KickUser(ByVal Source As IRCNode, ByVal Victim As User, ByVal Reason As String)
+		c.protocol.KickUser(Source, Name, Victim.Name, Reason)
+		c.Events.FireClientKicked(Source, Me, Victim, Reason)
+	End Sub
 End Class
 
 Public NotInheritable Class Channels

@@ -17,6 +17,12 @@ Module WinSE
 	Private Function DumpObject(ByVal o As Object, ByVal name As String) As String
 		Dim dump As New IO.StringWriter, rp As System.Security.Permissions.ReflectionPermission
 		Static dumplevel As Integer
+		Static parents As ArrayList
+		If parents Is Nothing Then parents = New ArrayList
+		If o Is Nothing Then
+			dump.Write("{0}*** Object {1} is null", New String(Chr(9), dumplevel), name)
+			Return dump.GetStringBuilder().ToString()
+		End If
 		dump.WriteLine("{0}*** Dumping object {1} of type {2}", New String(Chr(9), dumplevel), name, o.GetType().ToString())
 		rp = New System.Security.Permissions.ReflectionPermission(Security.Permissions.ReflectionPermissionFlag.MemberAccess Or Security.Permissions.ReflectionPermissionFlag.TypeInformation)
 		Try
@@ -29,20 +35,47 @@ Module WinSE
 			For Each fi As System.Reflection.FieldInfo In .GetFields(Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or DirectCast(IIf(rp Is Nothing, Reflection.BindingFlags.Default, Reflection.BindingFlags.NonPublic), System.Reflection.BindingFlags) Or Reflection.BindingFlags.GetField)
 				With fi
 					If fi.FieldType.IsPrimitive Then
-						dump.WriteLine("{0}{1} As {2} = {3}", New String(Chr(9), dumplevel + 1), fi.Name, fi.FieldHandle.ToString(), fi.GetValue(o))
+						dump.WriteLine("{0}{1} As {2} = {3}", New String(Chr(9), dumplevel + 1), fi.Name, fi.FieldType.ToString(), fi.GetValue(o))
+					ElseIf fi.GetValue(o) Is Nothing Then
+						dump.WriteLine("{0}{1} is null", New String(Chr(9), dumplevel), fi.Name)
 					Else
-						dumplevel += 1
-						dump.Write(DumpObject(fi.GetValue(o), name + "." + fi.Name))
-						dumplevel -= 1
+						Do
+							If Not parents Is Nothing Then
+								For Each o2 As Object In parents
+									If fi.GetValue(o) Is o2 Then
+										dump.WriteLine("{0}*** Circular reference in {1} - Skipping dump of field {2}", New String(Chr(9), dumplevel + 1), name, fi.Name)
+										Exit Do
+									End If
+								Next
+							End If
+							dumplevel += 1
+							parents.Add(o)
+							dump.Write(DumpObject(fi.GetValue(o), name + "." + fi.Name))
+							parents.Remove(o)
+							dumplevel -= 1
+							Exit Do
+						Loop
 					End If
 				End With
 			Next
 			If Array.IndexOf(o.GetType().GetInterfaces(), GetType(System.Collections.IEnumerable)) >= 0 Then
 				dump.WriteLine("{0}*** Obejct {1} is enumerable, dumping contents.", New String(Chr(9), dumplevel + 1), name)
 				For Each o2 As Object In DirectCast(o, System.Collections.IEnumerable)
-					dumplevel += 1
-					dump.Write(DumpObject(o2, name + "[]"))
-					dumplevel -= 1
+					Do
+						If Not parents Is Nothing Then
+							For Each o3 As Object In parents
+								If o Is o3 Then
+									dump.WriteLine("{0}*** Circular reference in {1}[]", New String(Chr(9), dumplevel + 1), name)
+									Exit Do
+								End If
+							Next
+						End If
+						dumplevel += 1
+						parents.Add(o)
+						dump.Write(DumpObject(o2, name + "[]"))
+						dumplevel -= 1
+						Exit Do
+					Loop
 				Next
 			End If
 		End With
@@ -52,6 +85,10 @@ Module WinSE
 
 #If Win32 Then
 	Private Declare Function FreeConsole Lib "kernel32" () As Integer
+#Else
+	Private Function FreeConsole() As Integer
+		'Get to fun UNIX system calls :| . I'll muck with this later.
+	End Function
 #End If
 
 	Private Sub LogHandler(ByVal Facility As String, ByVal Severity As String, ByVal Message As String)
@@ -83,6 +120,7 @@ Module WinSE
 				nRet = c.Init(Args)
 				If nRet <> 0 Then
 					Console.Error.WriteLine("Core.Initialization: FATAL: Core Init() returned {0}", nRet)
+					If Not logfile Is Nothing Then logfile.Close()
 					Return nRet
 				End If
 			Catch ex As Exception
@@ -102,6 +140,7 @@ Module WinSE
 #End If
 			Try
 				nRet = c.Main(Args)
+				If Not logfile Is Nothing Then logfile.Close()
 				Return nRet
 			Catch ex As Exception
 				Console.Error.WriteLine("Core.Exception: FATAL: Exception {0} was thrown and not caught! {1}", ex.GetType().ToString(), ex.Message)
@@ -134,5 +173,6 @@ Module WinSE
 				Console.Error.WriteLine(ex2.ToString())
 			End Try
 		End Try
+		If Not logfile Is Nothing Then logfile.Close()
 	End Function
 End Module

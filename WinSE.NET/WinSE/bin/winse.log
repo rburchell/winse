@@ -1,0 +1,8 @@
+[11:38:04] Core.Initialization:TRACE:Entering Main()
+[11:38:04] Core:NOTICE:Testing Base64 routines...
+[11:38:04] Core:NOTICE:Base64 Decoded:
+[11:38:04] Core:NOTICE:0 = 127
+[11:38:04] Core:NOTICE:1 = 0
+[11:38:04] Core:NOTICE:2 = 0
+[11:38:04] Core:NOTICE:3 = 1
+[11:38:16] Core.Initialization:TRACE:Leaving Main()

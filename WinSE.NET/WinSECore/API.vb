@@ -24,6 +24,7 @@ Imports System.Collections.Specialized
 Public NotInheritable Class API
 	Private ReadOnly c As Core
 	Friend Sub New(ByVal c As Core)
+		Me.c = c
 	End Sub
 	'Invokes a service command routine from the given hashtable.
 	'Exceptions thrown:
@@ -52,12 +53,16 @@ Public NotInheritable Class API
 		Static buffer As String
 		Dim stmp As String, b() As Byte
 		If c.sck.Poll(0, Net.Sockets.SelectMode.SelectRead) Then
-			b = New Byte(c.sck.Available) {}
-			c.sck.Receive(b)
-			buffer += System.Text.Encoding.ASCII.GetString(b)
-			'Easier to handle things with just LF as opposed to CRLF.
-			buffer = Replace(buffer, vbCrLf, vbLf)
-			buffer = Replace(buffer, vbCr, vbLf)
+			If c.sck.Available > 0 Then
+				b = New Byte(c.sck.Available) {}
+				c.sck.Receive(b)
+				buffer += System.Text.Encoding.ASCII.GetString(b)
+				'Easier to handle things with just LF as opposed to CRLF.
+				buffer = Replace(buffer, vbCrLf, vbLf)
+				buffer = Replace(buffer, vbCr, vbLf)
+			ElseIf c.sck.Available = 0 AndAlso InStr(buffer, vbLf) <= 0 Then
+				Throw New System.Net.Sockets.SocketException(10101)
+			End If
 		End If
 		If InStr(buffer, vbLf) > 0 Then
 			stmp = Split(buffer, vbLf, 2)(0)
@@ -77,7 +82,7 @@ Public NotInheritable Class API
 			Return str
 		Else
 			Dim dteEnd As Date = Now.Add(timeout)
-			Do While str Is Nothing AndAlso Now < dteEnd
+			Do While str Is Nothing
 				str = GetServ()
 			Loop
 			Return str
@@ -89,6 +94,10 @@ Public NotInheritable Class API
 	End Sub
 	Public Overloads Sub PutServ(ByVal format As String, ByVal ParamArray args() As Object)
 		PutServ(String.Format(format, args))
+	End Sub
+	Public Sub ExitServer(ByVal Reason As String, Optional ByVal Name As String = Nothing)
+		PutServ("ERROR :Closing link {0}[{1}] ({2})", IIf(Name Is Nothing, c.Conf.UplinkName, Name), DirectCast(c.sck.RemoteEndPoint, System.Net.IPEndPoint).Address, Reason)
+		c.sck.Shutdown(Net.Sockets.SocketShutdown.Send)
 	End Sub
 	Public Shared Function FMod(ByVal dividend As Double, ByVal divisor As Double) As Double
 		'Floating modulus. When the Mod operator doesn't help.
@@ -212,7 +221,7 @@ Public NotInheritable Class API
 	End Function
 	Public Function FindNode(ByVal name As String) As IRCNode
 		Dim n As IRCNode
-		n = FindNode(name, c.ServicesMap)
+		n = FindNode(name, c.Services)
 		If n Is Nothing Then n = FindNode(name, c.IRCMap)
 		Return n
 	End Function
@@ -229,15 +238,164 @@ Public NotInheritable Class API
 		End With
 		Return Nothing
 	End Function
-	Public Overloads Shared Function GetTS() As Long
+	Public Overloads Shared Function GetTS() As Integer
 		Return GetTS(Now)
 	End Function
-	Public Overloads Shared Function GetTS(ByVal d As Date) As Long
-		Return DateDiff(DateInterval.Second, New Date(1970, 1, 1, 0, 0, 0), d.ToUniversalTime)
+	Public Overloads Shared Function GetTS(ByVal d As Date) As Integer
+		Return CInt(DateDiff(DateInterval.Second, New Date(1970, 1, 1, 0, 0, 0), d.ToUniversalTime))
+	End Function
+	Public Overloads Function IsService(ByVal cptr As IRCNode) As Boolean
+		Return c.Services.SubNodes.Contains(cptr)
 	End Function
 	Public Sub SendHelp(ByVal SendTo As User, ByVal Base As String, ByVal Args() As String)
 
 	End Sub
+	'I converted these from unreal's src/support.c.
+	Private Const Base64 As String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	Const Pad64 As Char = "="c
+	Public Overloads Shared Function B64Encode(ByVal src As String) As String
+		Return B64Encode(System.Text.Encoding.ASCII.GetBytes(src))
+	End Function
+	Public Overloads Shared Function B64Encode(ByVal src() As Byte) As String
+		Dim target As String
+		Dim input(2) As Byte
+		Dim output(3) As Byte
+		Dim srclength As Integer = src.Length
+		Dim i As Integer
+		Dim srcidx As Integer = 0
+		While 2 < srclength
+			input(0) = src(srcidx)
+			input(1) = src(srcidx + 1)
+			input(2) = src(srcidx + 2)
+			srclength -= 3
+			srcidx += 3
+			output(0) = CByte(input(0) >> 2)
+			output(1) = CByte(((input(0) And &H3) << 4) + (input(1) >> 4))
+			output(2) = CByte(((input(1) And &HF) << 2) + (input(2) >> 6))
+			output(3) = CByte(input(2) And &H3F)
+			target += Base64.Chars(output(0))
+			target += Base64.Chars(output(1))
+			target += Base64.Chars(output(2))
+			target += Base64.Chars(output(3))
+		End While
+		If srclength <> 0 Then
+			'Get what's left.
+			input(0) = 0
+			input(1) = 0
+			input(2) = 0
+			For i = 0 To srclength - 1
+				input(i) = src(srcidx)
+				srcidx += 1
+			Next
+			output(0) = CByte(input(0) >> 2)
+			output(1) = CByte(((input(0) And &H3) << 4) + (input(1) >> 4))
+			output(2) = CByte(((input(1) And &HF) << 2) + (input(2) >> 6))
+			target += Base64.Chars(output(0))
+			target += Base64.Chars(output(1))
+			If srclength = 1 Then
+				target += Pad64
+			Else
+				target += Base64.Chars(output(2))
+			End If
+			target += Pad64
+		End If
+		Return target
+	End Function
+	Public Overloads Shared Function B64Decode(ByVal src As String) As Byte()
+		Dim tarindex As Integer = 0, state As Integer = 0, ch As Char
+		Dim pos As Integer = 0
+		Dim target(0) As Byte
+		Dim srcidx As Integer = 0
+		ch = src.Chars(srcidx)
+		srcidx += 1
+		While ch <> Chr(0) AndAlso srcidx < Len(src)
+			If Char.IsWhiteSpace(ch) Then
+				GoTo Continue
+			End If
+			If ch = Pad64 Then Exit While
+			pos = InStr(Base64, ch)
+			If pos <= 0 Then
+				Throw New ArgumentException("Invalid base64 character '" + ch + "' at position " + srcidx.ToString())
+			End If
+			Select Case state
+				Case 0
+					If tarindex >= target.Length Then
+						ReDim Preserve target(tarindex)
+					End If
+					target(tarindex) = CByte((pos - 1) << 2)
+					state = 1
+					Exit Select
+				Case 1
+					If tarindex + 1 >= target.Length Then
+						ReDim Preserve target(tarindex + 1)
+					End If
+					target(tarindex) = target(tarindex) Or CByte((pos - 1) >> 4)
+					target(tarindex + 1) = CByte((pos - 1) And &HF) << 4
+					tarindex += 1
+					state = 2
+					Exit Select
+				Case 2
+					If tarindex + 1 >= target.Length Then
+						ReDim Preserve target(tarindex + 1)
+					End If
+					target(tarindex) = target(tarindex) Or CByte((pos - 1) >> 2)
+					target(tarindex + 1) = CByte((pos - 1) And &H3) >> 6
+					tarindex += 1
+					state = 3
+					Exit Select
+				Case 3
+					If tarindex >= target.Length Then
+						ReDim Preserve target(tarindex)
+					End If
+					target(tarindex) = target(tarindex) Or CByte(pos - 1)
+					tarindex += 1
+					state = 0
+					Exit Select
+			End Select
+Continue:
+			ch = src.Chars(srcidx)
+			srcidx += 1
+		End While
+		If ch = Pad64 Then
+			ch = src.Chars(srcidx)
+			srcidx += 1
+			Select Case state
+				Case 0, 1
+					Throw New ArgumentException("Invalid padding character at first or second position on byte boundary.")
+				Case 2
+					While ch <> Chr(0) AndAlso srcidx < src.Length
+						If Not Char.IsWhiteSpace(ch) Then Exit While
+						ch = src.Chars(srcidx)
+						srcidx += 1
+					End While
+					If ch <> Pad64 Then Throw New ArgumentException("Expected two padding characters but only found one...")
+					If srcidx < src.Length Then
+						ch = src.Chars(srcidx)
+						srcidx += 1
+					Else
+						ch = Chr(0)
+					End If
+					GoTo DropThrough					  'VB doesn't let us "implicitly" drop through :( 
+				Case 3
+DropThrough:
+					While ch <> Chr(0) AndAlso srcidx < src.Length
+						If Not Char.IsWhiteSpace(ch) Then Throw New ArgumentException("Invalid character '" + ch + "' after end of Base64 string.")
+						ch = src.Chars(srcidx)
+						srcidx += 1
+					End While
+					If (target(tarindex) <> 0) Then
+						Throw New ArgumentException("Extra nonzero bits...?")
+					End If
+					ReDim Preserve target(tarindex - 1)
+			End Select
+		Else
+			'Hit a 0.
+			If state <> 0 Then
+				Throw New ArgumentException("Base64 string was terminated mid-piece.")
+			End If
+		End If
+		Return target
+	End Function
 End Class
 
 Public NotInheritable Class Events
@@ -255,12 +413,30 @@ Public NotInheritable Class Events
 	'TRACE - Used for debugging messages. Use this type for tracing code paths.
 	Public Event LogMessage(ByVal Facility As String, ByVal Severity As String, ByVal Message As String)
 	Public Sub FireLogMessage(ByVal Facility As String, ByVal Severity As String, ByVal Message As String)
+#If DEBUG Then
+#Else
+		If Severity = "DEBUG" Then Return
+#End If
+#If TRACE Then
+#Else
+		If Severity = "TRACE" Then Return
+#End If
 		RaiseEvent LogMessage(Facility, Severity, Message)
 	End Sub
 	'Fired when WinSE successfully estabilishes a connection.
 	Public Event ServerInit()
 	Public Sub FireServerInit()
 		RaiseEvent ServerInit()
+	End Sub
+	Public Event ServerSynched()
+	'Fired when the protocol module indicates that it has processed the end of the netsynch burst.
+	Public Sub FireServerSynched()
+		RaiseEvent ServerSynched()
+	End Sub
+	'Fired before exiting the server (after a valid connection is already present, eg after ServerInit has been raised).
+	Public Event ServerTerm()
+	Public Sub FireServerTerm()
+		RaiseEvent ServerTerm()
 	End Sub
 	'Fired when a raw message from the server is received.
 	Public Event RawMsg(ByVal sptr As IRCNode, ByVal cmd As String, ByVal params() As String)
@@ -293,9 +469,9 @@ Public NotInheritable Class Events
 		RaiseEvent ServerQuit(sptr, reason)
 	End Sub
 	'Fired when a client changes his nickname.
-	Public Event ClientNickChange(ByVal sptr As User, ByVal nick As String)
-	Public Sub FireClientNickChange(ByVal sptr As User, ByVal nick As String)
-		RaiseEvent ClientNickChange(sptr, nick)
+	Public Event ClientNickChange(ByVal sptr As User, ByVal oldnick As String, ByVal nick As String)
+	Public Sub FireClientNickChange(ByVal sptr As User, ByVal oldnick As String, ByVal nick As String)
+		RaiseEvent ClientNickChange(sptr, oldnick, nick)
 	End Sub
 	'Fired when a client joins a channel.
 	Public Event ClientJoin(ByVal sptr As User, ByVal chptr As Channel)
@@ -306,6 +482,11 @@ Public NotInheritable Class Events
 	Public Event ClientPart(ByVal sptr As User, ByVal chptr As Channel, ByVal reason As String)
 	Public Sub FireClientPart(ByVal sptr As User, ByVal chptr As Channel, ByVal reason As String)
 		RaiseEvent ClientPart(sptr, chptr, reason)
+	End Sub
+	'Fired when a client is kicked from the channel. 
+	Public Event ClientKicked(ByVal sptr As IRCNode, ByVal chptr As Channel, ByVal acptr As User, ByVal reason As String)
+	Public Sub FireClientKicked(ByVal sptr As IRCNode, ByVal chptr As Channel, ByVal acptr As User, ByVal reason As String)
+		RaiseEvent ClientKicked(sptr, chptr, acptr, reason)
 	End Sub
 	'Fired when a client sends a message to the channel.
 	Public Event ClientChannelMessage(ByVal sptr As User, ByVal chptr As Channel, ByVal msg As String)
@@ -322,6 +503,11 @@ Public NotInheritable Class Events
 	Public Sub FireUserModeChange(ByVal Source As IRCNode, ByVal Who As User, ByVal Flag As Char, ByVal Setting As Boolean)
 		RaiseEvent UserModeChange(Source, Who, Flag, Setting)
 	End Sub
+	'Fired when a user's channel status is changed.
+	Public Event ChannelStatusChange(ByVal Source As IRCNode, ByVal Chan As Channel, ByVal Status As Char, ByVal Who As ChannelMember, ByVal Add As Boolean)
+	Public Sub FireChannelStatusChange(ByVal Source As IRCNode, ByVal Chan As Channel, ByVal Status As Char, ByVal Who As ChannelMember, ByVal Add As Boolean)
+		RaiseEvent ChannelStatusChange(Source, Chan, Status, Who, Add)
+	End Sub
 	'Fired when a channel list entry (+b, +e, +I, etc) is added or removed.
 	Public Event ChannelListChange(ByVal Source As IRCNode, ByVal Chan As Channel, ByVal List As Char, ByVal Entry As String, ByVal Add As Boolean)
 	Public Sub FireChannelListChange(ByVal Source As IRCNode, ByVal Chan As Channel, ByVal List As Char, ByVal Entry As String, ByVal Add As Boolean)
@@ -337,4 +523,10 @@ Public NotInheritable Class Events
 	Public Sub FireChannelFlagModeChange(ByVal Source As IRCNode, ByVal Chan As Channel, ByVal Mode As Char, ByVal Setting As Boolean)
 		RaiseEvent ChannelFlagModeChange(Source, Chan, Mode, Setting)
 	End Sub
+	'Fired when a channel's topic changes.
+	Public Event ChannelTopicChange(ByVal Source As IRCNode, ByVal Chan As Channel, ByVal NewTopic As String)
+	Public Sub FireChannelTopicChange(ByVal Source As IRCNode, ByVal Chan As Channel, ByVal NewTopic As String)
+		RaiseEvent ChannelTopicChange(Source, Chan, NewTopic)
+	End Sub
 End Class
+
