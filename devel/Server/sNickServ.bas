@@ -160,7 +160,7 @@ Private Sub Register(Sender As Integer, NickToRegister As String, EMail As Strin
     End If
     
     With basMain.Users(Sender)
-        If UCase(.Nick) = UCase(basMain.Config.ServicesMaster) Then .Access = 100
+        If UCase(.Nick) = UCase(basMain.Config.ServicesMaster) Then .Access = "M"
         Access = .Access
         HideEMail = .HideEMail
         MsgStyle = .MsgStyle
@@ -186,19 +186,18 @@ Public Function Identify(Sender As Integer, NickToIdentify As String, Password A
         Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationNotRegistered)
         Exit Function
     End If
-    Dim UserID As Integer
     If Password = PasswordonFile Then
         With basMain.Users(Sender)
             .AbuseTeam = basFileIO.GetInitEntry("users.db", .Nick, "AbuseTeam")
-            .Access = IIf(IsDeny(Sender), 0, basFileIO.GetInitEntry("users.db", .Nick, "Access"))
+            .Access = IIf(IsDeny(Sender), "", basFileIO.GetInitEntry("users.db", .Nick, "Access"))
             ' ^ IIf added to remove services access if the user has been agent DENYed
             .EMail = basFileIO.GetInitEntry("users.db", .Nick, "Email")
             .HideEMail = basFileIO.GetInitEntry("users.db", .Nick, "HideEmail")
             .MsgStyle = basFileIO.GetInitEntry("users.db", .Nick, "MsgStyle")
             .Password = basFileIO.GetInitEntry("users.db", .Nick, "Password")
             'Check if they are a master, just in case their permissions got fiddled with.
-            If UCase(basMain.Users(UserID).IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
-                .Access = 100
+            If UCase(.IdentifiedToNick) = UCase(basMain.Config.ServicesMaster) Then
+                SetFlags Sender, "+" & AccFlagMaster
             End If
         End With
         Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationSuccessful)

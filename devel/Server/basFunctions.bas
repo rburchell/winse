@@ -911,3 +911,40 @@ End Function
 'PHEW! :> -aquanight
 'Yes, I really should split this into other .bas files, but I cba. And hey,
 'is it worth it? --w00t
+
+Public Function HasFlag(UserID As Integer, Flag As String) As Boolean
+HasFlag = IIf(InStr(1, Users(UserID).Access, Flag), True, False)
+End Function
+Public Sub SetFlags(UserID As Integer, FlagMask As String)
+If Not Mid(FlagMask, 1, 1) = "+" And Not Mid(FlagMask, 1, 1) = "-" Then 'Absolute Flag String
+  Users(UserID).Flags = FlagMask
+  Exit Sub
+End If
+' Copied with few editions from my SetUserModes - Jason
+  Dim l As Integer ' I use l or i for loops usually
+  Dim ModeChar As String * 1
+  Dim AddModes As Boolean
+  Dim Result As String
+  With basMain.Users(UserID)
+    Result = .Flags
+    AddModes = True
+    For l = 1 To Len(FlagMask)
+      ModeChar = Mid(FlagMask, l, 1)
+      If (Asc(ModeChar) >= 65 And Asc(ModeChar) <= 90) Or _
+         (Asc(ModeChar) >= 97 And Asc(ModeChar) <= 122) Or _
+         Asc(ModeChar) = 43 Or Asc(ModeChar) = 45 Then
+' Begin Validity Checked Code
+        If ModeChar = "+" Then
+          AddModes = True
+        ElseIf ModeChar = "-" Then
+          AddModes = False
+        Else
+          Result = Replace(Result, ModeChar, "")
+          If AddModes Then Result = Result & ModeChar
+        End If
+' End Validity Checked Code
+      End If
+      Next l
+      .Flags = Result
+  End With
+End Sub

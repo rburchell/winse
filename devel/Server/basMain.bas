@@ -27,6 +27,10 @@ Public Const LogTypeWarn = "WARN"
 Public Const LogTypeNotice = "NOTICE"
 Public Const LogTypeDebug = "DEBUG"
 
+'[ACCESS FLAGS]
+Public Const AccFlagMaster As String * 1 = "M"
+'[/ACCESS FLAGS]
+
 Public Type ConfigVars
     ServerType As String
     '^Added this so we can use better ways of doing
@@ -119,7 +123,7 @@ Public Type UserStructure
     MemoID As Integer           'ID associated with memos in the memoserv database.
     Modes As String             'Usermodes
     HideEMail As Boolean        'Is email visible?
-    Access As Byte              'Services access. 0=none, 255=root etc
+    Access As String            'Services access.
     Requests As Byte            'Flood level. Goes up by 1 on each request.
                                 'When it hits 5, a warning. 10, a kill. 20, a gline (unless >= services admin)
                                 'Flood level goes down by 1 every 2 seconds??
