@@ -379,7 +379,7 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     Dim sChan As Variant
     For Each sChan In chns
         If sChan = "0" Then
-            For Each v In Users(i).Channels
+            For Each v In u.Channels
                 Dim s(0) As String
                 s(0) = Channels(v).Name
                 Call CmdPart(Source, s, RawCmd)
@@ -408,6 +408,7 @@ Public Sub CmdJoin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
                 u.Channels.Add c
             Else
                 With Channels(sChan)
+                    If .Members.Exists(u.Nick) Then Exit Sub 'Already on the channel.
                     Set cm = New ChannelMember
                     On Error Resume Next
                     Set cm.Member = u
@@ -437,7 +438,7 @@ Public Sub CmdPart(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     chns = Split(Args(0), ",")
     Dim sChan As Variant
     For Each sChan In chns
-        Users(i).Channels.Remove sChan
+        u.Channels.Remove sChan
         With Channels(sChan)
             On Error Resume Next
             .Members.Remove u.Nick
@@ -530,7 +531,7 @@ Public Sub CmdMotd(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         If LOF(j) = 0 Then
             'doesnt exist yay
             Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Doesn't exist.")
-            basFunctions.SendData (":" & basMain.Config.ServerName & " 425 " & basMain.Users(i).Nick & " :Services MOTD file is missing")
+            basFunctions.SendData (":" & basMain.Config.ServerName & " 425 " & sNick & " :Services MOTD file is missing")
         Else
             Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Does exist, sending.")
             'Just in case lame mIRC/other clients think the random MOTD is from the server it is connected

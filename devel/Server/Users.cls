@@ -33,6 +33,7 @@ Attribute Item.VB_UserMemId = 0
     If IsObject(idx) Then
         If TypeOf idx Is User Then
             LogEventWithMessage LogTypeWarn, "Deprected use of Users(index)! Update code ASAP!"
+            Debug.Assert False 'Force code to stop here in debugger.
             Set Item = idx
             Exit Function
         End If

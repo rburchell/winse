@@ -44,7 +44,7 @@ Private mCustom As Collection
 Private Sub Class_Initialize()
     Set mMemos = New Memos
     Set mCustom = New Collection
-    Set mChannels = New Channel
+    Set mChannels = New Channels
 End Sub
 
 Public Property Get Memos() As Memos
@@ -133,7 +133,7 @@ Public Sub SetUserModes(ByVal Modes As String)
     Dim ModeChar As String * 1
     Dim AddModes As Boolean
     Dim Result As String
-    Result = Modes
+    Result = Me.Modes
     AddModes = True
     For l = 1 To Len(Modes)
         ModeChar = Mid(Modes, l, 1)
@@ -150,7 +150,7 @@ Public Sub SetUserModes(ByVal Modes As String)
                 sAdminServ.HandleUserMode Me, AddModes, ModeChar
                 sAgent.HandleUserMode Me, AddModes, ModeChar
                 sChanServ.HandleUserMode Me, AddModes, ModeChar
-                sDebugServ.HandleUserMode Me, AddModes, ModeChar
+'                sDebugServ.HandleUserMode Me, AddModes, ModeChar
                 sMassServ.HandleUserMode Me, AddModes, ModeChar
                 sNickServ.HandleUserMode Me, AddModes, ModeChar
                 sOperServ.HandleUserMode Me, AddModes, ModeChar
@@ -159,7 +159,7 @@ Public Sub SetUserModes(ByVal Modes As String)
 ' End Validity Checked Code
         End If
     Next l
-    Modes = Result
+    Me.Modes = Result
 End Sub
 
 Public Function HasFlag(ByVal Flag As String) As Boolean
@@ -198,4 +198,8 @@ Public Sub SetFlags(ByVal FlagMask As String)
     Access = Result
 End Sub
 
-
+Public Property Get DefaultProperty() As String
+    LogEventWithMessage LogTypeWarn, "Deprecated implicit access of nickname! Fix this ASAP!"
+    Debug.Assert False 'Force code to stop here in debugger.
+    DefaultProperty = Nick
+End Property

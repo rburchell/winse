@@ -133,7 +133,7 @@ Public Sub SendMessage(ByVal Sender As String, ByVal Reciever As String, ByVal M
     Dim UserID As Integer
     'Wrapper for notice\privmsg. Checks which we should use, and uses it.
     On Error GoTo ForgetIt
-    Select Case Users(Sender).MsgStyle
+    Select Case Users(Reciever).MsgStyle
         Case True
             'Notice
             Call basFunctions.Notice(Sender, Reciever, Message)
@@ -194,7 +194,7 @@ Public Sub NotifyAllUsersWithFlags(ByVal Flag As String, ByVal Message As String
     Dim Reciever As String
     Dim Sender As String
     Sender = Service(SVSINDEX_GLOBAL).Nick
-    For i = 0 To Users.Count
+    For i = 1 To Users.Count
         If basMain.Users(i).HasFlag(Flag) Then
             Reciever = basMain.Users(i).Nick
             Call basFunctions.SendMessage(Sender, Reciever, "Services Notice: " & Message)
@@ -249,6 +249,9 @@ Public Sub ParseCmd(ByVal Incoming As String)
             'end.
             ReDim Preserve vArgs(UBound(vArgs) + 1)
             vArgs(UBound(vArgs)) = sLongArg
+        Else
+            ReDim vArgs(0)
+            vArgs(0) = sLongArg
         End If
     End If
     'Now we have the command parsed. Let's see what to
@@ -265,6 +268,22 @@ Public Sub ParseCmd(ByVal Incoming As String)
         For idx = LBound(vArgs) To UBound(vArgs)
             sArgs(idx) = vArgs(idx)
         Next idx
+    End If
+    'Now do a source check. If it's not a server, and we don't know it, remove it.
+    If sSource <> "" And InStr(sSource, ".") = 0 Then
+        'It's a user.
+        If Users.Exists(sSource) Then
+            'Could we be introducing a user (strange IRCd puts the new nick in the source param)?
+            If sCmd <> "NICK" Or UBound(sArgs) <= 2 Then
+                'Not introducing and doesn't exist. This is bad.
+                LogEventWithMessage LogTypeError, "EEEK! Unknown user " & sSource & ". Are we desynched?"
+                SendData ":" & basMain.Config.ServerName & " KILL " & sSource & " :" & sSource & "(?) <- " & basMain.Config.UplinkName
+                Exit Sub
+            'Otherwise, it's an IRCd introducing a user and putting the new nick in the source.
+            End If
+        'Otherwise it's a server.
+        End If
+    'Otherwise it's a server (specifically the one we are linked to).
     End If
     'Supposedly this won't catch errors in a called
     'procedure...
@@ -319,7 +338,7 @@ End Function
 Public Property Let SetItem(ByVal Collection As Collection, ByVal Index As Variant, ByVal NewValue As Variant)
     Collection.Remove Index
     If VarType(Index) = vbString Then
-        Collection.Add NewValue, key:=Index
+        Collection.Add NewValue, Key:=Index
     Else
         Collection.Add NewValue, before:=Index
     End If
@@ -328,16 +347,16 @@ End Property
 Public Property Set SetItem(ByVal Collection As Collection, ByVal Index As Variant, ByVal NewValue As Object)
     Collection.Remove Index
     If VarType(Index) = vbString Then
-        Collection.Add NewValue, key:=Index
+        Collection.Add NewValue, Key:=Index
     Else
         Collection.Add NewValue, before:=Index
     End If
 End Property
 
 'Something to tell us if a collection item exists.
-Public Function CollectionContains(ByVal Collection As Collection, ByVal key As String) As Boolean
+Public Function CollectionContains(ByVal Collection As Collection, ByVal Key As String) As Boolean
     On Error GoTo Nope
-    Call Collection.Item(key)
+    Call Collection.Item(Key)
     CollectionContains = True
     Exit Function
 Nope:

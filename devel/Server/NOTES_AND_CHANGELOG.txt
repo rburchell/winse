@@ -26,7 +26,57 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 05/09/2004 - aquanight
+  As reported by w00t:
+  -[CS] [Fix] Removed bouncy modes for now, I do want to be able to _run_ cvs...
+              -- actually bouncy modes are finished now, but presently disabled (#If 0)
+                 until DB crap is finished.
+  -[CS] [Fix] Fixed aquanight's silly use of my CommandHelp ;) (hint: You only need
+              to specify the folder name thats IN app.path & "\help" not the whole thing :)
+              --whoops :/ . Don't know why I did that - might have been a documentation
+                thing. Guess I'll get started on doc'ing the API sometime.
+  -[CO] [Fix] Fixed aquanight's braindead mistake in SendMessage. (We want to send to
+              _reciever_ not _sender_)
+              -- Actually it was attempting to use the wrong preference - trying to get a
+                 user record for ChanServ - which doesn't have one. Whoops.
+  -[CO] [Fix] Updated MOTD so it doesnt use the old basMain.Users any more.
+              -- eheh <.< I must've missed it.
+  -[CO] [Fix] Fixed some aquanight silliness that broke collections. 
+              -- typo. I swear.
+  -[CO] [Fix] Fixed some more old basMain.Users stuff.
+              -- Whee! Examples include some old usage in NickServ and DebugServ.
+                 When we switched to the new user tracker I had added some warnings to help
+                 catch some of these. There may be stuff still trying to use User indexes
+                 and haven't been updated _at all_ yet.
+  -[CO] [???] w00t claims he has some db stuff, but I haven't seen it yet...
+  So I guess we no longer have a "perfect" coder. Waaah. Cry about it why don't you :P .
+  Seriously, though, that's the last time I commit something before checking it. I hope.
+  Oh, and now for my own fixes/adds.
+  -[CS] [Add] As mentioned, the Prefix Mode Bouncer is finished now, but it won't be
+              functional (as with the rest of ChanServ) until the DB stuff is finished.
+              AFAIK, Channy is the only service using the new dbs >:) . Guess I'll think
+              about updating NickServ sometime...
+  -[CO] [Add] I'm not so sure if this is a good idea, but I added a default property to User
+              to fetch the nickname. This will also send a warning showing that someone is
+              using old code. Maybe I should just leave this to the compiler to scream
+              about, but...
+  -[DS] [Fix] Fixed DebugServ DUMPUSER. It was still using old indexes.
+  -[CO] [Add] Something I neglected to mention earlier - User objects now have a Dispose
+              method which will remove all references of the object from the global
+              Users and Channels collections, used for users who were removed by some event
+              such as QUIT, KILL, or by our own doings (KillUser, SVSKillUser).
+  -[CO] [Add] Which also brings up the addition of SVSKillUser so that we can now simply
+              use a method call to use SVSKILL. I think it would be simple to add IRCd
+              checks to determine if we should use KILL (because SVSKILL doesn't exist
+              for example).
+  -[CO] [Add] One day I was reading the Anope source and stumbled on an uh oh. Bahamut
+              supposedly sends a QUIT as a response to SVSKILL. ParseCmd will now handle
+              unknown users correctly - send 'em a KILL and bail out, but I think
+              SVSKillUser will need to simply send the SVSKILL and not Dispose() the User
+              on Bahamut...
+              Actually, I somewhat recall seeing this occur while telnetting around. :)
  01/09/2004 - aquanight
+  -[CO] [Add] Some debug logging, huzzah :D 01/09/2004 - aquanight
   -[CS] [Add] We can now bounce some invalid +vhoaq changes (but not all yet).
   -[CO] [Fix] Fixed a nick tracking issue in the channel members collection.
   -[CO] [Fix] Fixed a "stupid me" issue with the mode callbacks - forgot a source parameter!

@@ -32,7 +32,7 @@ Private mIdentifedUsers As Users            'Users who have IDENTIFYed.
 Private mCustom As Collection
 
 Private Sub Class_Initialize()
-    Set mMembers = New Collection
+    Set mMembers = New Members
     Set mBans = New Collection
     Set mExcepts = New Collection
     Set mInvites = New Collection
@@ -71,7 +71,7 @@ End Sub
 
 Public Sub SendChannelModes(ByVal Source As String, ByVal Modes As String, ParamArray Parameters() As Variant)
     Call basFunctions.SendData(":" & Source & " MODE " & Me.Name & " " & Modes & " " & Join(Parameters, " "))
-    SetChannelModes Source, Trim(Mode & " " & Join(Parameters, " "))
+    SetChannelModes Source, Trim(Modes & " " & Join(Parameters, " "))
 End Sub
 
 Public Sub SetChannelModes(ByVal Source As String, ByVal Modes As String)
@@ -192,7 +192,7 @@ Private Sub DispatchPrefix(ByVal Source As String, ByVal bSet As Boolean, ByVal 
     sAdminServ.HandlePrefix Source, Me, bSet, Char, Target
     sAgent.HandlePrefix Source, Me, bSet, Char, Target
     sChanServ.HandlePrefix Source, Me, bSet, Char, Target
-    sDebugServ.HandlePrefix Source, Me, bSet, Char, Target
+'    sDebugServ.HandlePrefix Source, Me, bSet, Char, Target
     sMassServ.HandlePrefix Source, Me, bSet, Char, Target
     sNickServ.HandlePrefix Source, Me, bSet, Char, Target
     sOperServ.HandlePrefix Source, Me, bSet, Char, Target
@@ -266,7 +266,7 @@ Private Sub DispatchModeTypeB(ByVal Source As String, ByVal bSet As Boolean, ByV
     sAdminServ.HandleModeTypeB Source, Me, bSet, Char, Entry
     sAgent.HandleModeTypeB Source, Me, bSet, Char, Entry
     sChanServ.HandleModeTypeB Source, Me, bSet, Char, Entry
-    sDebugServ.HandleModeTypeB Source, Me, bSet, Char, Entry
+'    sDebugServ.HandleModeTypeB Source, Me, bSet, Char, Entry
     sMassServ.HandleModeTypeB Source, Me, bSet, Char, Entry
     sNickServ.HandleModeTypeB Source, Me, bSet, Char, Entry
     sOperServ.HandleModeTypeB Source, Me, bSet, Char, Entry
@@ -309,7 +309,7 @@ Private Sub DispatchModeTypeD(ByVal Source As String, ByVal bSet As Boolean, ByV
     sAdminServ.HandleModeTypeD Source, Me, bSet, Char
     sAgent.HandleModeTypeD Source, Me, bSet, Char
     sChanServ.HandleModeTypeD Source, Me, bSet, Char
-    sDebugServ.HandleModeTypeD Source, Me, bSet, Char
+'    sDebugServ.HandleModeTypeD Source, Me, bSet, Char
     sMassServ.HandleModeTypeD Source, Me, bSet, Char
     sNickServ.HandleModeTypeD Source, Me, bSet, Char
     sOperServ.HandleModeTypeD Source, Me, bSet, Char

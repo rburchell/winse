@@ -187,7 +187,7 @@ Public Function Identify(Sender As User, NickToIdentify As String, Password As S
         Exit Function
     End If
     If Password = PasswordonFile Then
-        With basMain.Users(Sender)
+        With Sender
             .AbuseTeam = basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "AbuseTeam")
             .Access = IIf(IsDeny(Sender), "", basFileIO.GetInitEntry(App.Path & "\databases\users.db", .Nick, "Access"))
             ' ^ IIf added to remove services access if the user has been agent DENYed
@@ -201,7 +201,7 @@ Public Function Identify(Sender As User, NickToIdentify As String, Password As S
             End If
         End With
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationSuccessful)
-        basMain.Users(Sender).IdentifiedToNick = NickToIdentify
+        Sender.IdentifiedToNick = NickToIdentify
     Else
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_NICKSERV).Nick, Sender.Nick, Replies.NickServIdentificationBadPassword)
     End If

@@ -94,21 +94,18 @@ Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal 
 End Sub
 
 Private Sub DumpLine(ByVal DumpTo As String, ByVal Line As String)
-    'Because most clients will open a seperate window
-    'for PRIVMSG, we will take advantage of this for
-    'dumping.
-    PrivMsg Service(SVSINDEX_DEBUGSERV).Nick, DumpTo, Line
+    SendMessage Service(SVSINDEX_DEBUGSERV).Nick, DumpTo, Line
 End Sub
 
-Private Sub DumpUser(ByVal DumpTo As String, ByVal ID As Integer)
-    If ID = 32767 Then
+Private Sub DumpUser(ByVal DumpTo As String, ByVal ID As User)
+    If ID Is Nothing Then
         SendMessage Service(SVSINDEX_DEBUGSERV).Nick, DumpTo, "No such user."
         Exit Sub
-    ElseIf Users(ID).Nick = "" Then
+    ElseIf ID.Nick = "" Then
         SendMessage Service(SVSINDEX_DEBUGSERV).Nick, DumpTo, "No such user."
         Exit Sub
     End If
-    With Users(ID)
+    With ID
         DumpLine DumpTo, "Nick: " + .Nick
         DumpLine DumpTo, "E-Mail: " + .EMail
         DumpLine DumpTo, "Password: " + .Password
@@ -128,7 +125,7 @@ Private Sub DumpUser(ByVal DumpTo As String, ByVal ID As Integer)
         DumpLine DumpTo, "On Channels:"
         Dim vChan As Variant
         For Each vChan In .Channels
-            DumpLine DumpTo, "  " + Channels(vChan).Name
+            DumpLine DumpTo, "  " + vChan.Name
         Next vChan
         DumpLine DumpTo, "End of Channels."
         DumpLine DumpTo, "Signed on: " + CStr(.SignOn)
