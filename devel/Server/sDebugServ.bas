@@ -206,3 +206,8 @@ Private Sub DumpChannel(ByVal DumpTo As String, ByVal ID As Integer)
     End With
     DumpLine DumpTo, "End of Dump."
 End Sub
+
+Public Sub HandleTick(ByVal Interval As Single)
+
+End Sub
+

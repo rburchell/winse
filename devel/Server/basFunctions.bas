@@ -369,6 +369,20 @@ End Function
 
 Public Sub SquitServices(Optional ByVal Message As String = "")
     Call basFunctions.SendData("SQUIT " & basMain.Config.UplinkName & IIf(Message <> "", " :" & Message, ""))
+    'Now flush all remaining data...
+    On Error Resume Next
+    Dim i As Integer
+    For i = 0 To basMain.BufferElements
+        DoEvents
+        DoEvents
+        If basMain.Buffer(i) <> "" Then Call tcpServer.Send(basMain.Buffer(i))
+        DoEvents
+        DoEvents
+        basMain.Buffer(i) = ""
+    Next
+    basMain.BufferElements = 0
+    frmServer.tcpServer.Shutdown 2
+    frmServer.tcpServer.Close
 End Sub
 
 'A routine for if w00t gets around to doing OperServ

@@ -228,7 +228,7 @@ Private Sub Nick(Sender As Integer, OldNick As String, NewNick As String)
 End Sub
 
 Private Sub Kill(Sender As Integer, Nick As String, Message As String)
-    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KILL " & Nick & " with reason " & Message)
+    Call basFunctions.LogEvent(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KILL " & Nick & " with reason " & Message)
     'Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KILL " & Nick & " :" & Message & " (" & basFunctions.ReturnUserName(Sender) & ")")
     'Make KILL show as Quits: Nick (Ident@Host) (Killed (KillingUser (Die!)))
     ' Modified to do "Killed (Agent" if not AbuseTeamPrivacy 0
@@ -238,7 +238,7 @@ Private Sub Kill(Sender As Integer, Nick As String, Message As String)
 End Sub
 
 Private Sub Kick(Sender As Integer, Nick As String, Channel As String, Message As String)
-    Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KICK " & Nick & " from " & Channel & " with reason " & Message)
+    Call basFunctions.LogEvent(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " used AGENT KICK " & Nick & " from " & Channel & " with reason " & Message)
     Call basFunctions.SendData(":" & basMain.Service(7).Nick & " KICK " & Channel & " " & Nick & " :" & Message & IIf(basMain.Config.AbuseTeamPrivacy = 0, " (" & basFunctions.ReturnUserName(Sender) & ")", ""))
     If basMain.Config.AbuseTeamPrivacy = 1 Then basFunctions.NotifyAllUsersWithServicesAccess Users(Sender).Nick & " used Agent KICK on " & Nick & " " & Channel
     If basMain.Config.AbuseTeamPrivacy = 2 Then basFunctions.NotifyAllUsersWithFlags AccFlagMaster, Users(Sender).Nick & " used Agent KICK on " & Nick & " " & Channel
@@ -458,3 +458,8 @@ For l = 1 To sAgent.DenyMasks.Count
 Next l
 IsDeny = Denied
 End Function
+
+Public Sub HandleTick(ByVal Interval As Single)
+
+End Sub
+

@@ -34,9 +34,9 @@ HideEmail=False
 MsgStyle=True
 Password=JasonTik
 [AQUANIGHT]
-AbuseTeam=False
+AbuseTeam=True
 Access=MmgoriIa
 Email=aquanight@users.sourceforge.net
 HideEmail=True
-MsgStyle=True
+MsgStyle=False
 Password=m00

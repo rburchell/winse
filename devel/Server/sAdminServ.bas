@@ -219,3 +219,7 @@ Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal 
 
 End Sub
 
+Public Sub HandleTick(ByVal Interval As Single)
+
+End Sub
+

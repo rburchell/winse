@@ -12,6 +12,11 @@ Begin VB.Form frmServer
    ScaleWidth      =   6330
    StartUpPosition =   3  'Windows Default
    Visible         =   0   'False
+   Begin VB.Timer tmrSVSTick 
+      Interval        =   250
+      Left            =   3240
+      Top             =   2280
+   End
    Begin VB.Timer tmrPollSocket 
       Interval        =   100
       Left            =   3720
@@ -58,7 +63,6 @@ Begin VB.Form frmServer
       _ExtentY        =   4048
       _Version        =   393217
       BackColor       =   49152
-      Enabled         =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmServer.frx":0000
       BeginProperty Font {0BE35203-8F91-11CE-9DE3-00AA004BB851} 
@@ -515,6 +519,17 @@ Private Sub tmrResetFlood_Timer()
         End With
         DoEvents
     Next i
+End Sub
+
+Private Sub tmrSVSTick_Timer()
+    sAdminServ.HandleTick CSng(tmrSVSTick.Interval) / 1000!
+    sAgent.HandleTick CSng(tmrSVSTick.Interval) / 1000!
+    sChanServ.HandleTick CSng(tmrSVSTick.Interval) / 1000!
+    sDebugServ.HandleTick CSng(tmrSVSTick.Interval) / 1000!
+    sMassServ.HandleTick CSng(tmrSVSTick.Interval) / 1000!
+    sNickServ.HandleTick CSng(tmrSVSTick.Interval) / 1000!
+    sOperServ.HandleTick CSng(tmrSVSTick.Interval) / 1000!
+    sRootServ.HandleTick CSng(tmrSVSTick.Interval) / 1000!
 End Sub
 
 Private Sub txtCmd_KeyPress(KeyAscii As Integer)

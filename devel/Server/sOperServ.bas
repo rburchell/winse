@@ -102,3 +102,8 @@ End Sub
 Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
+
+Public Sub HandleTick(ByVal Interval As Single)
+
+End Sub
+

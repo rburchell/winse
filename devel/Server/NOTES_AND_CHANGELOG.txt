@@ -27,6 +27,16 @@ Services:
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
  29/07/2004 - aquanight
+  -[CO] [---] Added a new event for services - every so often (can be
+              adjusted by changing tmrSVSTick.Interval) a callback
+              procedure can be called in each of the services modules.
+  -[CS] [---] Added some new subs to handle timed events.
+  -[NS] [---] Added some new subs to handle timed events.
+  -[OS] [---] Added some new subs to handle timed events.
+  -[AS] [---] Added some new subs to handle timed events.
+  -[RS] [---] Added some new subs to handle timed events.
+  -[AG] [---] Added some new subs to handle timed events.
+  -[MsS][---] Added some new subs to handle timed events.
   -[CO] [---] Squashed a few bugs.
   -[DS] [---] For debugging, added INDEXOFUSER, INDEXOFCHANNEL, DUMPUSER
               and DUMPCHANNEL. Permission checks to come later.

@@ -70,7 +70,7 @@ End Sub
 
 Private Sub Shutdown(Sender As Integer, Message As String)
     Call basFunctions.GlobalMessage("Services shutting down on request of " & Sender & " [" & Message & "]")
-    Call basFunctions.SquitServices
+    Call basFunctions.SquitServices("SHUTDOWN Command by " + Users(Sender).Nick)
     End
 End Sub
 
@@ -154,3 +154,8 @@ End Sub
 Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
+
+Public Sub HandleTick(ByVal Interval As Single)
+
+End Sub
+
