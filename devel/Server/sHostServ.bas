@@ -136,7 +136,7 @@ Users(Identified.Nick).VirtHost = GetDBHost(Identified)
 End Sub
 
 Private Function GetDBHost(Who As User) As String
-If sNickServ.DBIndexOf(Who) >= 0 Then GetDBHost = sNickServ.DB(sNickServ.DBIndexOf(Who)).VHost
+If sNickServ.DBIndexOf(Who.IdentifiedToNick) >= 0 Then GetDBHost = sNickServ.DB(sNickServ.DBIndexOf(Who.IdentifiedToNick)).VHost
 End Function
 
 Private Function SetDBHost(Who As User, NewHost As String) As Boolean
