@@ -102,11 +102,12 @@ Public Service(TotalServices - 1) As Service
 Public Buffer(32767) As String
 Public BufferElements As Integer
 
-'Database structures, for... the databases!
-Public NickDB As Database 'Nickname Records
-Public ChanDB As Database 'Channel Records
-Public MemoDB As Database 'Memo Records
-Public BotDB As Database  'BotServ Records
+'DA DATABASES
+Public NickServDB As Database
+Public ChanServDB As Database
+Public MemoServDB As Database
+Public OperServDB As Database
+Public BotServDB As Database
 
 Sub Main()
     'DO NOT REORDER THE SERVICES! eg chanserv (or whatever you call it) should be #0

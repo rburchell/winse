@@ -18,6 +18,116 @@ Attribute VB_Name = "sChanServ"
 Option Explicit
 Public Const ModVersion = "0.0.0.2"
 
+'Access Flags
+'Access flags marked NEGATIVE NEVER require an IDENTIFY to take effect, regardless of the SECURE option.
+Public Const CHANSERV_PERMFOUNDER = "F" 'Permanent Founder.
+Public Const CHANSERV_COFOUNDER = "f"   'Temporary or Co-Founder.
+Public Const CHANSERV_ACLREAD = "a"     'Read-Only access to ACL.
+Public Const CHANSERV_ACLRW = "A"       'Read-Write access to ACL.
+Public Const CHANSERV_VOICE = "v"       'May (DE)VOICE self.
+Public Const CHANSERV_VOICEOP = "V"     'May (DE)VOICE anyone.
+Public Const CHANSERV_QUIET = "q"       'May not be voiced. NEGATIVE
+Public Const CHANSERV_SUPERQUIET = "Q"  'UnrealIRCd Only. May not be voiced, and is ~q/~n banned on join.
+                                        'For non-Unreal, just remaps to +q. NEGATIVE
+Public Const CHANSERV_HALFOP = "h"      'May (DE)HALFOP self.
+Public Const CHANSERV_HALFOPOP = "H"    'May (DE)HALFOP anyone.
+Public Const CHANSERV_DEHALFOP = "D"    'May not be halfopped (+h). NEGATIVE
+Public Const CHANSERV_OP = "o"          'May (DE)OP self.
+Public Const CHANSERV_OPOP = "O"        'May (DE)OP anyone.
+Public Const CHANSERV_DEOP = "d"        'May not be opped. NEGATIVE
+Public Const CHANSERV_PROTECT = "p"     'UnrealIRCd: May (DE)PROTECT self.
+                                        'Others: ChanServ will enforce protection on this user.
+Public Const CHANSERV_PROTECTOP = "P"   'UnrealIRCd: May (DE)PROTECT anyone.
+                                        'Others: ChanServ will enforce protection on this user.
+Public Const CHANSERV_OWNER = "n"       'UnrealIRCd: May (DE)OWNER self.
+                                        'Others: ChanServ will enforce greater protection on this user.
+Public Const CHANSERV_OWNEROP = "N"     'UnrealIRCd: May (DE)ONWER anyone.
+                                        'Others: ChanServ will enforce greater protection on this user.
+Public Const CHANSERV_CANKICK = "k"     'May use CHANSERV KICK.
+Public Const CHANSERV_AUTOKICK = "K"    'Not allowed to join - is kicked and banned on join. NEGATIVE
+Public Const CHANSERV_CANBAN = "b"      'May use CHANSERV BAN.
+Public Const CHANSERV_BANOP = "B"       'Has read-write access to the AKICK list.
+Public Const CHANSERV_EXEMPT = "e"      'Is exempt from AKICK checking, and ChanServ will +e this user
+                                        'before placing any ban that matches him.
+Public Const CHANSERV_EXEMPTOP = "E"    'Has read-write access to the EXEMPT list.
+Public Const CHANSERV_INVITE = "i"      'May use CHANSERV INVITE on self.
+Public Const CHANSERV_INVITEOP = "I"    'May use CHANSERV INVITE on anyone. May also manage the INVITE list.
+Public Const CHANSERV_MODEOP = "m"      'May use CHANSERV MODE command.
+Public Const CHANSERV_CLEAR = "c"       'May use CHANSERV CLEAR. Suboption permissions depend on other flags.
+Public Const CHANSERV_TOPICOP = "t"     'May use CHANSERV TOPIC.
+Public Const CHANSERV_TOPICMAN = "T"    'May give/take +t flag.
+Public Const CHANSERV_GETKEY = "g"      'May use CHANSERV GETKEY.
+Public Const CHANSERV_SETKEY = "G"      'May give/take +g flag. May use CHANSERV SETKEY.
+Public Const CHANSERV_UNBAN = "u"       'May use CHANSERV UNBAN.
+Public Const CHANSERV_UNBANOP = "U"     'May give/take +u flag.
+Public Const CHANSERV_MEMOADMIN = "M"   'May send MEMOs to the channel. If +privatememos, may read memos.
+Public Const CHANSERV_BOTCOMS = "C"     'May use BotServ !commands.
+Public Const CHANSERV_BOTMODIFY = "x"   'May use BotServ SET, KICK, and BADWORDS.
+Public Const CHANSERV_BOTSPEAK = "X"    'May use BotServ SAY and ACT.
+Public Const CHANSERV_SHOWGREET = "y"   'Channel bot will print user's GREET message on join.
+Public Const CHANSERV_BOTNOKICK = "Y"   'Immune to Bot Kickers.
+Public Const CHANSERV_INFOALL = "z"     'Allowed to get ALL INFO.
+Public Const CHANSERV_NOSIGNKICK = "Z"  'KICK or BAN usage is not signed or prefixed.
+Public Const CHANSERV_SET = "s"         'May use SET except LOCKed options.
+Public Const CHANSERV_SETLOCK = "S"     'May use (UN)LOCK SET. May UNLOCK and SET options LOCKed by +S's.
+                                        '(May NOT UNLOCK or SET an option locked by a +f or the +F.)
+Public Const CHANSERV_LOCKACE = "l"     'May use (UN)LOCK ACCESS.
+Public Const CHANSERV_LOCKLIST = "L"    'May use (UN)LOCK AKICK/EXEMPT/INVITE.
+'(Note: Only +f or +F may lock an entire list. +l and +L can only lock single entries, and only entries
+'of a lower level than them.)
+
+'Default flag mappings:
+Public Const CHANSERV_VOPDEFAULT = "vyiua"
+Public Const CHANSERV_HOPDEFAULT = "hVkbiugta"
+Public Const CHANSERV_AOPDEFAULT = "oOHVkbeiugtma"
+Public Const CHANSERV_SOPDEFAULT = "pOHVkbeiugTsMcBEIaAm"
+Public Const CHANSERV_CFOUNDERDEFAULT = "f"
+
+'Structure of each channel record:
+'Each channel requires 2 records: one will be used for the access list.
+'Channel Settings Record:
+'Record Name is the name of the channel.
+'Fields:
+'DESC | Channel Description
+'PASSWORD | Channel Password
+'List item prefixes:
+'- : Normal.
+'$ : Sticky.
+'@ : Lock.
+'! : CoFounder Lock.
+'# : Founder Lock.
+'AKICK | Space seperated list of autokick entries.
+'EXEMPT | Space seperated list of exempt entries.
+'INVITE | Space seperated list of invite entries.
+'SUCCESSOR | Successor's nick.
+'SECUREOPS | ON/OFF (Non ACL members are +d)
+'SECUREHALFOPS | ON/OFF (Non ACL members are +D)
+'SECUREVOICES | ON/OFF (Non ACL members are +q)
+'RESTRICTED | ON/OFF (Non ACL members are +K)
+'SECURE | ON/OFF
+'LEAVEOPS | ON/OFF (First joiner isn't deopped, or netjoin ops aren't reversed.)
+'TOPICLOCK | ON/OFF
+'STRICTSTATUS | ON/OFF
+'STRICTLISTS | ON/OFF
+'LEARNBANS | ON/OFF/Number
+'FORGETBANS | ON/OFF
+'GIVE | ON/OFF
+'STRICTMODES | ON/OFF
+'MLOCK | [[[+|-]<unparameteredmode>]] [[[+]<parameteredmode(s)> <param(s)>]]
+'LOCK SET: Space seperated list of locked SET options. Prefix ! for +f lock, # for +F lock.
+'LOCK ACCESS: Space seperated list of locked ACEs (by nick). Prefix ! for +f lock, # for +F lock.
+'BOTS | Space seperated list of BotServ bots assigned to this channel.
+'BOTKICK | Nick of an assigned bot responsible for issuing requested KICKs.
+'BOTAUTOMODE | Nick of an assigned bot responsible for automatic mode setting (for +b, +o, etc).
+'BOTMODE | Nick of an assigned bot responsible for requested mode changes.
+'BOTTOPIC | Nick of an assigned bot responsible for TOPIC changes.
+'BOTGREET | Nick of an assigned bot responsible for saying GREET messages.
+'BOTAUTOKICK | Nick of an assigned bot responsible for issuing automatic KICKs.
+
+'Channel Access Record:
+'Record Name is "%s ACCESS LIST"
+'Fields are named by nickname, and value is flags.
+
 Public Sub ChanservHandler(ByVal Cmd As String, ByVal Sender As User)
     Dim Parameters() As String
     Dim SenderNick As String

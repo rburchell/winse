@@ -38,8 +38,9 @@ Public Sub MassservHandler(ByVal Cmd As String, ByVal Sender As User)
     Dim Parameters As String
     If InStr(Cmd, " ") > 0 Then
         'doing that doesn't work for me. It only works when Variant is used.
-        Dim CmdParts As Variant ' (0 To 1): Yes, I'm paranoid
-        CmdParts = Split(Cmd, " ", 2)
+        'Correction: it works fine when the array is dynamic. Don't worry, Split() won't fail us :P .
+        Dim CmdParts() As String ' (0 To 1): Yes, I'm paranoid
+        CmdParts() = Split(Cmd, " ", 2)
         Parameters = CmdParts(1)
         Cmd = CmdParts(0)
     Else
