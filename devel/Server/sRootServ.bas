@@ -38,12 +38,14 @@ Public Sub RootservHandler(Cmd As String, Sender As Integer)
     Select Case UCase(Cmd)
         Case "HELP"
             Call sRootServ.Help(Sender)
+        Case "INJECT"
+            Call sRootServ.Inject(Sender, Parameters)
         Case "SHUTDOWN"
             Call sRootServ.Shutdown(Sender, Parameters)
-        Case "VERSION"
-            Call sRootServ.Version(Sender)
         Case "RAW"
             Call sRootServ.Raw(Sender, Parameters)
+        Case "VERSION"
+            Call sRootServ.Version(Sender)
         Case Else
             Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, Replies.UnknownCommand)
     End Select
@@ -57,7 +59,7 @@ Private Sub Help(Sender As Integer)
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  *CHANSNOOP  - Channel Snoop Feature")
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  *REFERENCE  - Snoop symbol Reference")
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  *FLOODRESET - Reset someone's floodlevel manually.")
-    Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  *INJECT     - Send RAW command to Services.")
+    Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  INJECT     - Preform a services command as another user")
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  *RESTART    - SQUIT and reconnect services.")
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  SHUTDOWN    - SQUIT and shutdown services.")
     Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, "  RAW         - Send RAW command to Server " & Chr(3) & "4BE CAREFUL!!.")
@@ -78,6 +80,37 @@ End Sub
 
 Private Sub Raw(Sender As Integer, RawString As String)
     Call basFunctions.SendData(RawString)
+End Sub
+
+Private Sub Inject(Sender As Integer, sParameters As String)
+If basFunctions.ReturnUserServicesPermissions(Sender) < 100 Then
+  Call basFunctions.SendMessage(basMain.Service(6).Nick, SenderNick, Replies.MustBeAServicesMasterOrComaster)
+  Exit Sub
+End If
+Dim InjectData() As String, TargetID As Integer
+InjectData = Split(sParameters, " ", 3)
+TargetID = basFunctions.ReturnUserIndex(InjectData(0))
+Select Case UCase(InjectData(1))
+  Case "NICKSERV"
+    Call sNickServ.NickservHandler(InjectData(3), TargetID)
+  Case "CHANSERV"
+    Call sChanServ.ChanservHandler(InjectData(3), TargetID)
+  Case "MEMOSERV"
+    Call sMemoServ.MemoservHandler(InjectData(3), TargetID)
+'  Case "OPERSERV"
+'    Call sOperServ.OperservHandler(InjectData(3), TargetID)
+'  Case "ROOTSERV"
+'    Call sRootServ.RootservHandler(InjectData(3), TargetID)
+  Case "BOTSERV"
+    Call sBotServ.BotservHandler(InjectData(3), TargetID)
+'  Case "MASSSERV"
+'    Call sMassServ.MassservHandler(InjectData(3), TargetID)
+'  Case "HOSTSERV"
+'    Call sHostServ.HostservHandler(InjectData(3), TargetID)
+
+' None to AGENT or ADMINSERV for obvious reasons...
+
+' IRCop services cant be injected to, for obvious reasons, in case we make a access flag for this
 End Sub
 
 'Callin subs for channel mode changes
