@@ -26,6 +26,11 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 12/09/2004 - aquanight
+  -[DB] [Fix] Unw00ted OpenDB. Why the HECK did you want to hardcode the MDB connect string?
+              It works when I use the full provider string in the provided config option!
+              This also allows users to store the DB file on a more capable drive, or use
+              MySQL or some other DB provider (assuming they know the connect string)!
  10/09/2004 - aquanight
   -[DB] [Fix] Added winse.mdb to the repository. Also adjusted constraints and field types.
               I noticed that some of the names were not what I planned to use. I guess

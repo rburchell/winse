@@ -135,6 +135,15 @@ Sub Main()
     '--w00t
     'Let's parse our config :|
     basMain.ParseConfigurationFile (App.Path & "\winse.conf")
+    basMain.Config.ConnectString = Replace(basMain.Config.ConnectString, "$APPPATH", App.Path)
+    
+    Dim c As Connection
+    Set c = OpenDB(basMain.Config.ConnectString)
+    sChanServ.LoadData c
+    sMemoServ.LoadData c
+    'That's all. Close it up.
+    c.Close
+    Set c = Nothing
     
     'Note that you CAN have custom hostmasks (a sethost is issued) but I choose not to.
     'actually for aliases to work, the

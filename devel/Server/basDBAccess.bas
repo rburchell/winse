@@ -22,10 +22,7 @@ Option Explicit
 Public Function OpenDB(ByVal ConnectString As String) As Connection
     Dim conn As Connection
     Set conn = New Connection
-    'ConnectString is ignored for now... hardwired.
-    conn.ConnectionString = "DATA SOURCE=" & App.Path & "\winse.mdb"
-    conn.Provider = "Microsoft.JET.OleDB.4.0"
-    conn.Open 'ConnectString
+    conn.Open ConnectString
     Set OpenDB = conn
 End Function
 
@@ -71,12 +68,13 @@ Public Function ReadTableIntoCollection(ByVal Connection As Variant, ByVal table
     Set col = New Collection
     While Not rs.EOF
         Set col2 = New Collection
-        For idx = 0 To rs.Fields.Count
+        For idx = 0 To rs.Fields.Count - 1
             With rs.Fields(idx)
                 col2.Add .Value, .Name
             End With
         Next idx
         col.Add col2
+        rs.MoveNext
     Wend
     If bCloseTable Or bCloseConn Then rs.Close
     If bCloseConn Then conn.Close

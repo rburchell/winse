@@ -93,7 +93,7 @@ Public Sub LoadData(ByVal conn As Connection)
     For idx = 1 To DB.Count
         Set subcol = DB(idx)
         DB.Remove idx
-        DB.Add subcol, subcol("Name"), idx
+        DB.Add subcol, subcol("Name")
     Next idx
 End Sub
 
