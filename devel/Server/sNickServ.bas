@@ -160,7 +160,7 @@ Private Sub Register(Sender As Integer, NickToRegister As String, EMail As Strin
     End If
     
     With basMain.Users(Sender)
-        If UCase(.Nick) = UCase(basMain.ServicesMaster) Then .Access = 100
+        If UCase(.Nick) = UCase(basMain.Config.ServicesMaster) Then .Access = 100
         Access = .Access
         HideEMail = .HideEMail
         MsgStyle = .MsgStyle

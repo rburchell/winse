@@ -248,11 +248,12 @@ Public Sub KillUser(UserId As Integer, ByVal Message As String, Optional Killer 
         'Ever heard of kill paths? Yep, we need to
         'specify the Killer :) . - aquanight
             'You'll really have to explain this to me :| --w00t
-        If Killer = "" Then
-            Killer = basMain.ServerName
+        'Well... we're supposed to include the killer
+        'in a kill path. But further research with
+        'Unreal reveals that we actually do NOT include
+        'the server name :).
+        If Not Killer = "" Then
             Message = Killer & " (" & Message & ")"
-        Else
-            Message = basMain.ServerName & "!" & Killer & " (" & Message & ")"
         End If
         basFunctions.SendData (":" + Killer + " KILL " & basMain.Users(UserId).Nick & " :" & Message)
         With basMain.Users(UserId)
@@ -281,16 +282,22 @@ Public Function ReturnUserName(UserId As Integer) As String
 End Function
 
 Public Sub GlobalMessage(Message As String)
-    Dim i As Integer
-    Dim Reciever As String
-    Dim Sender As String
-    Sender = Service(8).Nick
-    
-    For i = 0 To basMain.TotalUsers
-        Reciever = basMain.Users(i).Nick
-        Call basFunctions.SendMessage(Sender, Reciever, Message)
-        DoEvents
-    Next i
+    'I'm thinking that we should Global the easy way :)
+    'IMHO, global messages should always be NOTICE,
+    'but that's partly because mIRC does wierd things
+    'with $target PRIVMSGs (in status: (nick) message).
+    ' - aquanight
+    basFunctions.SendData ":" + Service(8).Nick + " NOTICE " + basMain.Config.GlobalTargets + " :" + Message
+'    Dim i As Integer
+'    Dim Reciever As String
+'    Dim Sender As String
+'    Sender = Service(8).Nick
+'
+'    For i = 0 To basMain.TotalUsers
+'        Reciever = basMain.Users(i).Nick
+'        Call basFunctions.SendMessage(Sender, Reciever, Message)
+'        DoEvents
+'    Next i
 End Sub
 
 Public Sub CheckFloodLevel(UserId As Integer)
@@ -348,7 +355,7 @@ Public Function ReturnChannelIndex(ChannelName As String)
 End Function
 
 Public Sub SquitServices(Optional ByVal Message As String = "")
-    Call basFunctions.SendData("SQUIT " & basMain.UplinkName & IIf(Message <> "", " :" & Message, ""))
+    Call basFunctions.SendData("SQUIT " & basMain.Config.UplinkName & IIf(Message <> "", " :" & Message, ""))
 End Sub
 
 'A routine for if w00t gets around to doing OperServ
@@ -501,10 +508,71 @@ Public Function ReturnChannelOnlyModes(ChannelModes As String)
 End Function
 
 Public Sub ParseCmd(ByVal Incoming As String)
-
+    If Incoming = "" Then Exit Sub
+    Dim sTmp As String
+    sTmp = Incoming 'Make a copy of the incoming text.
+    'Hopefully this will replace all the stuff in
+    '*_DataArrival :P . I'm hoping this will make us
+    'less dependent on the form.
+    Dim sLongArg As String 'Contain the long argument.
+    Dim sSource As String 'Contain the source.
+    Dim sCmd As String 'The command
+    Dim vArgs As Variant 'Args not part of the long arg.
+    'Asc() returns the ASCII code of the first char
+    'of a string, so we can use that to check for a
+    'source :) .
+    If Asc(sTmp) = Asc(":") Then
+        sSource = Mid(2, sTmp)
+        sSource = Left(sSource, InStr(sSource, " ") - 1)
+        sTmp = Mid(sTmp, InStr(sTmp, " ") + 1)
+    End If
+    'Now pull the command.
+    If sTmp = "" Then Exit Sub
+    If InStr(sTmp, " ") = 0 Then
+        sCmd = sTmp
+        sTmp = ""
+    Else
+        sCmd = Left(sTmp, InStr(sTmp, " ") - 1)
+        sTmp = Mid(sTmp, InStr(sTmp, " ") + 1)
+    End If
+    'Now, do we have any arguments?
+    If sTmp <> "" Then
+        'Pull the long argument.
+        If Asc(sTmp) = Asc(":") Then
+            'The whole list is the long arg.
+            sLongArg = Mid(sTmp, 2)
+            sTmp = ""
+        ElseIf InStr(sTmp, " :") > 0 Then
+            'The long arg comes later.
+            sLongArg = Mid(sTmp, InStr(sTmp, " :") + 2)
+            sTmp = Left(sTmp, InStr(sTmp, " :") - 1)
+        End If
+        'Now parse the remaining arguments.
+        If sTmp <> "" Then
+            vArgs = Split(sTmp, " ")
+            'If we have a long arg, append it to the
+            'end.
+            ReDim Preserve vArgs(UBound(vArgs) + 1)
+            vArgs(UBound(vArgs)) = sLongArg
+        End If
+    End If
+    'Now we have the command parsed. Let's see what to
+    'do with it!
+    'Create a command dispatcher. FIXME: Maybe we should
+    'have this be a persistant variable?
+    Dim cd As CommandDispatcher
+    Set cd = New CommandDispatcher
+    'Now execute it :) Use late-binding to pick the
+    'correct procedure.
+    On Error Resume Next
+    Call CallByName(cd, sCmd, VbMethod, Array(sSource, vArgs, Incoming))
+    If Err.Number <> 0 Then Debug.Print Err.Number, Err.Description
 End Sub
 
 Public Function SetChannelModes2(ChanID As Integer, Modes As String)
+    'Believe it or not, I like throwing errors over just
+    'sending out a scream :) .
+    If ChanID < 0 Then Err.Raise 9, , Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.SetChannelModes2")
     'Indexes, for the character and parameter
     Dim iChar As Integer, iParam As Integer
     'Strings to store said character and parameter
@@ -580,27 +648,232 @@ Public Function SetChannelModes2(ChanID As Integer, Modes As String)
             'EEEEEEEEEK!
             NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckUnknownModeChange, "%c", IIf(bSet, "+", "-") & sChar)
         End If
+    Next iChar
 End Function
 
 Private Sub DispatchPrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
-
+    If ChanID < 0 Or Target < 0 Then
+        'Now something really went pear-shaped. :P
+        'Send out a scream.
+        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchPrefix")
+        'Reboot.
+        RestartServices "Fatal sanity check error. Forcing restart."
+    End If
+    Dim s As String
+    s = Channels(ChanID).UsersModes(Target)
+    If bSet Then
+        s = s & Char
+    Else
+        s = Replace(s, Char, "")
+    End If
+    SetItem(Channels(ChanID).UsersModes, Target) = s
+    'Okay, now that we've updated their status, send it
+    'out :) .
+    sAdminServ.HandlePrefix ChanID, bSet, Char, Target
+    sAgent.HandlePrefix ChanID, bSet, Char, Target
+    sChanServ.HandlePrefix ChanID, bSet, Char, Target
+    sDebugServ.HandlePrefix ChanID, bSet, Char, Target
+    sMassServ.HandlePrefix ChanID, bSet, Char, Target
+    sNickServ.HandlePrefix ChanID, bSet, Char, Target
+    sOperServ.HandlePrefix ChanID, bSet, Char, Target
+    sRootServ.HandlePrefix ChanID, bSet, Char, Target
 End Sub
 
-Private Sub DispatchModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+'Sometimes we have to modify an item in a collection.
+'Unfortunately, VB6's collection does not allow us to
+'simply assign a new value into the collection, so we
+'are going to use a pretty ugly work around. Property
+'Let|Set allows us to use the assignment syntax to
+'call these, so use:
+'[Let|Set] SetItem(<col>, <index>) = <newval>
+'NOTE: Due to the nature of this hack, if you use an
+'integer index, any string key WILL be lost! If you use
+'a key value, the numeric position of the item will no
+'longer be correct! - aquanight
+Public Property Let SetItem(ByVal Collection As Collection, ByVal Index As Variant, ByVal NewValue As Variant)
+    Collection.Remove Index
+    If VarType(Index) = vbString Then
+        Collection.Add NewValue, Key:=Index
+    Else
+        Collection.Add NewValue, before:=Index
+    End If
+End Property
 
+Public Property Set SetItem(ByVal Collection As Collection, ByVal Index As Variant, ByVal NewValue As Object)
+    Collection.Remove Index
+    If VarType(Index) = vbString Then
+        Collection.Add NewValue, Key:=Index
+    Else
+        Collection.Add NewValue, before:=Index
+    End If
+End Property
+
+'Something to tell us if a collection item exists.
+Public Function CollectionContains(ByVal Collection As Collection, ByVal Key As String) As Boolean
+    On Error GoTo Nope
+    Call Collection.Item(Key)
+    CollectionContains = True
+    Exit Function
+Nope:
+    CollectionContains = False
+End Function
+
+Private Sub DispatchModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+    If ChanID < 0 Or Entry = "" Then
+        'Now something really went pear-shaped. :P
+        'Send out a scream.
+        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
+        'Reboot.
+        RestartServices "Fatal sanity check error. Forcing restart."
+    End If
+    Select Case Char
+        Case "b"
+            If bSet Then
+                If Not CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Bans.Add Entry, Entry
+            Else
+                If CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Bans.Remove Entry
+            End If
+        Case "e"
+            If bSet Then
+                If Not CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Excepts.Add Entry, Entry
+            Else
+                If CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Excepts.Remove Entry
+            End If
+        Case "I"
+            If bSet Then
+                If Not CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Invites.Add Entry, Entry
+            Else
+                If CollectionContains(Channels(ChanID).Bans, Entry) Then Channels(ChanID).Invites.Remove Entry
+            End If
+        Case Else
+            'Don't know? Don't care.
+    End Select
+    'Now send it out :)
+    sAdminServ.HandleModeTypeA ChanID, bSet, Char, Entry
+    sAgent.HandleModeTypeA ChanID, bSet, Char, Entry
+    sChanServ.HandleModeTypeA ChanID, bSet, Char, Entry
+    sDebugServ.HandleModeTypeA ChanID, bSet, Char, Entry
+    sMassServ.HandleModeTypeA ChanID, bSet, Char, Entry
+    sNickServ.HandleModeTypeA ChanID, bSet, Char, Entry
+    sOperServ.HandleModeTypeA ChanID, bSet, Char, Entry
+    sRootServ.HandleModeTypeA ChanID, bSet, Char, Entry
 End Sub
 
 Private Sub DispatchModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
-
+    If ChanID < 0 Or (Entry = "" And bSet = True) Then
+        'Now something really went pear-shaped. :P
+        'Send out a scream.
+        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
+        'Reboot.
+        RestartServices "Fatal sanity check error. Forcing restart."
+    End If
+    Select Case Char
+        Case "k"
+            Channels(ChanID).ChannelKey = IIf(bSet, Entry, "")
+        Case "L"
+            Channels(ChanID).OverflowChannel = IIf(bSet, Entry, "")
+        Case "f"
+            If bSet Then
+                Channels(ChanID).FloodProtection = Entry
+            Else
+                Channels(ChanID).FloodProtection = ""
+            End If
+        Case Else
+            'Don't know? Don't care.
+    End Select
+    'Now send it out :)
+    sAdminServ.HandleModeTypeB ChanID, bSet, Char, Entry
+    sAgent.HandleModeTypeB ChanID, bSet, Char, Entry
+    sChanServ.HandleModeTypeB ChanID, bSet, Char, Entry
+    sDebugServ.HandleModeTypeB ChanID, bSet, Char, Entry
+    sMassServ.HandleModeTypeB ChanID, bSet, Char, Entry
+    sNickServ.HandleModeTypeB ChanID, bSet, Char, Entry
+    sOperServ.HandleModeTypeB ChanID, bSet, Char, Entry
+    sRootServ.HandleModeTypeB ChanID, bSet, Char, Entry
 End Sub
 
 Private Sub DispatchModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
-
+    If ChanID < 0 Or (Entry = "" And bSet = True) Then
+        'Now something really went pear-shaped. :P
+        'Send out a scream.
+        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
+        'Reboot.
+        RestartServices "Fatal sanity check error. Forcing restart."
+    End If
+    Select Case Char
+        Case "l"
+            Channels(ChanID).OverflowLimit = IIf(bSet, CLng(Entry), 0)
+        Case Else
+            'Don't know? Don't care.
+    End Select
+    'Now send it out :)
+    sAdminServ.HandleModeTypeC ChanID, bSet, Char, Entry
+    sAgent.HandleModeTypeC ChanID, bSet, Char, Entry
+    sChanServ.HandleModeTypeC ChanID, bSet, Char, Entry
+    sDebugServ.HandleModeTypeC ChanID, bSet, Char, Entry
+    sMassServ.HandleModeTypeC ChanID, bSet, Char, Entry
+    sNickServ.HandleModeTypeC ChanID, bSet, Char, Entry
+    sOperServ.HandleModeTypeC ChanID, bSet, Char, Entry
+    sRootServ.HandleModeTypeC ChanID, bSet, Char, Entry
 End Sub
 
 Private Sub DispatchModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
-
+    If ChanID < 0 Then
+        'Now something really went pear-shaped. :P
+        'Send out a scream.
+        NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.DispatchModeTypeA")
+        'Reboot.
+        RestartServices "Fatal sanity check error. Forcing restart."
+    End If
+    If bSet Then
+        If InStr(Channels(ChanID).Modes, Char) = 0 Then Channels(ChanID).Modes = Channels(ChanID).Modes + Char
+    Else
+        'Don't need to check :) replace will do that for
+        'us!
+        Channels(ChanID).Modes = Replace(Channels(ChanID).Modes, Char, "")
+    End If
 End Sub
+
+'The reason all the Dispatch* procs force a restart is
+'because they should NEVER be called with illegal
+'arguments. Why?
+'ChanID < 0 is alredy checked before entry, and the
+'presence of arguments are checked as well. A skipped
+'argument could possibly cause things to go pear-shaped,
+'but I can't see that happening with a serious IRCd.
+'Only if we had some form of INJECT command, and in that
+'case it's the user's fault :P .
+
+Public Sub RestartServices(Optional ByVal RestartMsg As String = "Restarting...")
+    'Restart the service daemon completely. OperServ
+    'RESTART? Forced restarts due to sanity checks?
+    'You tell me.
+    NotifyAllUsersWithServicesAccess "Restarting services... Reason: " & RestartMsg
+    SquitServices RestartMsg
+    Shell App.Path & "\" & App.EXEName & ".exe", vbMinimizedNoFocus
+    End 'Splat.
+End Sub
+
+'More functions! :) - aquanight
+Public Function FreeUserID() As Integer
+    Dim i As Integer
+    For i = 0 To UBound(Users)
+        If Users(i).Nick = "" Then
+            FreeUserID = i
+            Exit Function
+        End If
+    Next i
+End Function
+
+Public Function FreeChanID() As Integer
+    Dim i As Integer
+    For i = 0 To UBound(Channels)
+        If Channels(i).Nick = "" Then
+            FreeChanID = i
+            Exit Function
+        End If
+    Next i
+End Function
 
 'PHEW! :> -aquanight
 'Yes, I really should split this into other .bas files, but I cba. And hey,

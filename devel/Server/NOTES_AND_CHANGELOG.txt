@@ -2,7 +2,7 @@ CREDITS:
 No name may be removed from this list, except by w00t (ie Code Reuse if no longer used :P)
 If you are working on Winse, contact w00t for your contribution to be noted here.
  [Coding]
-   w00t - w00t@netronet.org  | aquanight - ?
+   w00t - w00t@netronet.org  | aquanight - aquanight@users.sourceforge.net
  [Code Reuse]
    Tron - tron@ircd-net.org
 
@@ -25,7 +25,7 @@ ToDo:
    perhaps dont hide at all, since only access 10+ able to run...? [?] #0005
   -Make replies for all commands (failure and success) and use them. #0006
  [aquanight]
-  -Tracking of all modes, new mode parser. [!] #0007
+  -Tracking of all modes, new mode parser. [!] #0007 [DONE]
   -Find a way to track what channels a user is on, etc etc. [!] #0008
 
 Services:
@@ -38,6 +38,21 @@ Services:
              All [AL]
 [-----------------------------------]
 
+04/07/2004 - aquanight
+ -[US] [:-)] Happy 4th all you US people! ^_^
+ -[CO] [---] Finished the new channel mode parser - the service callbacks are called now (I hope).
+             I still haven't replaced the old one yet. I think we should
+             finish implementing the new one before that. :)
+ -[CO] [---] Implemented a new command parser, but haven't replaced the
+             old one yet. We make use of a class module to implement
+             the commands. They are seperate subs and invoked using
+             Late Binding (CallByName). This means implementing new
+             commands is as easy as simply adding a Sub to this class!
+             Soon, I'll add stubs to the service modules to do extra
+             stuff for commands (like ChanServ deopping the first joiner
+             and NickServ doing it's thing :P ).
+ -[**] [---] Removed a couple modules that aren't used any more.
+ -[CO] [---] Added a rater basic data access module. It will probably improve in usabilty soon. I don't suggest using it right away :) .
 29/06/2004 - aquanight
  -[CO] [---] Added a new channel mode parser, but haven't replaced the old one just yet.
  -[CS] [---] Added some new subs to handle mode changes coming in from the IRCd.

@@ -45,7 +45,8 @@ Public Sub ParseConfigurationFile(File As String)
     'wont work.
     
     'The directives.
-    Dim Directives(10) As String
+    Dim Directives As Collection 'This should make things easier :) - aquanight
+    Set Directives = New Collection
     Dim fd As Integer 'hope so :|
     Dim i As Integer
     Dim ConfigLine As String
@@ -53,29 +54,30 @@ Public Sub ParseConfigurationFile(File As String)
     Dim DirectiveVal As String
     
     'Initialise directives.
-    Directives(0) = "CONFIGVER"
-    Directives(1) = "UPLINKHOST"
-    Directives(2) = "UPLINKPORT"
-    Directives(3) = "UPLINKNAME"
-    Directives(4) = "UPLINKPASSWORD"
-    Directives(5) = "UPLINKTYPE"
-    Directives(6) = "SERVERNAME"
-    Directives(7) = "SERVERDESCRIPTION"
-    Directives(8) = "SERVERNUMERIC"
-    Directives(9) = "SERVICESMASTER"
-    Directives(10) = "DEFAULTMESSAGETYPE"
+    Directives.Add "CONFIGVER"
+    Directives.Add "UPLINKHOST"
+    Directives.Add "UPLINKPORT"
+    Directives.Add "UPLINKNAME"
+    Directives.Add "UPLINKPASSWORD"
+    Directives.Add "UPLINKTYPE"
+    Directives.Add "SERVERNAME"
+    Directives.Add "SERVERDESCRIPTION"
+    Directives.Add "SERVERNUMERIC"
+    Directives.Add "SERVICESMASTER"
+    Directives.Add "DEFAULTMESSAGETYPE"
+    Directives.Add "GLOBALTARGETS"
     
     Call basFunctions.LogEvent(basMain.LogTypeDebug, "Checking conf existance")
     fd = FreeFile
     Open File For Append As #fd
-        If LOF(fd) = 0 Then
-            'Error, given config file doesnt exist.
-            Call basFunctions.LogEvent(basMain.LogTypeError, Replies.ConfigFileDoesntExist)
-            'clean up, terminate.
-            Close #fd
-            Kill File
-            End
-        End If
+    If LOF(fd) = 0 Then
+        'Error, given config file doesnt exist.
+        Call basFunctions.LogEvent(basMain.LogTypeError, Replies.ConfigFileDoesntExist)
+        'clean up, terminate.
+        Close #fd
+        Kill File
+        End
+    End If
     Close #fd
     'k, by here, the file is confirmed as existing, so now... try to parse it :|
     'Make sure fd is still valid.
@@ -83,61 +85,63 @@ Public Sub ParseConfigurationFile(File As String)
     fd = FreeFile
     Open File For Input As #fd
 NextLine:
-        Do While Not EOF(fd)
-            Line Input #fd, ConfigLine
-            ConfigLine = Trim(ConfigLine)
-            If Left(ConfigLine, 1) = "#" Or ConfigLine = "" Then
-                'if its a comment, ignore. (update: also ignore blank lines :P)
+    Do While Not EOF(fd)
+        Line Input #fd, ConfigLine
+        ConfigLine = Trim(ConfigLine)
+        If Left(ConfigLine, 1) = "#" Or ConfigLine = "" Then
+            'if its a comment, ignore. (update: also ignore blank lines :P)
+            GoTo NextLine
+        End If
+        'Ok, now we need to :|:| try get stuff. Make a copy of the line in
+        'ConfigCopy so we can mutilate it. (make it ucase for searching)
+        ConfigCopy = UCase(ConfigLine)
+        'See what directive we have...
+        For i = 1 To Directives.Count
+            If Left(ConfigCopy, Len(Directives(i))) = Directives(i) Then
+                'We have a match!
+                DirectiveVal = Right(ConfigLine, Len(ConfigLine) - (Len(Directives(i)) + 1))
+                Select Case Directives(i)
+                    Case "CONFIGVER"
+                        If DirectiveVal <> "1.0.0.0" Then
+                            Call basFunctions.LogEvent(basMain.LogTypeError, Replies.ConfigFileUnexpectedConfVersion)
+                        End If
+                    Case "UPLINKHOST"
+                        basMain.Config.UplinkHost = DirectiveVal
+                    Case "UPLINKPORT"
+                        basMain.Config.UplinkPort = DirectiveVal
+                    Case "UPLINKNAME"
+                        basMain.Config.UplinkName = DirectiveVal
+                    Case "UPLINKPASSWORD"
+                        basMain.Config.UplinkPassword = DirectiveVal
+                    Case "UPLINKTYPE"
+                        basMain.Config.UplinkType = DirectiveVal
+                    Case "SERVERNAME"
+                        basMain.Config.ServerName = DirectiveVal
+                    Case "SERVERDESCRIPTION"
+                        basMain.Config.ServerDescription = DirectiveVal
+                    Case "SERVERNUMERIC"
+                        basMain.Config.ServerNumeric = DirectiveVal
+                    Case "SERVICESMASTER"
+                        basMain.Config.ServicesMaster = DirectiveVal
+                    Case "GLOBALTARGETS"
+                        basMain.Config.GlobalTargets = DirectiveVal
+                    Case "DEFAULTMESSAGETYPE"
+                        'Defines the default for users().msgstyle True=notice false=privmsg
+                        Select Case DirectiveVal
+                            Case "P", "p"
+                                basMain.Config.DefaultMessageType = False
+                            Case "N", "n"
+                                basMain.Config.DefaultMessageType = True
+                            Case Else
+                                Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
+                                basMain.Config.DefaultMessageType = True
+                        End Select
+                End Select
                 GoTo NextLine
             End If
-            'Ok, now we need to :|:| try get stuff. Make a copy of the line in
-            'ConfigCopy so we can mutilate it. (make it ucase for searching)
-            ConfigCopy = UCase(ConfigLine)
-            'See what directive we have...
-            For i = 0 To UBound(Directives)
-                If Left(ConfigCopy, Len(Directives(i))) = Directives(i) Then
-                    'We have a match!
-                    DirectiveVal = Right(ConfigLine, Len(ConfigLine) - (Len(Directives(i)) + 1))
-                    Select Case Directives(i)
-                        Case "CONFIGVER"
-                            If DirectiveVal <> "1.0.0.0" Then
-                                Call basFunctions.LogEvent(basMain.LogTypeError, Replies.ConfigFileUnexpectedConfVersion)
-                            End If
-                        Case "UPLINKHOST"
-                            basMain.Config.UplinkHost = DirectiveVal
-                        Case "UPLINKPORT"
-                            basMain.Config.UplinkPort = DirectiveVal
-                        Case "UPLINKNAME"
-                            basMain.Config.UplinkName = DirectiveVal
-                        Case "UPLINKPASSWORD"
-                            basMain.Config.UplinkPassword = DirectiveVal
-                        Case "UPLINKTYPE"
-                            'ignore for now.
-                        Case "SERVERNAME"
-                            basMain.Config.ServerName = DirectiveVal
-                        Case "SERVERDESCRIPTION"
-                            basMain.Config.ServerDescription = DirectiveVal
-                        Case "SERVERNUMERIC"
-                            basMain.Config.ServerNumeric = DirectiveVal
-                        Case "SERVICESMASTER"
-                            basMain.Config.ServicesMaster = DirectiveVal
-                        Case "DEFAULTMESSAGETYPE"
-                            'Defines the default for users().msgstyle True=notice false=privmsg
-                            Select Case DirectiveVal
-                                Case "P", "p"
-                                    basMain.Config.DefaultMessageType = False
-                                Case "N", "n"
-                                    basMain.Config.DefaultMessageType = True
-                                Case Else
-                                    Call basFunctions.LogEvent(basMain.LogTypeWarn, Replies.ConfigFileInvalidMessageType)
-                                    basMain.Config.DefaultMessageType = True
-                            End Select
-                    End Select
-                    GoTo NextLine
-                End If
-            Next i
-            'No match. Warn and continue.
-            Call basFunctions.LogEvent(basMain.LogTypeWarn, Replace(Replies.ConfigFileUnknownDirective, "%n", ConfigLine))
-        Loop
+        Next i
+        'No match. Warn and continue.
+        Call basFunctions.LogEvent(basMain.LogTypeWarn, Replace(Replies.ConfigFileUnknownDirective, "%n", ConfigLine))
+    Loop
     Close #fd
 End Sub

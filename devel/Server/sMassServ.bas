@@ -99,4 +99,3 @@ End Sub
 Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
-

@@ -58,7 +58,6 @@ Begin VB.Form frmServer
       _ExtentY        =   4048
       _Version        =   393217
       BackColor       =   49152
-      Enabled         =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmServer.frx":0000
       BeginProperty Font {0BE35203-8F91-11CE-9DE3-00AA004BB851} 
@@ -436,7 +435,7 @@ Private Sub Form_Unload(Cancel As Integer)
     'Close the connection, if it's running.
     If Not tcpServer Is Nothing Then
         Call basFunctions.LogEvent(basMain.LogTypeNotice, Replies.ServicesTerminatingNormally)
-        Call frmServer.tcpServer.Send("SQUIT " & basMain.UplinkName & " :" & Replies.ServicesTerminatingNormally)
+        Call frmServer.tcpServer.Send("SQUIT " & basMain.Config.UplinkName & " :" & Replies.ServicesTerminatingNormally)
         For i = 0 To 64000
             'Don't remove, else things dont get sent etc etc (ie SQUIT) >:( --w00t
         Next i
@@ -524,6 +523,6 @@ End Sub
 Private Sub mnuMainReconnect_Click()
     tcpServer_Close
     Set tcpServer = New TCPSocket
-    tcpServer.Connect basMain.UplinkHost, basMain.UplinkPort
+    tcpServer.Connect basMain.Config.UplinkHost, basMain.Config.UplinkPort
     tcpServer_Connect
 End Sub

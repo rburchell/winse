@@ -27,16 +27,18 @@ Public Const LogTypeWarn = "WARN"
 Public Const LogTypeNotice = "NOTICE"
 Public Const LogTypeDebug = "DEBUG"
 
-Type ConfigVars
+Public Type ConfigVars
     UplinkHost As String
     UplinkName As String
     UplinkPort As String
     UplinkPassword As String
+    UplinkType As String
     ServerName As String
     ServerNumeric As String 'Could be byte??
     ServerDescription As String
     ServicesMaster  As String
     DefaultMessageType As Boolean
+    GlobalTargets As String 'What Global sends to send something to everyone.
 End Type
 
 Public Config As ConfigVars
@@ -80,6 +82,8 @@ Public Const ChannelModes = "psmntirRcOAQKVGCuzNSMTbekfLl"
     'defined. Thus we should have seperate variables for
     'defining modes to be given to Founders, SOPs, AOPs,
     'HOPs, and VOPs, and whatever else :) . - aquanight
+    'Update: we don't need that yucky + character in
+    'there, so out it goes :) .
 Public Const ChanModesForAccess = "qaohv"
 'Determining how many parameters to send is easy,
 'simply use Len(*Privs) - 1. But let me warn you that
@@ -92,6 +96,16 @@ Public Const AOPPrivs = "+o"
 Public Const HOPPrivs = "+h"
 Public Const VOPPrivs = "+v"
 
+'An idea I had if we decide to allow SUSPEND or FORBID
+'of channels. When a channel is SUSPENDed or FORBIDden,
+'it is effectively MLOCK'd and TopicLocked to the
+'values set below.
+Public Const SuspendMLock = "+Osnt"
+Public Const SuspendTLock = "This channel is suspended."
+Public Const ForbidTLock = "This channel is forbidden."
+
+'I really think a seperate structure for user connection
+'info and user nickserv data is necessary :P .
 Public Type UserStructure
     Nick As String              'Nickname
     EMail As String             'User email. NOT CHECKED FOR VALIDITY!!
@@ -107,6 +121,16 @@ Public Type UserStructure
     AbuseTeam As Boolean        'Abuse Team members can use services commands that otherwise, only the services master can use.
     IdentifiedToNick As String  'Holds nick that user has identified to. Blank if not identified.
     Channels As Collection      'Channels this user is on. (Use Channel ID as the value and key :) ).
+    'Some extra stuff we might get from things like
+    'Unreal IRCd :P .
+    SignOn As Long              'Time Stamp of the user.
+    SvsStamp As Long            '"Service stamp"
+    UserName As String          'Ident (in USER or Identd reply).
+    HostName As String          'User's real hostname.
+    RealName As String          '"Real Name" of this user
+    VirtHost As String          'Virtual Host, from stuff like GETHOST or NICKv2
+    'Anything else services need to store?
+    Custom As New Collection
 End Type
 
 Private Type ChannelAccess
@@ -144,17 +168,29 @@ Public Type ChannelStructure
     'That kind of limit is impractical, and for storing
     'only 1-5 characters max, allocating 10 is a waste
     'of space :P . -aquanight
+    'Ok, I basically just totally changed this :)
+    'Basically, each entry in this collection is key'd
+    'by the CStr() of the user's UserID. -aquanight
     UsersModes As Collection
     'Now for the extended modes that require parameters (+flL etc)
     'We dont need to store them just now. --w00t
         'Oh what the heck, define them anyway :) -aquanight
-    Bans() As String
-    Excepts() As String
+    'I'm turning these arrays to collections because
+    'messing with resizing arrays and what not is just
+    'to bulky for my tastes :P . Declaring them New
+    'should make sure we don't forget to init them, but
+    '.NET isn't going to like it very much ;p .
+    ' - aquanight
+    Bans As New Collection
+    Excepts As New Collection
+    Invites As New Collection 'For hybrid :)
     ChannelKey As String
     FloodProtection As String 'chanmode +f
     OverflowChannel As String
     'This can be bigger than you think :) - aquanight
     OverflowLimit As Long
+    'Anything else services need to store?
+    Custom As New Collection
 End Type
 
 Public Type Service

@@ -86,6 +86,14 @@ Public Const NickServIdentificationNotRegistered = "Your nickname is not registe
     'Indeed. --w00t
 Public Const NickServTooManyBadPasswords = "You have tried to incorrectly identify too many times and as such are being disconnected."
 Public Const NickServRegisterOK = "Your nickname is now registered with password %p. When connecting in the future, type /msg NickServ IDENTIFY %p to identify to your nickname."
+'Stuff to fill in NickServDB.LastQuit for non-QUIT events
+'that still remove a user:
+ 'Replace %1 and %2 with server names.
+Public Const NickServLastQuitNetsplit = "Lost in netsplit (%1 %2)."
+ '%s = Server, %o = Operator, %r = Reason
+Public Const NickServLastQuitLocalKill = "[%s] Local kill by %o (%r)"
+ '%o = Operator, %r = Reason
+Public Const NickServLastQuitFarKill = "Killed (%o (%r))"
 
 'AdminServ
 Public Const AdminServCantAddMaster = "Only users with access 100 can add additional masters."
@@ -102,3 +110,43 @@ Public Const AgentUserDeOpered = "User %n has had MODE -o set."
 'Use this when de-opping the first user, I guess? - aquanight
 Public Const ChanServRegisteredChannel = "This channel has been registered with ChanServ."
 Public Const ChanServChannelNotRegistered = "Channel %n has not been registered"
+'Some more responses we could use.
+ 'For ChanServ KICKs. This is prefixed to the reason
+ '(and possibly nickname).
+Public Const ChanServKickRequested = "KICKed: "
+ 'For ChanServ BANs. Same as KICK.
+Public Const ChanServBanRequested = "BANned: "
+ 'For ChanServ AKICK. This is the KICK comment used to
+ 'boot the user.
+ 'This one is for timed AKICKs. (Can we have timed
+ 'AKICKs?)
+ '%c = Channel name. %n = AKICK setter. %r = Reason.
+ 'Theoretically, we could send a 474 too :P
+ ':services.* 474 Lamer #blah :Cannot join channel (+b)
+Public Const ChanServAKICKTemp = "User has been banned from %c. (%n: %r)"
+ 'And for perm AKICKs.
+Public Const ChanServAKICKPerm = "User has been permanently banned from %c. (%n: %r)"
+ 'When a non-oper joins a channel MLOCK'd +O or a
+ 'non-admin joins a channel MLOCK'd +A.
+ '(We could theoretically send a 481 too :P )
+ ':services.* 481 Lamer :Permission denied - you are not an IRC Operator.
+Public Const ChanServKickNotOper = "You are not permitted to enter this channel."
+ 'Whe a non-SSL joins an SSL channel (MLOCK'd +z).
+ 'We could probably also send whatever num Unreal/etc
+ 'uses for this.
+Public Const ChanServKickNotSSL = "To join this channel, you must be using an SSL Connection."
+ 'One feature I had in mind is when JOINing a channel
+ 'that is MLOCK'd +k or +i, we should not allow such a
+ 'join for the first user unless he has the INVITE
+ 'privilege.
+ '%c = Channel.
+ 'We could also send:
+ ':services.* 475 Lamer #blah :Cannot join channel (+k)
+Public Const ChanServKickMLOCKk = "This channel requires a key to join. If you know the key, type /chanserv JOIN %c key"
+ 'And for this, we could send
+ ':services.* 473 Lamer #blah :Cannot join channel (+i)
+Public Const ChanServKickMLOCKi = "This channel requires an invitiation to join. Please wait for a Channel Operator to join the channel and invite you."
+ 'And of course for SUSPENDed channels :)
+Public Const ChanServKickSuspend = "This channel is suspended."
+ 'And for FORBIDden channels :P
+Public Const ChanServKickForbid = "This channel is forbidden."
