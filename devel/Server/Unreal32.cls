@@ -411,3 +411,61 @@ End Property
 Private Sub IIRCd_Wallopers(ByVal Source As String, ByVal Message As String)
     SendData FormatString("{0} {1} :{2}", GetNSSourcePrefix(Source), IIf(EnableToken, TOK_GLOBOPS, "GLOBOPS"), Message)
 End Sub
+
+'And these functions are translated from UnrealIRCd src/aln.c
+Public Function IntToB64(ByVal val As Long) As String
+    Dim map() As Variant
+    map = Array("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", _
+        "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", _
+        "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", _
+        "w", "x", "y", "z", "{", "}")
+    Static b64buf As String * 7
+    Dim i As Long
+    i = 8
+    'Unreal does some weird check to see if val is over 2^31-1, but we don't need it since Long can't do that.
+    'Unreal's check just calls abort() if it is over, which we shouldn't do.
+    Do
+        i = i - 1
+        Mid(b64buf, i, 1) = map(val And 63)
+        'Now we need to do a 6-bit right shift. Unreal's code uses a signed long, and by C's standard,
+        '>> on a signed integer performs an arithmetic shift. This will play havoc if val is < 0 but that
+        'shouldn't happen anyway.
+        val = val \ (2 ^ 6)
+    Loop While val
+    IntToB64 = Mid(b64buf, i)
+End Function
+
+Public Function B64ToInt(ByVal b64 As String) As Long
+    Dim map() As Variant
+    map = Array(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, _
+    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, -1, -1, -1, -1, -1, 36, 37, 38, 39, 40, 41, _
+    42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, -1, 63, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, _
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
+    Dim idx As Long
+    Dim v As Long
+    idx = 1
+    v = map(Asc(Mid(b64, idx, 1)))
+    idx = idx + 1
+    If idx > Len(b64) Then
+        B64ToInt = 0
+        Exit Function
+    End If
+    For idx = idx To Len(b64)
+        'Do a 6-bit left shift. Harder than a right.
+        'Mask off bits that will fall off.
+        v = v And &H3FFFFFF
+        If CDbl(v) * (2 ^ 6) > 2147483647# Then
+            v = FMod(v * (2 ^ 6), 2147483648#) + -2147483648#
+        Else
+            v = v * (2 ^ 6)
+        End If
+        v = v + map(Asc(Mid(b64, idx, 1)))
+    Next idx
+    B64ToInt = v
+End Function

@@ -26,6 +26,16 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */\
+ 25/11/2004 - aquanight
+  -[CO] [Add] Eheh. I could've sworn I added it >_<. IRCdBahamut.cls added for real now.
+              Silly CVS :/ .
+  -[CO] [---] Moved IntToB64 and B64ToInt to Unreal32.cls, since they apply to unrealircd and
+              after reading bewareircd's documentation on P10, it's not going to work with that
+              very well :| .
+  -[HS] [Fix] Switched HostServ HELP to "new" (aka auspiceish) help system. Yeah, Jason, thanks
+              for just copying NickServ's help sub (especially old one). I'd like to see YOU try
+              /hostserv IDENTIFY !
+  -[HS] [---] More code prettying :) . 
  22/11/2004 - aquanight
   -[CO] [Add] Added IRCdBahamut.cls - protocol class for Bahamut ircds. Of course, we aren't
               using the protocols yet, but that'll be there soon.
