@@ -95,9 +95,6 @@ Public MustInherit Class IRCd
 	Public Overridable Function ServiceUMode() As String
 		Return "o"
 	End Function
-	Public Overridable Function ChServiceUMode() As String
-		Return "o"
-	End Function
 	Public Overridable Function InvisServiceUMode() As String
 		Return "io"
 	End Function
@@ -159,6 +156,8 @@ Public MustInherit Class IRCd
 	Public Overridable Sub ForceNick(ByVal Source As IRCNode, ByVal Target As String, ByVal NewNick As String)
 	End Sub
 	Public Overridable Sub ForceUMode(ByVal Source As IRCNode, ByVal Target As String, ByVal Mode As String)
+	End Sub
+	Public Overridable Sub SetIdentify(ByVal Source As IRCNode, ByVal Target As String, ByVal Name As String)
 	End Sub
 	Public MustOverride Sub SQuitServer(ByVal Source As IRCNode, ByVal Server As String, ByVal Reason As String)
 	Public MustOverride Sub KillUser(ByVal Source As IRCNode, ByVal Target As String, ByVal Reason As String, Optional ByVal SuperKill As Boolean = False)

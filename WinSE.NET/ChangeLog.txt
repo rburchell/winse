@@ -12,6 +12,10 @@ Tags:
 [**] = ALL
 
 -- WinSE .NET 0.1 --
+02/04/2005 - aquanight
+Yes it's been a while but here's the next update :) .
+-[PR] [Add] Unreal - Bunch of commands implemented. We might be able to actually connect now, if not for the missing parts.
+
 06/03/2005 - aquanight
 -[CO] [Add] Some API additions, and lots of them including the Channel and User mode parser, and permission flags are back.
 -[PR] [Add] Unreal - Finished up most of the sending stuff, now working on receiving. Heck, this thing might be able to link if not for

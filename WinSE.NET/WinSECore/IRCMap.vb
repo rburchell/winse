@@ -178,7 +178,7 @@ Public NotInheritable Class User
 	Public ReadOnly Identifies As New StringCollection
 	Public AwayMessage As String
 	Public TS As Integer
-	Public VHost As String
+	Public VHost As String, VIdent As String
 	Public Server As Server
 	Public SWhois As String
 	Public SendMessage As SendMsgProc

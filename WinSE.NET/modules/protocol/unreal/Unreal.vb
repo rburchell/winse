@@ -207,6 +207,7 @@ Public NotInheritable Class Unreal
 		c.API.PutServ("{0} {1} {2} :{3}", GetNSPrefix(Source), IIf(SuperKill, IIf(EnableTokens, TOK_SVSKILL, "SVSKILL"), IIf(EnableTokens, TOK_KILL, "KILL")), Target, IIf(SuperKill, Reason, Source.Name & " (" & Reason & ")"))
 	End Sub
 	Public Overrides Sub LoginToServer()
+		'We can't use TOKENs here.
 		c.API.PutServ("PASS :{0}", c.Conf.SendPass)
 		'VHP is an undocumented token. What it does is when Unreal sends us user information, it sends us the cloaked host as the VHost.
 		'If the user is -x, the realhost is sent as the vhost.
@@ -409,11 +410,12 @@ Public NotInheritable Class Unreal
 			sptr = c.API.FindNode(source)
 			If sptr Is Nothing Then
 				If InStr(source, ".") > 0 Then
-					c.API.PutServ("SQUIT {0} :{0}(?) (Unknown Server)", source)
+					SQuitServer(c.Services, source, String.Format("{0}(?) (Unknown server)", source))
 				Else
-					c.API.PutServ("KILL {0} :{0}(?) (Unknown User)", source)
+					KillUser(c.Services, source, String.Format("{0}(?) (Unknown user)", source))
 				End If
 			End If
+			Return
 		Else
 			sptr = c.IRCMap
 		End If
@@ -466,7 +468,7 @@ Public NotInheritable Class Unreal
 		If [Set] Then
 			c.API.PutServ("@{0} {1} 1 {2} +ilKV 1 :*@{3} &*!*@*", IntToB64(c.Conf.ServerNumeric), IIf(EnableTokens, TOK_SJOIN, "SJOIN"), Channel, Source)
 		Else
-			c.API.PutServ("{0} {1} {2} -ilKVb *!*@*", GetNSPrefix(Source), IIf(EnableTokens, TOK_MODE, "MODE"), Channel)
+			c.API.PutServ("{0} {1} {2} -ilKVb *!*@* 1", GetNSPrefix(Source), IIf(EnableTokens, TOK_MODE, "MODE"), Channel)
 			c.API.PutServ("{0} {1} {2} :Released", GetNSPrefix(Source), IIf(EnableTokens, TOK_PART, "PART"), Channel)
 		End If
 	End Sub
@@ -514,10 +516,15 @@ Public NotInheritable Class Unreal
 	Public Overrides ReadOnly Property SupportFlags() As WinSECore.IRCdSupportFlags
 		Get
 			Dim flg As WinSECore.IRCdSupportFlags
-			flg = WinSECore.IRCdSupportFlags.QUIRK_CHANHOLD_WONTKICK Or WinSECore.IRCdSupportFlags.QUIRK_INVEX_ONLY_INVONLY Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_IPADDR Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_NICKNAME Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_REALNAME Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_USERHOST Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_BANEXMPT Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_FORCEJOIN Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_FORCEPART Or _
+			flg = WinSECore.IRCdSupportFlags.QUIRK_CHANHOLD_WONTKICK Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_IPADDR Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_NICKNAME Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_REALNAME Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_USERHOST Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_BANEXMPT Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_FORCEJOIN Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_FORCEPART Or _
 			WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_HALFOP Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_MASSDEOP Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_MODEHACK Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_NETBURST Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_OWNER Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_PROTECT Or WinSECore.IRCdSupportFlags.SUPPORT_HOLD_NICK Or WinSECore.IRCdSupportFlags.SUPPORT_SERVER_SVSNOOPERS Or WinSECore.IRCdSupportFlags.SUPPORT_TEMPBAN_IPADDR Or _
 			WinSECore.IRCdSupportFlags.SUPPORT_TEMPBAN_NICKNAME Or WinSECore.IRCdSupportFlags.SUPPORT_TEMPBAN_USERHOST Or WinSECore.IRCdSupportFlags.SUPPORT_UNBAN_IPADDR Or WinSECore.IRCdSupportFlags.SUPPORT_UNBAN_NICKNAME Or WinSECore.IRCdSupportFlags.SUPPORT_UNBAN_REALNAME Or WinSECore.IRCdSupportFlags.SUPPORT_UNBAN_USERHOST Or WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCENICK Or WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCEUMODE Or WinSECore.IRCdSupportFlags.SUPPORT_USER_SUPERKILL Or _
 			WinSECore.IRCdSupportFlags.SUPPORT_USER_SVSOPER Or WinSECore.IRCdSupportFlags.SUPPORT_USER_VHOST Or WinSECore.IRCdSupportFlags.SUPPORT_USER_VIDENT Or WinSECore.IRCdSupportFlags.QUIRK_VIDENT_REPLACES_REALIDENT
+			If PrefixAQ Then
+				flg = flg Or WinSECore.IRCdSupportFlags.QUIRK_PROTECT_ISOPER
+			Else
+				flg = flg Or WinSECore.IRCdSupportFlags.QUIRK_OWNER_NOTOPER
+			End If
 			If ProtocolVersion >= 2306 Then
 				flg = flg Or WinSECore.IRCdSupportFlags.QUIRK_INVEX_ONLY_INVONLY Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_INVEX
 			End If
@@ -538,13 +545,10 @@ Public NotInheritable Class Unreal
 		End Get
 	End Property
 	Public Overrides Function ServiceUMode() As String
-		Return "oS"
+		Return "oSqp"
 	End Function
 	Public Overrides Function InvisServiceUMode() As String
-		Return "ioS"
-	End Function
-	Public Overrides Function ChServiceUMode() As String
-		Return "oSqp"
+		Return "ioSqp"
 	End Function
 	Public Overrides Sub SetVHost(ByVal Source As WinSECore.IRCNode, ByVal Target As WinSECore.User, ByVal VHost As String)
 		If Source Is Target Then
@@ -572,6 +576,13 @@ Public NotInheritable Class Unreal
 	Public Overrides Function IsSAdmin(ByVal u As WinSECore.User) As Boolean
 		Return u.Usermodes.IndexOf("a"c) >= 0
 	End Function
+	Public Overrides Sub SetIdentify(ByVal Source As WinSECore.IRCNode, ByVal Target As String, ByVal Name As String)
+		If Name = "" Then
+			ForceUMode(Source, Target, "-r")
+		Else
+			ForceUMode(Source, Target, "+r")
+		End If
+	End Sub
 #End Region
 	Private Function GetNSPrefix(ByVal Source As WinSECore.IRCNode) As String
 		If Source Is Nothing Then Throw New ArgumentNullException("Source")
@@ -634,11 +645,19 @@ Public NotInheritable Class Unreal
 	<WinSECore.Command("LUSERS", False), WinSECore.Command(TOK_LUSERS, True), WinSECore.Command("CLOSE", False), WinSECore.Command(TOK_CLOSE, True), WinSECore.Command("WATCH", False), WinSECore.Command(TOK_WATCH, True), WinSECore.Command("CYCLE", False), WinSECore.Command(TOK_CYCLE, True), WinSECore.Command("ISON", False), WinSECore.Command(TOK_ISON, True), WinSECore.Command("KNOCK", False), WinSECore.Command(TOK_KNOCK, True), WinSECore.Command("USERHOST", False), WinSECore.Command(TOK_USERHOST, True), WinSECore.Command("WHO", False), WinSECore.Command(TOK_WHO, True), WinSECore.Command("SILENCE", False), WinSECore.Command(TOK_SILENCE, True), WinSECore.Command("DNS", False), WinSECore.Command(TOK_DNS, True), WinSECore.Command("POST", False), WinSECore.Command(TOK_POST, True), WinSECore.Command("NEWJOIN", False), WinSECore.Command("SVSNAME", False), WinSECore.Command("REMGLINE", False), WinSECore.Command(TOK_REMGLINE, True), WinSECore.Command("ZLINE", False), WinSECore.Command(TOK_ZLINE, True), _
 	WinSECore.Command("GOPER", False), WinSECore.Command(TOK_GOPER, True), WinSECore.Command("GNOTICE", False), WinSECore.Command(TOK_GNOTICE, True), WinSECore.Command("KLINE", False), WinSECore.Command(TOK_KLINE, True), WinSECore.Command("HASH", False), WinSECore.Command(TOK_HASH, True), WinSECore.Command("SERVICE", False), WinSECore.Command(TOK_SERVICE, True), WinSECore.Command("USERS", False), WinSECore.Command(TOK_USERS, True), WinSECore.Command("SUMMON", False), WinSECore.Command(TOK_SUMMON, True), WinSECore.Command("USER", False), WinSECore.Command(TOK_USER, True), WinSECore.Command("CHATOPS", False), WinSECore.Command(TOK_CHATOPS, True), WinSECore.Command("CONNECT", False), WinSECore.Command(TOK_CONNECT, True), WinSECore.Command("LINKS", False), WinSECore.Command(TOK_LINKS, True), WinSECore.Command("LIST", False), WinSECore.Command(TOK_LIST, True), WinSECore.Command("LOCOPS", False), WinSECore.Command(TOK_LOCOPS, True), WinSECore.Command("MAP", False), WinSECore.Command(TOK_MAP, True), _
 	WinSECore.Command("MKPASSWD", False), WinSECore.Command(TOK_MKPASSWD, True), WinSECore.Command("VHOST", False), WinSECore.Command(TOK_VHOST, True), WinSECore.Command("NACHAT", False), WinSECore.Command(TOK_NACHAT, True), WinSECore.Command("OPER", False), WinSECore.Command(TOK_OPER, True), WinSECore.Command("SVSFLINE", False), WinSECore.Command(TOK_SVSFLINE, True), WinSECore.Command("SVSJOIN", False), WinSECore.Command(TOK_SVSJOIN, True), WinSECore.Command("SVSLUSERS", False), WinSECore.Command(TOK_SVSLUSERS, True), WinSECore.Command("SVSMOTD", False), WinSECore.Command(TOK_SVSMOTD, True), WinSECore.Command("SVSNOOP", False), WinSECore.Command(TOK_SVSNOOP, True), WinSECore.Command("SVSO", False), WinSECore.Command(TOK_SVSO, True), WinSECore.Command("SVSPART", False), WinSECore.Command(TOK_SVSPART, True), WinSECore.Command("SVSSILENCE", False), WinSECore.Command(TOK_SVSSILENCE, True), WinSECore.Command("SVS2SNO", False), WinSECore.Command(TOK_SVS2SNO, True), WinSECore.Command("SVSSNO", False), _
-	WinSECore.Command(TOK_SVSSNO, True), WinSECore.Command("SVSWATCH", False), WinSECore.Command(TOK_SVSWATCH, True), WinSECore.Command("UNKLINE", False), WinSECore.Command(TOK_UNKLINE, True), WinSECore.Command("UNSQLINE", False), WinSECore.Command(TOK_UNSQLINE, True), WinSECore.Command("UNZLINE", False), WinSECore.Command(TOK_UNZLINE, True), WinSECore.Command("WALLOPS", False), WinSECore.Command(TOK_WALLOPS, True), WinSECore.Command("ADDLINE", False), WinSECore.Command(TOK_ADDLINE, True), WinSECore.Command("ADDMOTD", False), WinSECore.Command(TOK_ADDMOTD, True), WinSECore.Command("ADDOMOTD", False), WinSECore.Command(TOK_ADDOMOTD, True), WinSECore.Command("ADCHAT", False), WinSECore.Command(TOK_ADCHAT, True), WinSECore.Command("SVS2MODE", False), WinSECore.Command(TOK_SVS2MODE, True), WinSECore.Command("SVSMODE", False), WinSECore.Command(TOK_SVSMODE, True), WinSECore.Command("GLOBOPS", False), WinSECore.Command(TOK_GLOBOPS, True)> _
+	WinSECore.Command(TOK_SVSSNO, True), WinSECore.Command("SVSWATCH", False), WinSECore.Command(TOK_SVSWATCH, True), WinSECore.Command("UNKLINE", False), WinSECore.Command(TOK_UNKLINE, True), WinSECore.Command("UNSQLINE", False), WinSECore.Command(TOK_UNSQLINE, True), WinSECore.Command("UNZLINE", False), WinSECore.Command(TOK_UNZLINE, True), WinSECore.Command("WALLOPS", False), WinSECore.Command(TOK_WALLOPS, True), WinSECore.Command("ADDLINE", False), WinSECore.Command(TOK_ADDLINE, True), WinSECore.Command("ADDMOTD", False), WinSECore.Command(TOK_ADDMOTD, True), WinSECore.Command("ADDOMOTD", False), WinSECore.Command(TOK_ADDOMOTD, True), WinSECore.Command("ADCHAT", False), WinSECore.Command(TOK_ADCHAT, True), WinSECore.Command("SVS2MODE", False), WinSECore.Command(TOK_SVS2MODE, True), WinSECore.Command("SVSMODE", False), WinSECore.Command(TOK_SVSMODE, True), WinSECore.Command("GLOBOPS", False), WinSECore.Command(TOK_GLOBOPS, True), WinSECore.Command("SMO", False), WinSECore.Command("AU", True), _
+	WinSECore.Command("SENDSNO", False), WinSECore.Command("Ss", True), WinSECore.Command("SENDUMODE", False), WinSECore.Command("AP", True)> _
 	Public Sub IgnoreCommand(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 
 	End Sub
 #Region "Stubs from ignored commands. Keeping them around ""just in case""."
+	Public Sub CmdSendUMode(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+
+	End Sub
+	Public Sub CmdSMO(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+	End Sub
+	Public Sub CmdSendSNO(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+	End Sub
 	Public Sub CmdDns(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 	End Sub
 	Public Sub CmdWatch(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
@@ -837,6 +856,7 @@ Public NotInheritable Class Unreal
 						.Numeric = Integer.Parse(args(6))
 						.Usermodes = args(7)
 						.VHost = DirectCast(IIf(args(8) <> "*", args(8), Nothing), String)
+						.VIdent = .Username
 						.RealName = args(9)
 					End With
 					DirectCast(sptr, WinSECore.Server).SubNodes.Add(cptr)
@@ -891,6 +911,7 @@ Public NotInheritable Class Unreal
 						.Numeric = CInt(args(6))
 						.Usermodes = args(7)
 						.VHost = DirectCast(IIf(args(8) <> "*", args(8), Nothing), String)
+						.VIdent = .Username
 						.IP = New System.Net.IPAddress(WinSECore.API.B64Decode(args(9)))
 						.RealName = args(10)
 					End With
@@ -1077,46 +1098,60 @@ Public NotInheritable Class Unreal
 		End If
 	End Sub
 	<WinSECore.Command("MODE", False), WinSECore.Command(TOK_MODE, True)> Public Sub CmdMode(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-		Dim chptr As WinSECore.Channel, modes As String, ts As Integer
+		Dim chptr As WinSECore.Channel, acptr As WinSECore.IRCNode, modes As String, ts As Integer
 		If args.Length < 2 Then
 			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 2) in MODE (Buffer = {1})", args.Length, rawcmd))
 			Return
 		End If
-		'We have to pull a P10[1] here. If the last argument is numeric, pull it out of the way.
-		If c.Channels.Contains(args(0)) Then
-			chptr = c.Channels(args(0))
+		If args(0).Chars(0) = "#"c Then
+			If c.Channels.Contains(args(0)) Then
+				chptr = c.Channels(args(0))
+				'We have to pull a P10[1] here. If the last argument is numeric, pull it out of the way.
+				If IsNumeric(args(args.Length - 1)) Then
+					ts = Integer.Parse(args(args.Length - 1))
+					modes = String.Join(" ", args, 1, args.Length - 2)
+				Else
+					ts = chptr.TS
+					modes = String.Join(" ", args, 1, args.Length - 1)
+				End If
+				'Now we have to obey TS here.
+				If ts > chptr.TS Then
+					'Blah.
+					c.Events.FireLogMessage("Protocol.Unreal", "TRACE", String.Format("Ignoring TS MODE {0} {1} (TS {2} > {3})", args(0), modes, ts, chptr.TS))
+					Return
+				ElseIf ts < chptr.TS Then
+					c.Events.FireLogMessage("Protocol.Unreal", "TRACE", String.Format("Replacing modes on {0} with TS MODE {1} (TS {2} < {3})", args(0), modes, ts, chptr.TS))
+					With chptr
+						.SetModes(Source, "-" & .ParamlessModes)
+						.SetModes(Source, "-" & Join(DirectCast(New ArrayList(.ParamedModes.Keys).ToArray(GetType(String)), String()), ""))
+						.SetModes(Source, "-" & New String("b"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("b"c)).ToArray(GetType(String)), String()), " "))
+						.SetModes(Source, "-" & New String("b"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("b"c)).ToArray(GetType(String)), String()), " "))
+						If ProtocolVersion >= 2306 Then .SetModes(Source, "-" & New String("e"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("I"c)).ToArray(GetType(String)), String()), " "))
+						For Each m As WinSECore.ChannelMember In .UserList
+							.SetModes(Source, "-" & m.Status & " " & RTrim(Replace(New String(Chr(0), m.Status.Length), Chr(0), m.Who.Name + " ")))
+						Next
+						.TS = ts
+					End With
+				End If
+				chptr.SetModes(Source, modes)
+				'[1] = P10 defines for reading parameters counting from the end as well as the beginning. We read the TS from the end when it
+				'      is present which is a very P10ish thing to do :-) .
+			Else
+				c.Events.FireLogMessage("Protocol.Unreal", "WARNING", String.Format("MODE for nonexistant channel {0}!", args(0)))
+			End If
 		Else
-			c.Events.FireLogMessage("Protocol.Unreal", "WARNING", String.Format("MODE for nonexistant channel {0}!", args(0)))
+			acptr = c.API.FindNode(args(0))
+			If acptr Is Nothing Then
+				c.Events.FireLogMessage("Protocol.Unreal", "WARNING", String.Format("MODE for nonexistant user {0}", args(0)))
+				KillUser(c.Services, args(0), String.Format("{0}? (Unknown user)", args(0)))
+			ElseIf Not TypeOf acptr Is WinSECore.User Then
+				c.Events.FireLogMessage("Protocol.Unreal", "WARNING", String.Format("MODE for non-user {0}", args(0)))
+			Else
+				With DirectCast(acptr, WinSECore.User)
+					.SetUserModes(args(0), Source)
+				End With
+			End If
 		End If
-		If IsNumeric(args(args.Length - 1)) Then
-			ts = Integer.Parse(args(args.Length - 1))
-			modes = String.Join(" ", args, 1, args.Length - 2)
-		Else
-			ts = chptr.TS
-			modes = String.Join(" ", args, 1, args.Length - 1)
-		End If
-		'Now we have to obey TS here.
-		If ts > chptr.TS Then
-			'Blah.
-			c.Events.FireLogMessage("Protocol.Unreal", "TRACE", String.Format("Ignoring TS MODE {0} {1} (TS {2} > {3})", args(0), modes, ts, chptr.TS))
-			Return
-		ElseIf ts < chptr.TS Then
-			c.Events.FireLogMessage("Protocol.Unreal", "TRACE", String.Format("Replacing modes on {0} with TS MODE {1} (TS {2} < {3})", args(0), modes, ts, chptr.TS))
-			With chptr
-				.SetModes(Source, "-" & .ParamlessModes)
-				.SetModes(Source, "-" & Join(DirectCast(New ArrayList(.ParamedModes.Keys).ToArray(GetType(String)), String()), ""))
-				.SetModes(Source, "-" & New String("b"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("b"c)).ToArray(GetType(String)), String()), " "))
-				.SetModes(Source, "-" & New String("b"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("b"c)).ToArray(GetType(String)), String()), " "))
-				If ProtocolVersion >= 2306 Then .SetModes(Source, "-" & New String("e"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("I"c)).ToArray(GetType(String)), String()), " "))
-				For Each m As WinSECore.ChannelMember In .UserList
-					.SetModes(Source, "-" & m.Status & " " & RTrim(Replace(New String(Chr(0), m.Status.Length), Chr(0), m.Who.Name + " ")))
-				Next
-				.TS = ts
-			End With
-		End If
-		chptr.SetModes(Source, modes)
-		'[1] = P10 defines for reading parameters counting from the end as well as the beginning. We read the TS from the end when it
-		'      is present which is a very P10ish thing to do :-) .
 	End Sub
 	<WinSECore.Command("PART", False), WinSECore.Command(TOK_PART, True)> Public Sub CmdPart(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 		Dim chptr As WinSECore.Channel
@@ -1389,49 +1424,296 @@ Public NotInheritable Class Unreal
 		End With
 	End Sub
 	<WinSECore.Command("KICK", False), WinSECore.Command(TOK_KICK, True)> Public Sub CmdKick(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		Dim chptr As WinSECore.Channel, acptr As WinSECore.IRCNode
+		Dim idx As Integer
 		If args.Length < 2 Then
 			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 2) in KICK (Buffer = {1})", args.Length, rawcmd))
 			Return
 		End If
+		idx = c.Channels.IndexOf(args(0))
+		If idx < 0 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "WARNING", String.Format("Non-existant channel {0} in KICK! (Buffer = {1})", args(0), rawcmd))
+			Return
+		End If
+		chptr = c.Channels(idx)
+		acptr = c.API.FindNode(args(1))
+		If acptr Is Nothing Then
+			c.Events.FireLogMessage("Protocol.Unreal", "WARNING", String.Format("Non-existant user {0} in KICK {1}! (Buffer = {2})", args(1), args(0), rawcmd))
+			Return
+		ElseIf Not TypeOf acptr Is WinSECore.User Then
+			c.Events.FireLogMessage("Protocol.Unreal", "WARNING", String.Format("Non-user {0} in KICK {1}! (Buffer = {2})", args(1), args(0), rawcmd))
+			Return
+		ElseIf Not chptr.UserList.Contains(DirectCast(acptr, WinSECore.User)) Then
+			c.Events.FireLogMessage("Protocol.Unreal", "WARNING", String.Format("User {0} not on channel in KICK {1}! (Buffer = {2})", args(1), args(0), rawcmd))
+			Return
+		End If
+		chptr.UserList.Remove(chptr.UserList(DirectCast(acptr, WinSECore.User)))
+		If chptr.UserList.Count = 0 Then
+			c.Channels.Remove(chptr)
+		End If
+		If args.Length >= 3 Then
+			c.Events.FireClientKicked(Source, chptr, DirectCast(acptr, WinSECore.User), args(2))
+			c.Events.FireClientPart(DirectCast(acptr, WinSECore.User), chptr, "Kicked by " + Source.Name + " (" + args(2) + ")")
+		Else
+			c.Events.FireClientKicked(Source, chptr, DirectCast(acptr, WinSECore.User), Nothing)
+			c.Events.FireClientPart(DirectCast(acptr, WinSECore.User), chptr, "Kicked by " + Source.Name)
+		End If
 	End Sub
-	<WinSECore.Command("AWAY", False), WinSECore.Command("6", True)> Public Sub CmdAway(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+	<WinSECore.Command("AWAY", False), WinSECore.Command(TOK_AWAY, True)> Public Sub CmdAway(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If Not TypeOf Source Is WinSECore.User Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Non-user sending AWAY! (Buffer = {0})", rawcmd))
+			Return
+		End If
+		With DirectCast(Source, WinSECore.User)
+			If args.Length < 1 Then
+				.AwayMessage = Nothing
+				c.Events.FireClientAway(DirectCast(Source, WinSECore.User), Nothing)
+			Else
+				.AwayMessage = args(0)
+				c.Events.FireClientAway(DirectCast(Source, WinSECore.User), args(0))
+			End If
+		End With
+	End Sub
+	<WinSECore.Command("AKILL", False), WinSECore.Command(TOK_AKILL, True)> Public Sub CmdAKill(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		'We should never receive this from a server, but we should deal with it just in case.
+		c.Events.FireLogMessage("Protocol.Unreal", "WARNING", "Uplink using deprecated command AKILL!")
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in AKILL (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		'For the sake of internal ban tracking, we are going to take a message like this:
+		':sender AKILL user@host :reason
+		'And treat it as this:
+		'TKL + G user host sender 0 TS-NOW :reason
+		Dim s(7) As String
+		s(0) = "+"
+		s(1) = "G"
+		s(2) = Split(args(0), "@", 2)(0)
+		s(3) = Split(args(0), "@", 2)(1)
+		s(4) = Source.Name
+		s(5) = "0"
+		s(6) = c.API.GetTS().ToString()
+		If args.Length = 1 Then
+			s(7) = "No reason specified"
+		Else
+			s(7) = args(1)
+		End If
+		CmdTkl(c.IRCMap, DirectCast(IIf(EnableTokens, TOK_TKL, "TKL"), String), s, rawcmd)
+	End Sub
+	<WinSECore.Command("ADMIN", False), WinSECore.Command(TOK_ADMIN, True)> Public Sub CmdAdmin(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 
 	End Sub
-	<WinSECore.Command("AKILL", False), WinSECore.Command("V", True)> Public Sub CmdAKill(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("WHOWAS", False), WinSECore.Command(TOK_WHOWAS, True)> Public Sub CmdWhoWas(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in WHOWAS (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		If Not TypeOf Source Is WinSECore.User Then
+			'This is probably perfectly valid but we're just going to ignore it.
+			Return
+		End If
+		'Why we are even getting queried with this is beyond me but we'll have to deal with it somehow.
+		'We could integrate this into NickServ's "last online time" stuff but... for now:
+		SendNumeric(c.Services, DirectCast(Source, WinSECore.User), 406, "{0} :There was no such nickname", args(0))
+		SendNumeric(c.Services, DirectCast(Source, WinSECore.User), 369, "{0} :End of WHOWAS", args(0))
 	End Sub
-	<WinSECore.Command("ADMIN", False), WinSECore.Command("@", True)> Public Sub CmdAdmin(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
-	End Sub
-	<WinSECore.Command("WHOWAS", False), WinSECore.Command("$", True)> Public Sub CmdWhoWas(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
-	End Sub
-	<WinSECore.Command("WHOIS", False), WinSECore.Command("#", True)> Public Sub CmdWhoIs(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("WHOIS", False), WinSECore.Command(TOK_WHOIS, True)> Public Sub CmdWhoIs(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in WHOIS (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		'Probably a "far whois" (/whois NickServ NickServ, for example).
+		Dim acptr As WinSECore.IRCNode
+		Dim sptr As WinSECore.User
+		If Not TypeOf Source Is WinSECore.User Then
+			Return
+		End If
+		sptr = DirectCast(Source, WinSECore.User)
+		If args.Length >= 2 Then
+			acptr = c.API.FindNode(args(1))
+		Else
+			acptr = c.API.FindNode(args(0))
+		End If
+		If acptr Is Nothing Then
+			SendNumeric(c.Services, sptr, 401, "{0} :No such nick/channel", args(CInt(IIf(args.Length >= 2, 1, 0))))
+		ElseIf TypeOf acptr Is WinSECore.User Then
+			With DirectCast(acptr, WinSECore.User)
+				'WHOIS DUMP TIME.
+				'First line: 311 NickServ nickserv services.winse.net * :Nickname Services
+				'* NickServ is nickserv@services.winse.net * Nickname Services
+				SendNumeric(c.Services, sptr, 311, "{0} {1} {2} * :{3}", .Name, .Username, IIf(.VHost <> "", .VHost, .Hostname), .RealName)
+				'If this user is registered we should send the registered nick numeric.
+				If .Usermodes.IndexOf("r"c) >= 0 Then
+					SendNumeric(c.Services, sptr, 307, "{0} :is a registered nick", .Name)
+				End If
+				'We should probably send channel information. But I cba atm.
+				'Next line: 312 NickServ services.winse.net :WinSE IRC Services
+				'* NickServ connected to services.winse.net - WinSE IRC Services
+				SendNumeric(c.Services, sptr, 312, "{0} {1} :{2}", .Name, .Server.Name, .Server.Info)
+				'Now for fun IRCop line...
+				'313 NickServ :is a Network Service
+				'* NickServ is a Network Service
+				If .Username.IndexOf("H"c) < 0 Then
+					If .Usermodes.IndexOf("N"c) >= 0 Then
+						SendNumeric(c.Services, sptr, 313, "{0} :is a Network Administrator", .Name)
+					ElseIf .Usermodes.IndexOf("a"c) >= 0 Then
+						SendNumeric(c.Services, sptr, 313, "{0} :is a Services Administrator", .Name)
+					ElseIf .Usermodes.IndexOf("A"c) >= 0 Then
+						SendNumeric(c.Services, sptr, 313, "{0} :is a Server Administrator", .Name)
+					ElseIf .Usermodes.IndexOf("C"c) >= 0 Then
+						SendNumeric(c.Services, sptr, 313, "{0} :is a Co-Administrator", .Name)
+					ElseIf .Usermodes.IndexOf("S"c) >= 0 Then
+						SendNumeric(c.Services, sptr, 313, "{0} :is a Network Service", .Name)
+					ElseIf .Usermodes.IndexOf("o"c) >= 0 Then
+						SendNumeric(c.Services, sptr, 313, "{0} :is an IRC Operator", .Name)
+					End If
+					If .Usermodes.IndexOf("h"c) >= 0 AndAlso .AwayMessage <> "" Then
+						SendNumeric(c.Services, sptr, 310, "{0} :is available for help", .Name)
+					End If
+				End If
+				If .Usermodes.IndexOf("z"c) >= 0 Then
+					SendNumeric(c.Services, sptr, 671, "{0} :is using a Secure Connection", .Name)
+				End If
+				If .Username.IndexOf("H"c) < 0 AndAlso .SWhois <> "" Then
+					SendNumeric(c.Services, sptr, 320, "{0} :{1}", .Name, .SWhois)
+				End If
+				If c.API.IsService(acptr) Then
+					'We can return signon and idletime. In most cases, the service's TS will suffice.
+					SendNumeric(c.Services, sptr, 317, "{0} 0 {1} :seconds idle, signon time", .Name, .TS)
+				End If
+			End With
+		End If
+		SendNumeric(c.Services, sptr, 318, "{0} :End of /WHOIS list", acptr.Name)
 	End Sub
 	<WinSECore.Command("UNDCCDENY", False), WinSECore.Command("BJ", True)> Public Sub CmdUnDCCDeny(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 
 	End Sub
-	<WinSECore.Command("UMODE2", False), WinSECore.Command("|", True)> Public Sub CmdUMode2(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("UMODE2", False), WinSECore.Command(TOK_UMODE2, True)> Public Sub CmdUMode2(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in UMODE2 (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		If Not TypeOf Source Is WinSECore.User Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Usermode change on non-user {0}", Source.Name))
+		End If
+		Dim s(1) As String
+		s(0) = Source.Name
+		s(1) = args(0)
+		CmdMode(Source, DirectCast(IIf(EnableTokens, TOK_UMODE2, "UMODE2"), String), s, rawcmd)
 	End Sub
-	<WinSECore.Command("TSCTL", False), WinSECore.Command("AW", True)> Public Sub CmdTSCTL(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("TSCTL", False), WinSECore.Command(TOK_TSCTL, True)> Public Sub CmdTSCTL(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		'The only thing we care about is TSCTL ALLTIME.
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in TSCTL (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		If UCase(args(0)) = "ALLTIME" Then
+			'Send the output like Unreal would:
+			c.API.PutServ("{0} {1} {2} :*** Server={3} TStime={4} time()={4} TSoffset=0", GetNSPrefix(c.Services), IIf(EnableTokens, TOK_NOTICE, "NOTICE"), Source.Name, c.Services.Name, c.API.GetTS())
+		End If
 	End Sub
 	<WinSECore.Command("TRACE", False), WinSECore.Command("b", True)> Public Sub CmdTrace(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 
 	End Sub
-	<WinSECore.Command("GLINE", False), WinSECore.Command("}", True)> Public Sub CmdGLine(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("GLINE", False), WinSECore.Command(TOK_GLINE, True)> Public Sub CmdGLine(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in AKILL (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		Dim s() As String
+		If Left(args(0), 1) = "-" Then
+			':sender GLINE -user@host
+			'To...
+			'TKL - G user host sender
+			s = New String(4) {}
+			s(0) = "-"
+			s(1) = "G"
+			s(2) = Mid(Split(args(0), "@", 2)(0), 2)
+			s(3) = Split(args(0), "@", 2)(1)
+			s(4) = Source.Name
+		Else
+			'For the sake of internal ban tracking, we are going to take a message like this:
+			':sender GLINE user@host [<expiry> [:reason]]
+			'And treat it as this:
+			'TKL + G user host sender 0 TS-NOW :reason
+			s = New String(7) {}
+			s(0) = "+"
+			s(1) = "G"
+			s(2) = Split(args(0), "@", 2)(0)
+			s(3) = Split(args(0), "@", 2)(1)
+			s(4) = Source.Name
+			s(6) = c.API.GetTS().ToString()
+			If args.Length = 1 Then
+				s(5) = "0"
+				s(7) = "No reason specified"
+			ElseIf args.Length = 2 Then
+				s(5) = "0"
+				s(7) = args(1)
+			ElseIf args.Length > 2 Then
+				Try
+					s(5) = CStr(CInt(s(6)) + c.API.Duration(args(1)))
+					If s(5) = s(6) Then s(5) = "0"
+					s(7) = args(2)
+				Catch ex As Exception
+					s(5) = "0"
+					s(7) = args(1)
+				End Try
+			End If
+		End If
+		CmdTkl(c.IRCMap, DirectCast(IIf(EnableTokens, TOK_TKL, "TKL"), String), s, rawcmd)
 	End Sub
-	<WinSECore.Command("SHUN", False), WinSECore.Command("BL", True)> Public Sub CmdShun(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("SHUN", False), WinSECore.Command(TOK_SHUN, True)> Public Sub CmdShun(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in AKILL (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		Dim s() As String
+		If Left(args(0), 1) = "-" Then
+			':sender SHUN -user@host
+			'To...
+			'TKL - S user host sender
+			s = New String(4) {}
+			s(0) = "-"
+			s(1) = "S"
+			s(2) = Mid(Split(args(0), "@", 2)(0), 2)
+			s(3) = Split(args(0), "@", 2)(1)
+			s(4) = Source.Name
+		Else
+			'For the sake of internal ban tracking, we are going to take a message like this:
+			':sender SHUN user@host [<expiry> [:reason]]
+			'And treat it as this:
+			'TKL + S user host sender 0 TS-NOW :reason
+			s = New String(7) {}
+			s(0) = "+"
+			s(1) = "S"
+			s(2) = Split(args(0), "@", 2)(0)
+			s(3) = Split(args(0), "@", 2)(1)
+			s(4) = Source.Name
+			s(6) = c.API.GetTS().ToString()
+			If args.Length = 1 Then
+				s(5) = "0"
+				s(7) = "No reason specified"
+			ElseIf args.Length = 2 Then
+				s(5) = "0"
+				s(7) = args(1)
+			ElseIf args.Length > 2 Then
+				Try
+					s(5) = CStr(CInt(s(6)) + c.API.Duration(args(1)))
+					If s(5) = s(6) Then s(5) = "0"
+					s(7) = args(2)
+				Catch ex As Exception
+					s(5) = "0"
+					s(7) = args(1)
+				End Try
+			End If
+		End If
+		CmdTkl(c.IRCMap, DirectCast(IIf(EnableTokens, TOK_TKL, "TKL"), String), s, rawcmd)
 	End Sub
 	<WinSECore.Command("TEMPSHUN", False), WinSECore.Command("Tz", True)> Public Sub CmdTempShun(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 
 	End Sub
-	<WinSECore.Command("TIME", False), WinSECore.Command(">", True)> Public Sub CmdTime(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("TIME", False), WinSECore.Command(TOK_TIME, True)> Public Sub CmdTime(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		c.API.PutServ("{0} 391 {1} :{2}", GetNSPrefix(c.Services), Source.Name, Format(Now, "dddd, mmmm d, yyyy HH:mm:ss zzz"))
 	End Sub
 	<WinSECore.Command("SVSNLINE", False), WinSECore.Command("BR", True)> Public Sub CmdSVSNLine(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 
@@ -1439,29 +1721,78 @@ Public NotInheritable Class Unreal
 	<WinSECore.Command("STATS", False), WinSECore.Command("2", True)> Public Sub CmdStats(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 
 	End Sub
-	<WinSECore.Command("SQLINE", False), WinSECore.Command("c", True)> Public Sub CmdSQLine(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("SQLINE", False), WinSECore.Command(TOK_SQLINE, True)> Public Sub CmdSQLine(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		'We should never receive this from a server, but we should deal with it just in case.
+		c.Events.FireLogMessage("Protocol.Unreal", "WARNING", "Uplink using deprecated command SQLINE!")
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in SQLINE (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		'For the sake of internal ban tracking, we are going to take a message like this:
+		':sender SQLINE nick :reason
+		'And treat it as this:
+		'TKL + Q * nick sender 0 TS-NOW :reason
+		Dim s(7) As String
+		s(0) = "+"
+		s(1) = "Q"
+		s(2) = "*"
+		s(3) = args(0)
+		s(4) = Source.Name
+		s(5) = "0"
+		s(6) = c.API.GetTS().ToString()
+		If args.Length = 1 Then
+			s(7) = "No reason specified"
+		Else
+			s(7) = args(1)
+		End If
+		CmdTkl(c.IRCMap, DirectCast(IIf(EnableTokens, TOK_TKL, "TKL"), String), s, rawcmd)
 	End Sub
-	<WinSECore.Command("SETNAME", False), WinSECore.Command("AE", True)> Public Sub CmdSetName(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("SETNAME", False), WinSECore.Command(TOK_SETNAME, True)> Public Sub CmdSetName(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in SETNAME (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		If Not TypeOf Source Is WinSECore.User Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Non-user {0} changing realname to {1}! (Buffer = {2})", source.Name, args(0), rawcmd)
+			Return
+		End If
+		DirectCast(Source, WinSECore.User).RealName = args(0)
 	End Sub
-	<WinSECore.Command("SETIDENT", False), WinSECore.Command("AD", True)> Public Sub CmdSetIdent(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("SETIDENT", False), WinSECore.Command(TOK_SETIDENT, True)> Public Sub CmdSetIdent(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in SETIDENT (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		If Not TypeOf Source Is WinSECore.User Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Non-user {0} changing vIdent to {1}! (Buffer = {2})", source.Name, args(0), rawcmd)
+			Return
+		End If
+		DirectCast(Source, WinSECore.User).Username = args(0)
+		DirectCast(Source, WinSECore.User).VIdent = args(0)
 	End Sub
-	<WinSECore.Command("SETHOST", False), WinSECore.Command("AA", True)> Public Sub CmdSetHost(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("SETHOST", False), WinSECore.Command(TOK_SETHOST, True)> Public Sub CmdSetHost(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in SETHOST (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		If Not TypeOf Source Is WinSECore.User Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Non-user {0} changing vHost to {1}! (Buffer = {2})", source.Name, args(0), rawcmd)
+			Return
+		End If
+		DirectCast(Source, WinSECore.User).VHost = args(0)
 	End Sub
-	<WinSECore.Command("SENDUMODE", False), WinSECore.Command("AP", True)> Public Sub CmdSendUMode(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
-	End Sub
-	<WinSECore.Command("SMO", False), WinSECore.Command("AU", True)> Public Sub CmdSMO(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
-	End Sub
-	<WinSECore.Command("SENDSNO", False), WinSECore.Command("Ss", True)> Public Sub CmdSendSNO(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
-	End Sub
-	<WinSECore.Command("SDESC", False), WinSECore.Command("AG", True)> Public Sub CmdSDesc(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("SDESC", False), WinSECore.Command(TOK_SDESC, True)> Public Sub CmdSDesc(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If args.Length < 1 Then
+			c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Insufficient parameters ({0} < 1) in SDESC (Buffer = {1})", args.Length, rawcmd))
+			Return
+		End If
+		Dim srv As WinSECore.Server
+		If TypeOf Source Is WinSECore.Server Then
+			srv = DirectCast(Source, WinSECore.Server)
+		Else
+			srv = DirectCast(Source, WinSECore.User).Server
+		End If
+		srv.Info = args(0)
 	End Sub
 	<WinSECore.Command("SAPART", False), WinSECore.Command("AY", True)> Public Sub CmdSAPart(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 
@@ -1485,10 +1816,14 @@ Public NotInheritable Class Unreal
 
 	End Sub
 	<WinSECore.Command("PROTOCTL", False), WinSECore.Command("_", True)> Public Sub CmdProtoCtl(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+		ProtoCtl.AddRange(args)
 	End Sub
-	<WinSECore.Command("PING", False), WinSECore.Command("8", True)> Public Sub CmdPing(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
-
+	<WinSECore.Command("PING", False), WinSECore.Command(TOK_PONG, True)> Public Sub CmdPing(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
+		If InStr(args(args.Length - 1), " ") > 0 Then
+			'Sneaky, but it works.
+			args(args.Length - 1) = ":" + args(args.Length - 1)
+		End If
+		c.API.PutServ("{0} {1} {2}", GetNSPrefix(Source), IIf(EnableTokens, TOK_PONG, "PONG"), Join(args, " "))
 	End Sub
 	<WinSECore.Command("PONG", False), WinSECore.Command("9", True)> Public Sub CmdPong(ByVal Source As WinSECore.IRCNode, ByVal cmd As String, ByVal args() As String, ByVal rawcmd As String)
 

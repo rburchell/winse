@@ -245,7 +245,7 @@ Public NotInheritable Class API
 		Return CInt(DateDiff(DateInterval.Second, New Date(1970, 1, 1, 0, 0, 0), d.ToUniversalTime))
 	End Function
 	Public Overloads Function IsService(ByVal cptr As IRCNode) As Boolean
-		Return c.Services.SubNodes.Contains(cptr)
+		Return c.Services.HasClient(cptr, True)
 	End Function
 	Public Sub SendHelp(ByVal SendTo As User, ByVal Base As String, ByVal Args() As String)
 
@@ -452,6 +452,11 @@ Public NotInheritable Class Events
 	Public Event ClientQuit(ByVal sptr As User, ByVal reason As String)
 	Public Sub FireClientQuit(ByVal sptr As User, ByVal reason As String)
 		RaiseEvent ClientQuit(sptr, reason)
+	End Sub
+	'Fired when a user sets or unsets AWAY. If Reason Is Nothing Then User Is Back Else User Is Away
+	Public Event ClientAway(ByVal sptr As User, ByVal Reason As String)
+	Public Sub FireClientAway(ByVal sptr As User, ByVal reason As String)
+		RaiseEvent ClientAway(sptr, reason)
 	End Sub
 	'Fired when user cptr is killed by sptr (ClientQuit fired afterwards...)
 	Public Event ClientKilled(ByVal sptr As IRCNode, ByVal cptr As User, ByVal Reason As String)

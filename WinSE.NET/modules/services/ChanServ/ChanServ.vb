@@ -8,7 +8,7 @@ Public Class ChanServ
 		sc.Ident = "channel"
 		sc.Host = c.Conf.ServerName
 		sc.RealName = "Channel Registration Services"
-		sc.Usermode = c.protocol.ChServiceUMode()
+		sc.Usermode = c.protocol.ServiceUMode()
 		sc.mainproc = AddressOf Me.DebugServMain
 		sc.CmdHash.Add("HELP", AddressOf CmdHelp)
 	End Sub
