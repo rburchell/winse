@@ -271,6 +271,9 @@ Type: ON/OFF
 When set, ChanServ won't deop the first user, or users joining in a netsplit.
 (If SECUREOPS is set, ChanServ will still deop them unless they are on the ACL.
 ChanServ may also still deop a user if he has +d in his ACE.)
+(Exception: users joining in a netsplit that qualify for automatic identify and
+have the required +h +o +p or +n privilege will not have the corresponding mode(s)
+removed.)
 
 Option TOPICLOCK
 Type: ON/OFF
@@ -293,9 +296,12 @@ privilege will have ban additions bounced, and a user not having UNBAN
 privilege will have ban removals bounced. Also exempt additions/removals
 will be bounced if the user does not have the EXEMPT list privilege.
 
-NOTE: Regardless of this setting:
-- Adding a ban matching a user with +e will always be bounced.
-- Removing a ban enforced by AKICK STICK will always be bounced.
+NOTE: Regardless of this setting, removing a ban enforced by AKICK STICK
+will always be bounced.
+
+If a user on the channel matches an added ban, but also is +e or matches an EXEMPT
+entry, ChanServ will add an exempt for that user if the IRCd supports exempts.
+If the IRCd does not support exempts, ChanServ will bounce the ban.
 
 Option LEARNBANS
 Type: ON/OFF or number
@@ -320,7 +326,7 @@ flags:
 v : Get +v on join.
 h : Get +h on join.
 o : Get +o on join.
-p : Get +ao on join.
+p : Get +a on join. (+ao if p and o are present)
 n : Get +qo on join.
 
 Option STRICTMODE

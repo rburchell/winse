@@ -191,23 +191,23 @@ Public Sub Jupe(ByVal Sender As User, Parameters() As String)
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
+Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 

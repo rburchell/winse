@@ -352,7 +352,7 @@ Public Sub CmdMode(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     If Users.Exists(Args(0)) Then
         Users(Args(0)).SetUserModes sModeString
     ElseIf Channels.Exists(Args(0)) Then
-        Channels(Args(0)).SetChannelModes sModeString
+        Channels(Args(0)).SetChannelModes Source, sModeString
     Else
         'EEEEEEEEEEEEEEEK!
         Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckMODENonExistantEntity, "%n", Args(0)))
@@ -576,9 +576,9 @@ Public Sub CmdAdmin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd
     Dim sSOPs As String, u As User
     For Each u In Users
         If u.Access <> "" Then
-            If InStr(1, u.Access, "M", vbBinaryCompare) Then 'I need to be anal about casematching here :) .
+            If u.HasFlag(AccFlagMaster) Then 'I need to be anal about casematching here :) .
                 sSOPs = sSOPs & MakeBold(MakeUnderline(u.Nick)) & " "
-            ElseIf InStr(1, u.Access, "m", vbBinaryCompare) Then
+            ElseIf u.HasFlag(AccFlagCoMaster) Then
                 sSOPs = sSOPs & MakeBold(u.Nick) & " "
             Else
                 sSOPs = sSOPs & u.Nick & " "

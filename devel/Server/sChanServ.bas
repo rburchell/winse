@@ -546,7 +546,7 @@ Public Sub Register(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServREGISTEROK, "%c", Channel.Name))
         JoinBot Channel, Service(SVSINDEX_CHANSERV).Nick
         Call basFunctions.SendData(":" & Service(SVSINDEX_CHANSERV).Nick & " MODE " & Channel.Name & " +nrtq " & Source.Nick)
-        Channel.SetChannelModes "+nrtq " & Source.Nick
+        Channel.SetChannelModes Service(SVSINDEX_CHANSERV).Nick, "+nrtq " & Source.Nick
         Call basFunctions.SendData(":" & Service(SVSINDEX_CHANSERV).Nick & " TOPIC " & Channel.Name & " " & newcol("TopicSetBy") & " " & newcol("TopicSetOn") & newcol("LastTopic"))
     End If
 End Sub
@@ -583,7 +583,7 @@ Public Sub Identify(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyOK, "%c", Channel.Name))
         If Channel.Members.Exists(Source) Then
             Call basFunctions.SendData(":" + Service(SVSINDEX_CHANSERV).Nick + " MODE " + Channel.Name + " +ao " + Source.Nick + " " + Source.Nick)
-            Channel.SetChannelModes "+ao " + Source.Nick + " " + Source.Nick
+            Channel.SetChannelModes Service(SVSINDEX_CHANSERV).Nick, "+ao " + Source.Nick + " " + Source.Nick
         End If
     End If
 End Sub
@@ -661,23 +661,205 @@ Private Sub Version(Sender As User)
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
+Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
+    'We bounce this if:
+    '- If it aint a service! :D
+    '- STRICTSTATUS and sender is not +V (for (de)voicing) +H (for (de)halfopping) +O (for (de)opping)
+    '  +P (for (de)admining) or +N (for (de)ownering).
+    '- For voicing, SECUREVOICES and target isn't on ACL, or target is +q or +Q.
+    '- For halfopping, SECUREHALFOPS and target isn't on ACL, or target is +D.
+    '- For opping, admining, or ownering, SECUREOPS and target isn't on ACL, or target is +d.
+    If IsServicesNick(Source) Then Exit Sub
+    If Source = "" Or InStr(Source, ".") > 0 Then
+        'SERVER VOICE / (HALF)OP
+        If (Not DB(Chan.Name)("LeaveOps")) And bSet Then
+            Select Case Char
+                Case "v" 'Do we really care about this?
+                Case "h"
+                    If Target.IdentifiedToNick <> "" Then
+                        If HasFlag(Chan.Name, Target.IdentifiedToNick, "-" & CHANSERV_HALFOP & CHANSERV_HALFOPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Not a halfop, so bounce it.
+                            '(Techinically, we should allow an op to keep halfops, but oh well :P .)
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-h", Target.Nick
+                            Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Target.Nick, Replies.ChanServRegisteredChannel)
+                            Exit Sub
+                        End If
+                    Else
+                        'Not a halfop, so bounce it.
+                        Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-h", Target.Nick
+                        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Target.Nick, Replies.ChanServRegisteredChannel)
+                        Exit Sub
+                    End If
+                Case "o"
+                    If Target.IdentifiedToNick <> "" Then
+                        If HasFlag(Chan.Name, Target.IdentifiedToNick, "-" & CHANSERV_OP & CHANSERV_OPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Not an op, so bounce it.
+                            '(Techincally, we should allow admins and owners to keep it, but oh well :P .)
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-o", Target.Nick
+                            Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Target.Nick, Replies.ChanServRegisteredChannel)
+                            Exit Sub
+                        End If
+                    Else
+                        'Not an op, so bounce it.
+                        Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-o", Target.Nick
+                        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Target.Nick, Replies.ChanServRegisteredChannel)
+                        Exit Sub
+                    End If
+                Case "a"
+                    If Target.IdentifiedToNick <> "" Then
+                        If HasFlag(Chan.Name, Target.IdentifiedToNick, "-" & CHANSERV_PROTECT & CHANSERV_PROTECTOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Not a protected user, so bounce it.
+                            '(Techinically, we should allow an owner to keep admin, but oh well :P .)
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-a", Target.Nick
+                            Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Target.Nick, Replies.ChanServRegisteredChannel)
+                            Exit Sub
+                        End If
+                    Else
+                        'Not a protected user, so bounce it.
+                        Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-a", Target.Nick
+                        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Target.Nick, Replies.ChanServRegisteredChannel)
+                        Exit Sub
+                    End If
+                Case "q"
+                    If Target.IdentifiedToNick <> "" Then
+                        If HasFlag(Chan.Name, Target.IdentifiedToNick, "-" & CHANSERV_OWNER & CHANSERV_OWNEROP & CHANSERV_PERMFOUNDER) Then
+                            'Not an owner, so bounce it.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-q", Target.Nick
+                            Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Target.Nick, Replies.ChanServRegisteredChannel)
+                            Exit Sub
+                        End If
+                    Else
+                        'Not an owner, so bounce it.
+                        Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-q", Target.Nick
+                        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Target.Nick, Replies.ChanServRegisteredChannel)
+                        Exit Sub
+                    End If
+                'End Case
+            End Select
+        End If
+    End If
+    'Now for the normal checks.
+    Dim uSender As User
+    Set uSender = Users(Source)
+    'If uSender Is Nothing Then Either Server Or Unknown User.
+    If Not uSender Is Nothing Then
+        If uSender.IdentifiedToNick <> "" Then
+            If bSet Then
+                Select Case Char
+                    Case "v"
+                        'Bounce if:
+                        'Target is +q / +Q
+                        'SECUREVOICE and user isn't on the ACL.
+                        'STRICTSTATUS and source doesn't have +V.
+                        'So first thing is the sender's ACL check.
+                        'EXCEPTION - USER VOICES SELF
+                        If DB(Chan.Name)("StrictStatus") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_VOICE & CHANSERV_VOICEOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-v", Target.Nick
+                        ElseIf DB(Chan.Name)("StrictStatus") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_VOICEOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-v", Target.Nick
+                        ElseIf (DB(Chan.Name)("SecureVoice") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasAnyFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_QUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER, "+" & CHANSERV_SUPERQUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-v", Target.Nick
+                        End If
+                    Case "h"
+                        'Bounce if:
+                        'Target is +D
+                        'SECUREHALFOPS and user isn't on the ACL.
+                        'STRICTSTATUS and source doesn't have +H.
+                        If DB(Chan.Name)("StrictStatus") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_HALFOP & CHANSERV_HALFOPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-h", Target.Nick
+                        ElseIf DB(Chan.Name)("StrictStatus") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_HALFOPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-h", Target.Nick
+                        ElseIf (DB(Chan.Name)("SecureHalfops") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEHALFOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-h", Target.Nick
+                        End If
+                    Case "o"
+                        'Bounce if:
+                        'Target is +d
+                        'SECUREOPS and target isn't on the ACL.
+                        'STRICTSTATUS and source doesn't have +O.
+                        If DB(Chan.Name)("StrictStatus") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OP & CHANSERV_OPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-o", Target.Nick
+                        ElseIf DB(Chan.Name)("StrictStatus") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-o", Target.Nick
+                        ElseIf (DB(Chan.Name)("SecureOps") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-o", Target.Nick
+                        End If
+                    Case "a"
+                        'Bounce if:
+                        'Target is +d
+                        'SECUREOPS and target isn't on the ACL.
+                        'STRICTSTATUS and source doesn't have +P.
+                        If DB(Chan.Name)("StrictStatus") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_PROTECT & CHANSERV_PROTECTOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-a", Target.Nick
+                        ElseIf DB(Chan.Name)("StrictStatus") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_PROTECTOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-a", Target.Nick
+                        ElseIf (DB(Chan.Name)("SecureOps") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-a", Target.Nick
+                        End If
+                    Case "q"
+                        'Bounce if:
+                        'Target is +d
+                        'SECUREOPS and target isn't on the ACL.
+                        'STRICTSTATUS and source doesn't have +N.
+                        If DB(Chan.Name)("StrictStatus") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OWNER & CHANSERV_OWNEROP & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-q", Target.Nick
+                        ElseIf DB(Chan.Name)("StrictStatus") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OWNEROP & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-q", Target.Nick
+                        ElseIf (DB(Chan.Name)("SecureOps") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-q", Target.Nick
+                        End If
+                    'End Case
+                End Select
+            Else
+                'Unsetting. Rules are different here.
+                Select Case Char
+                    Case "v"
+                        'Bounce if:
+                        'STRICTSTATUS and source doesn't have +V.
+                        'Target is of a higher level.
+                        'If target == source (ie devoicing self) we don't care.
+                        If Target.Nick <> Source And DB(Chan.Name)("StrictStatus") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_VOICEOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                            'Bounce.
+                            Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+v", Target.Nick
+                        ElseIf HasFlag(Chan.Name, Target.IdentifiedToNick, CHANSERV_VOICE) Then
+                    Case "h"
+                    Case "o"
+                    Case "a"
+                    Case "q"
+                End Select
+            End If
+        End If
+    End If
+End Sub
+
+Public Sub HandleModeTypeA(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
-
-End Sub
-
-Public Sub HandleModeTypeD(ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Source As String, ByVal Chan As Channel, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 
@@ -723,6 +905,18 @@ Public Function HasFlag(ByVal Channel As String, ByVal User As String, ByVal Fla
         If InStr(sResult, Mid(sFlagsUnset, idx, 1)) > 0 Then Exit Function
     Next idx
     HasFlag = True
+End Function
+
+Public Function HasAnyFlag(ByVal Channel As String, ByVal User As String, ParamArray Flags() As Variant) As Boolean
+    Dim idx As Long
+    For idx = LBound(Flags) To UBound(Flags)
+        If Not IsMissing(Flags(idx)) Then
+            If HasFlag(Channel, User, Flags(idx)) Then
+                HasAnyFlag = True
+                Exit Function
+            End If
+        End If
+    Next idx
 End Function
 
 Public Sub SetFlag(ByVal Channel As String, ByVal User As String, ByVal Flag As String)

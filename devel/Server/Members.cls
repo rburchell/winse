@@ -20,16 +20,24 @@ Private Sub Class_Initialize()
 End Sub
 
 Public Sub Add(ByVal c As ChannelMember)
-    mData.Add c, c.Member.Nick
+    mData.Add c
 End Sub
 
 Public Sub Remove(ByVal idx As Variant)
-    mData.Remove idx
+    If VarType(idx) = vbString Then
+        mData.Remove KeyToIndex(idx)
+    Else
+        mData.Remove idx
+    End If
 End Sub
 
 Public Function Item(ByVal idx As Variant) As ChannelMember
 Attribute Item.VB_UserMemId = 0
-    Set Item = mData(idx)
+    If VarType(idx) = vbString Then
+        Set Item = mData(KeyToIndex(idx))
+    Else
+        Set Item = mData(idx)
+    End If
 End Function
 
 Public Function Count() As Long
@@ -45,3 +53,14 @@ Public Function Exists(ByVal idx As Variant) As Boolean
     On Error Resume Next
     Exists = Not Item(idx) Is Nothing
 End Function
+
+Private Function KeyToIndex(ByVal Key As String) As Long
+    Dim idx As Long
+    For idx = 1 To mData.Count
+        If mData(idx).Member.Nick = Key Then
+            KeyToIndex = idx
+            Exit Function
+        End If
+    Next idx
+End Function
+

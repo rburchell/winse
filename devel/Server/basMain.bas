@@ -250,7 +250,6 @@ NextLine:
         'Right time to unw00t this :) .
         DirectiveName = Split(ConfigLine, "=", 2)(0)
         DirectiveVal = Split(ConfigLine, "=", 2)(1)
-        'Ok, now we need to :|:| try get stuff. Make a copy of the line in
         Select Case UCase(DirectiveName)
             Case "CONFIGVER"
                 If DirectiveVal <> "1.0.0.0" Then
@@ -301,7 +300,6 @@ NextLine:
                         basMain.Config.InjectToOperServices = False
                 End Select
             Case "ABUSETEAMPRIVACY"
-                'Defines the default for users().msgstyle True=notice false=privmsg
                 Select Case LCase(DirectiveVal)
                     Case "none"
                         basMain.Config.AbuseTeamPrivacy = 0

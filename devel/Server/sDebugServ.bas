@@ -65,23 +65,23 @@ Public Sub DebugservHandler(ByVal Cmd As String, ByVal Sender As User)
 End Sub
 
 'Callin subs for channel mode changes
-Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+Public Sub HandlePrefix(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
 
 End Sub
 
-Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeA(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Public Sub HandleModeTypeB(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Public Sub HandleModeTypeC(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
 
 End Sub
 
-Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+Public Sub HandleModeTypeD(ByVal Source As String, ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
 
 End Sub
 

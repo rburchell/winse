@@ -163,7 +163,7 @@ Public Sub SetUserModes(ByVal Modes As String)
 End Sub
 
 Public Function HasFlag(ByVal Flag As String) As Boolean
-    HasFlag = IIf(InStr(1, Access, Flag), True, False)
+    HasFlag = InStr(1, Access, Flag, vbBinaryCompare) > 0 'This is case sensitive. Make sure VB knows that :P .
 End Function
 
 Public Sub SetFlags(ByVal FlagMask As String)

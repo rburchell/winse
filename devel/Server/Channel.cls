@@ -63,7 +63,18 @@ Public Property Get IdentifedUsers() As Users
     Set IdentifedUsers = mIdentifedUsers
 End Property
 
-Public Sub SetChannelModes(ByVal Modes As String)
+Public Sub KickUser(ByVal Source As String, ByVal Victim As User, ByVal Reason As String)
+    Call basFunctions.SendData(":" & Source & " KICK " & Me.Name & " " & Victim & " :" & Reason)
+    Members.Remove Victim.Nick
+    If Members.Count <= 0 Then Channels.Remove Me.Name
+End Sub
+
+Public Sub SendChannelModes(ByVal Source As String, ByVal Modes As String, ParamArray Parameters() As Variant)
+    Call basFunctions.SendData(":" & Source & " MODE " & Me.Name & " " & Modes & " " & Join(Parameters, " "))
+    SetChannelModes Source, Trim(Mode & " " & Join(Parameters, " "))
+End Sub
+
+Public Sub SetChannelModes(ByVal Source As String, ByVal Modes As String)
     'Indexes, for the character and parameter
     Dim iChar As Integer, iParam As Integer
     'Strings to store said character and parameter
@@ -105,7 +116,7 @@ Public Sub SetChannelModes(ByVal Modes As String)
                     'For now, just do nothing so that
                     'we don't die :/ .
                 Else
-                    DispatchPrefix bSet, sChar, basMain.Users(sParam)
+                    DispatchPrefix Source, bSet, sChar, basMain.Users(sParam)
                 End If
             Else
                 'EEEEEEEEEK!
@@ -116,7 +127,7 @@ Public Sub SetChannelModes(ByVal Modes As String)
             If iParam <= UBound(sMode) Then
                 sParam = sMode(iParam)
                 iParam = iParam + 1
-                DispatchModeTypeA bSet, sChar, sParam
+                DispatchModeTypeA Source, bSet, sChar, sParam
             Else
                 'EEEEEEEEEK!
                 Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
@@ -126,12 +137,12 @@ Public Sub SetChannelModes(ByVal Modes As String)
             If iParam <= UBound(sMode) Then
                 sParam = sMode(iParam)
                 iParam = iParam + 1
-                DispatchModeTypeB bSet, sChar, sParam
+                DispatchModeTypeB Source, bSet, sChar, sParam
             ElseIf bSet = False Then
                 'Some wacky IRCd might let us get away
                 'unsetting a mode w/o parameter
                 '*coughunrealircdcough*
-                DispatchModeTypeB False, sChar, ""
+                DispatchModeTypeB Source, False, sChar, ""
             Else
                 'EEEEEEEEEK!
                 Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
@@ -148,11 +159,11 @@ Public Sub SetChannelModes(ByVal Modes As String)
                     Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar))
                 End If
             Else
-                DispatchModeTypeC bSet, sChar
+                DispatchModeTypeC Source, bSet, sChar
             End If
         ElseIf InStr(sValid(3), sChar) > 0 Then
             'Type D: Never use a param
-            DispatchModeTypeD bSet, sChar
+            DispatchModeTypeD Source, bSet, sChar
         Else
             'EEEEEEEEEK!
             Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.SanityCheckUnknownModeChange, "%c", IIf(bSet, "+", "-") & sChar))
@@ -161,7 +172,7 @@ Public Sub SetChannelModes(ByVal Modes As String)
     Exit Sub
 End Sub
 
-Private Sub DispatchPrefix(ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
+Private Sub DispatchPrefix(ByVal Source As String, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As User)
     If Target Is Nothing Then
         'Now something really went pear-shaped. :P
         'Send out a scream.
@@ -178,17 +189,17 @@ Private Sub DispatchPrefix(ByVal bSet As Boolean, ByVal Char As String, ByVal Ta
     End If
     'Okay, now that we've updated their status, send it
     'out :) .
-    sAdminServ.HandlePrefix Me, bSet, Char, Target
-    sAgent.HandlePrefix Me, bSet, Char, Target
-    sChanServ.HandlePrefix Me, bSet, Char, Target
-    sDebugServ.HandlePrefix Me, bSet, Char, Target
-    sMassServ.HandlePrefix Me, bSet, Char, Target
-    sNickServ.HandlePrefix Me, bSet, Char, Target
-    sOperServ.HandlePrefix Me, bSet, Char, Target
-    sRootServ.HandlePrefix Me, bSet, Char, Target
+    sAdminServ.HandlePrefix Source, Me, bSet, Char, Target
+    sAgent.HandlePrefix Source, Me, bSet, Char, Target
+    sChanServ.HandlePrefix Source, Me, bSet, Char, Target
+    sDebugServ.HandlePrefix Source, Me, bSet, Char, Target
+    sMassServ.HandlePrefix Source, Me, bSet, Char, Target
+    sNickServ.HandlePrefix Source, Me, bSet, Char, Target
+    sOperServ.HandlePrefix Source, Me, bSet, Char, Target
+    sRootServ.HandlePrefix Source, Me, bSet, Char, Target
 End Sub
 
-Private Sub DispatchModeTypeA(ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Private Sub DispatchModeTypeA(ByVal Source As String, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
     If Entry = "" Then
         'Now something really went pear-shaped. :P
         'Send out a scream.
@@ -219,17 +230,17 @@ Private Sub DispatchModeTypeA(ByVal bSet As Boolean, ByVal Char As String, ByVal
             'Don't know? Don't care.
     End Select
     'Now send it out :)
-    sAdminServ.HandleModeTypeA Me, bSet, Char, Entry
-    sAgent.HandleModeTypeA Me, bSet, Char, Entry
-    sChanServ.HandleModeTypeA Me, bSet, Char, Entry
-    sDebugServ.HandleModeTypeA Me, bSet, Char, Entry
-    sMassServ.HandleModeTypeA Me, bSet, Char, Entry
-    sNickServ.HandleModeTypeA Me, bSet, Char, Entry
-    sOperServ.HandleModeTypeA Me, bSet, Char, Entry
-    sRootServ.HandleModeTypeA Me, bSet, Char, Entry
+    sAdminServ.HandleModeTypeA Source, Me, bSet, Char, Entry
+    sAgent.HandleModeTypeA Source, Me, bSet, Char, Entry
+    sChanServ.HandleModeTypeA Source, Me, bSet, Char, Entry
+    sDebugServ.HandleModeTypeA Source, Me, bSet, Char, Entry
+    sMassServ.HandleModeTypeA Source, Me, bSet, Char, Entry
+    sNickServ.HandleModeTypeA Source, Me, bSet, Char, Entry
+    sOperServ.HandleModeTypeA Source, Me, bSet, Char, Entry
+    sRootServ.HandleModeTypeA Source, Me, bSet, Char, Entry
 End Sub
 
-Private Sub DispatchModeTypeB(ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+Private Sub DispatchModeTypeB(ByVal Source As String, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
     If (Entry = "" And bSet = True) Then
         'Now something really went pear-shaped. :P
         'Send out a scream.
@@ -252,17 +263,17 @@ Private Sub DispatchModeTypeB(ByVal bSet As Boolean, ByVal Char As String, ByVal
             'Don't know? Don't care.
     End Select
     'Now send it out :)
-    sAdminServ.HandleModeTypeB Me, bSet, Char, Entry
-    sAgent.HandleModeTypeB Me, bSet, Char, Entry
-    sChanServ.HandleModeTypeB Me, bSet, Char, Entry
-    sDebugServ.HandleModeTypeB Me, bSet, Char, Entry
-    sMassServ.HandleModeTypeB Me, bSet, Char, Entry
-    sNickServ.HandleModeTypeB Me, bSet, Char, Entry
-    sOperServ.HandleModeTypeB Me, bSet, Char, Entry
-    sRootServ.HandleModeTypeB Me, bSet, Char, Entry
+    sAdminServ.HandleModeTypeB Source, Me, bSet, Char, Entry
+    sAgent.HandleModeTypeB Source, Me, bSet, Char, Entry
+    sChanServ.HandleModeTypeB Source, Me, bSet, Char, Entry
+    sDebugServ.HandleModeTypeB Source, Me, bSet, Char, Entry
+    sMassServ.HandleModeTypeB Source, Me, bSet, Char, Entry
+    sNickServ.HandleModeTypeB Source, Me, bSet, Char, Entry
+    sOperServ.HandleModeTypeB Source, Me, bSet, Char, Entry
+    sRootServ.HandleModeTypeB Source, Me, bSet, Char, Entry
 End Sub
 
-Private Sub DispatchModeTypeC(ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+Private Sub DispatchModeTypeC(ByVal Source As String, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
     If (Entry = "" And bSet = True) Then
         'Now something really went pear-shaped. :P
         'Send out a scream.
@@ -277,17 +288,17 @@ Private Sub DispatchModeTypeC(ByVal bSet As Boolean, ByVal Char As String, Optio
             'Don't know? Don't care.
     End Select
     'Now send it out :)
-    sAdminServ.HandleModeTypeC Me, bSet, Char, Entry
-    sAgent.HandleModeTypeC Me, bSet, Char, Entry
-    sChanServ.HandleModeTypeC Me, bSet, Char, Entry
-    sDebugServ.HandleModeTypeC Me, bSet, Char, Entry
-    sMassServ.HandleModeTypeC Me, bSet, Char, Entry
-    sNickServ.HandleModeTypeC Me, bSet, Char, Entry
-    sOperServ.HandleModeTypeC Me, bSet, Char, Entry
-    sRootServ.HandleModeTypeC Me, bSet, Char, Entry
+    sAdminServ.HandleModeTypeC Source, Me, bSet, Char, Entry
+    sAgent.HandleModeTypeC Source, Me, bSet, Char, Entry
+    sChanServ.HandleModeTypeC Source, Me, bSet, Char, Entry
+    sDebugServ.HandleModeTypeC Source, Me, bSet, Char, Entry
+    sMassServ.HandleModeTypeC Source, Me, bSet, Char, Entry
+    sNickServ.HandleModeTypeC Source, Me, bSet, Char, Entry
+    sOperServ.HandleModeTypeC Source, Me, bSet, Char, Entry
+    sRootServ.HandleModeTypeC Source, Me, bSet, Char, Entry
 End Sub
 
-Private Sub DispatchModeTypeD(ByVal bSet As Boolean, ByVal Char As String)
+Private Sub DispatchModeTypeD(ByVal Source As String, ByVal bSet As Boolean, ByVal Char As String)
     If bSet Then
         If InStr(Modes, Char) = 0 Then Modes = Modes + Char
     Else
@@ -295,12 +306,12 @@ Private Sub DispatchModeTypeD(ByVal bSet As Boolean, ByVal Char As String)
         'us!
         Modes = Replace(Modes, Char, "")
     End If
-    sAdminServ.HandleModeTypeD Me, bSet, Char
-    sAgent.HandleModeTypeD Me, bSet, Char
-    sChanServ.HandleModeTypeD Me, bSet, Char
-    sDebugServ.HandleModeTypeD Me, bSet, Char
-    sMassServ.HandleModeTypeD Me, bSet, Char
-    sNickServ.HandleModeTypeD Me, bSet, Char
-    sOperServ.HandleModeTypeD Me, bSet, Char
-    sRootServ.HandleModeTypeD Me, bSet, Char
+    sAdminServ.HandleModeTypeD Source, Me, bSet, Char
+    sAgent.HandleModeTypeD Source, Me, bSet, Char
+    sChanServ.HandleModeTypeD Source, Me, bSet, Char
+    sDebugServ.HandleModeTypeD Source, Me, bSet, Char
+    sMassServ.HandleModeTypeD Source, Me, bSet, Char
+    sNickServ.HandleModeTypeD Source, Me, bSet, Char
+    sOperServ.HandleModeTypeD Source, Me, bSet, Char
+    sRootServ.HandleModeTypeD Source, Me, bSet, Char
 End Sub

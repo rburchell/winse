@@ -26,6 +26,11 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 01/09/2004 - aquanight
+  -[CS] [Add] We can now bounce some invalid +vhoaq changes (but not all yet).
+  -[CO] [Fix] Fixed a nick tracking issue in the channel members collection.
+  -[CO] [Fix] Fixed a "stupid me" issue with the mode callbacks - forgot a source parameter!
+  -[CO] [Fix] Fixed a Jasonism in User.HasFlag.
  29/08/2004 - aquanight
   -[CO] [Fix] Unw00ted the config parser. Yay.
   -[CO] [Fix] Fixed a nick tracking issue in user collections.
