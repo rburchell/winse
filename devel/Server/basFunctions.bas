@@ -385,63 +385,33 @@ Public Sub NotifyAllUsersWithServicesAccess(Message As String)
     Next i
 End Sub
 
-'I'll probably write a better Mode parser
-'soon. And it will handle parameters and the like
-'much better :) -aquanight
-'Good. :P I suck at this kind of thing :'(
-
 Public Sub SetUserModes(UserId As Integer, Modes As String)
-    Dim Modes2 As String
-    Dim j As Byte 'better not > 255 :|
-    Dim ModeChar As String * 1
-    Dim RemoveModes As Boolean
-    Dim Result As Byte
-
-    'Killed those STUPID tabs... -aquanight
-    'You were warned that it was ripped directly ;)
-    With basMain.Users(UserId)
-        If Modes2 = "" Then Modes2 = .Modes
-        For j = 1 To Len(Modes)
-            ModeChar = Mid(Modes, j, 1)
-            If Asc(ModeChar) < 65 Or Asc(ModeChar) > 90 Then
-                If Asc(ModeChar) < 97 Or Asc(ModeChar) > 122 Then
-                    'Ignore as is invalid mode char. ie is not alphabet char.
-                    If ModeChar = "-" Then
-                        RemoveModes = True
-                    ElseIf ModeChar = "+" Then
-                        RemoveModes = False
-                    End If
-                    ModeChar = ""
-                End If
-            End If
-DontClearMode:
-            If ModeChar = "" Then GoTo Skip
-            'WHAT THE HECK??? - aquanight
-            'I cant remember --w00t
-            Select Case RemoveModes
-                Case True
-                    'remove mode
-                    Result = InStr(Modes2, ModeChar)
-                    If Result <> 0 Then
-                        'remove that damn mode.
-                        'Mid just looks so much better. -aquanight
-                        'Yes, yes it does. I'll try remember :P --w00t
-                        Modes2 = Left(Modes2, Result - 1) & Mid(Modes2, Result + 1)
-                    End If
-                Case False
-                    'assume addmode
-                    'If we havent got it...
-                    If InStr(Modes2, ModeChar) = 0 Then
-                        'add it
-                        If InStr(ModeChar, basMain.UserModes) = 0 Then
-                            Modes2 = Modes2 & ModeChar
-                        End If
-                    End If
-            End Select
-Skip:
-        Next j
-        .Modes = Modes2
-    End With
+  Dim l As Integer ' I use l or i for loops usually
+  Dim ModeChar As String * 1
+  Dim AddModes As Boolean
+  Dim Result As String
+  With basMain.Users(UserId)
+    Result = .Modes
+    AddModes = True
+    For l = 1 To Len(Modes)
+      ModeChar = Mid(Modes, j, 1)
+      If (Asc(ModeChar) >= 65 And Asc(ModeChar) <= 90) Or _
+         (Asc(ModeChar) >= 97 And Asc(ModeChar) <= 122) Or _
+         Asc(ModeChar) = 43 Or Asc(ModeChar) = 45 Then
+' Begin Validity Checked Code
+        If ModeChar = "+" Then
+          AddModes = True
+        ElseIf ModeChar = "-" Then
+          AddModes = False
+        Else
+          Result = Replace(Result, ModeChar, "")
+          If AddModes Then Result = Result & ModeChar
+        End If
+' End Validity Checked Code
+      End If
+      Next l
+      .Modes = Result
+  End With
 End Sub
 
 Public Function SetChannelModes(ChanID As Integer, Modes As String)
