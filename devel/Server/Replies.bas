@@ -82,6 +82,7 @@ Public Const AdminServCantAddMaster = "Only users with access 100 can add additi
 Public Const AdminServAccessModified = "User %n's access was modified sucessfully."
 Public Const AdminServUserAddToAbuseTeam = "User %n added to the Abuse Team"
 Public Const AdminServUserDelFromAbuseTeam = "User %n deleted from the Abuse Team"
+Public Const AdminServJupeFishyNameCheck = "User %n tried to use AdminServ JUPE with a fishy name! They are trying to crash services!"
 
 'Agent
 Public Const AgentUserUnidentified = "User %n un-identified successfully."

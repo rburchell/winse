@@ -1,0 +1,209 @@
+CREDITS:
+No name may be removed from this list, except by w00t (ie Code Reuse if no longer used :P)
+If you are working on Winse, contact w00t for your contribution to be noted here.
+ [Coding]
+   w00t - w00t@netronet.org  | aquanight - ?
+ [Code Reuse]
+   Tron - tron@ircd-net.org
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+CHANGELOG
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Current Notices:
+ -This is a pre-alpha release. Bugs are to be expected, especially as we are
+  currently in Fix mode. Report all bugs to w00t@netronet.org
+
+ToDo:
+ [?]
+  -Mass nick collisions ALL over the place randomly... This is very bad. Seems
+   to have something to do with basUnixTime being a bit off. [!!] #0001
+  -FJOIN and FPART seem to lag some... [-] #0002
+  -CS doesnt always seem to successfully set the  topic of a registered channel. [-] #0003
+ [w00t]
+  -Make QUIT _also_ destroy channel if necessary. [!cant really be done till #0008] #0004
+  -Check for access to run NS\CS list, and to view email address... 
+   perhaps dont hide at all, since only access 10+ able to run...? [?] #0005
+  -Make replies for all commands (failure and success) and use them. #0006
+ [aquanight]
+  -Tracking of all modes, new mode parser. [!] #0007
+  -Find a way to track what channels a user is on, etc etc. [!] #0008
+
+Services:
+ ChanServ  [CS]  AdminServ [AS]
+ NickServ  [NS]  RootServ  [RS]
+ HostServ  [HS]  Agent     [AG]
+ BotServ   [BS]  Global    [GN]
+ OperServ  [OS]  MassServ  [MsS]
+ MemoServ  [MS]  Core      [CO]
+             All [AL]
+[-----------------------------------]
+
+26/06/2004 - w00t
+ -[AS] [Fix] JUPE added, needs testing. [update: now should check for "fishy" names :o]
+ -[CO] [Fix] KillServer renamed DelServer since I like it better! :P
+25/06/2004 - w00t
+ -Incremented version 0.0.3.3 -> 0.0.4.0 build description noesis -> sense_datum
+ -[CO] [Fix] Logging to file now works! (Pinched from my Messenger application :P)
+ -[CO] [Fix] We no longer respond to PING, since we PING our uplink.
+ -[CO] [Fix] If we recieve ERROR :whatever from server, we finish up and die.
+ -[NS] [Fix] Now uses basMain.ParseBuffer rather than doing manually :)
+ -[MsS] [Bug] Fixed RTE on SERVJOIN/SERVPART
+ -[AG] [Bug] Fixed RTE in Agent UNIDENTIFY if no parameters were given =|
+ -[AG] [Fix] Added DEOPER.
+24/06/2004 - w00t
+ -[CO] [Bug] Fixed GetSender\GetTarget. -aquanight, you will need to see why your code failed!
+ -[CO] [Fix] Reintroduced a whole lot of stuff from when we rewrote tcpServer_GetData
+ -[CO] [Bug] Changed basFunctions.KillUser var Killer to default to "Agent" rather than "" since "" causes BIIIG stuffups.
+ -[CO] [Bug] Fixed SQUIT not being sent on shutdown.
+ -[CS] [Fix] Now uses basMain.ParseBuffer rather than doing manually :)
+ -[AS] [Fix] Now uses basMain.ParseBuffer rather than doing manually :)
+ -[AS] [Bug] Fixed ACCESS looking for the wrong nick in the DB!
+ -[AL] [Fix] Updated copyright headers to reflect "winse team" rather than just me :)
+21/06/2004 - w00t
+ -[CO] [Fix] Added Replies.SanityCheck* stuff and use them! (yay)
+ -[AL] [Fix] "All" code created, use "AL" (I liiiike two digit codes :P)
+18/06/2004 - aquanight
+ -[AL] [---] Option Explicit added to all remaining modules.
+ -[AL] [---] Explicit type specifications added.
+ -[AL] [---] Some functions changed to subs, since they didnt return anything.
+ -[CO] [Fix] Code cleanup, mostly in basFunctions.
+ -[CO] [Fix] MSWinsock replaced with a .NET/COM component
+15/06/2004 - w00t
+ -[CO] [Bug] Undeclared variables declared
+ -[AS] [Bug] Option Explicit enabled.
+ -[AL] [---] aquanight added as a developer.
+14/06/2004 - w00t
+ -[CO] [Bug] Fixed a bug with PRIVMSG handling.
+ -[CO] [Bug] PART now only removes a chan from array _if necessary_
+ -[CO] [Bug] Fixed bug in PRIVMSG handling that caused an exponential
+             slowdown proportional to the number of clients.
+ -[CO] [Fix] Added modular buffer parser, means cleaner code!
+ -[CS] [Bug] Tidied stuff up.
+ -[OS] [Bug] Fixed RTE on OS GLOBAL caused by a change to the core.
+09/05/2004 - w00t
+ -[CO] [Fix] Added logging (atm only messages, doesnt log to file)
+ -[CO] [Fix] Channels deleted from array.
+ -[CO] [Bug] Fixed bug handling JOIN event that caused CS to set channel topic
+             and modes each time a user joined.
+ -[CS] [Bug] Chanserv was setting topic on _any_ channel, regardless of state.
+ -[AG] [Fix] Started to turn OPTION EXPLICIT on.
+ -[AG] [Fix] Added FJOIN
+ -[AG] [Fix] Added FPART
+08/05/2004 - w00t
+ -Incremented version 0.0.2.4 -> 0.0.3.3 build description posit -> noesis
+ -[CO] [Bug] Fixed server killing NS and CS. They were sending commands
+              before they had sent NICK and USER to the remote server.
+ -[CO] [Fix] Buffering of sends added.
+06/05/2004 - w00t
+ -Added GPL notices.
+ -Incremented version 0.0.1.8 -> 0.0.2.4 and build description rootage -> posit
+ -[CO] [Bug] IsBot attribute added to IntroduceUser meaning that bots can
+             (only theoretically :P) recieve channel messages.
+ -[CO] [Bug] Fixed bug resulting from setting TotalUsers initial value to -1
+             (always overwrote array(0)... meaning that >1 user connected
+             stuffed everything up.
+ -[CO] [Bug] TotalUsers was always one more than the total user count.
+ -[CS] [Fix] REGISTER added.
+ -[CS] [Fix] Sets mlock, and topic sucessfully.
+ -[NS] [Bug] Fixed a yuckky nesting problem. Didnt cause problems, but looked bad.
+ -[NS] [Bug] Removed the NICK parameter out of both REGISTER and IDENTIFY
+ -[NS] [Fix] LIST added.
+ -[AG] [Fix] UNIDENTIFY added.
+ -[AS] [Bug] ACCESS was setting the val on the _sender_ nick in the db,
+             not the target nick. I thought I fixed this yesterday...
+05/05/2004 - w00t
+ -[CO] [Fix] Added channel structure, for preliminary support of chanserv.
+ -[CO] [Fix] basUnixTime stolen from vbIRCd :P Means we can actually send timestamps!
+ -[CO] [Bug] Changed NAME attribute of UserStructure to NICK.
+ -[NS] [Bug] SET COMMUNICATION now saves to db for registered nicks.
+ -[NS] [Fix] IDENTIFY now checks if user is _the_ services master, and sets access=100
+                 just in case someone modified their permissions.
+ -[AS] [Fix] SET removed for now. Not needed.
+ -[AS] [Fix] ACCESS added.
+ -[AS] [Fix] Now uses the new parameter array system, rather than the old seperator way.
+ -[AS] [Fix] SET ADDABUSTEAM AND DELABUSETEAM merged into ABUSETEAM ADD nick and ABUSETEAM DEL nick
+ -[AS] [Bug] Abuse team modification would set on the _wrong_ user. It was changing
+             (in the db) on the _sender_ not the target user.
+04/05/2004 - w00t
+ -[CO] [Bug] Now correctly tracks identification to nicks and nickchanges.
+ -[RS] [Fix] RAW added
+ -[AG] [Fix] EXIT added
+ -[AG] [Fix] NICK added
+ -[AG] [Fix] KICK added
+ -[AG] [Fix] KILL added
+ -[AS] [Bug] Adminserv now saves abuseteam status for registered nicks ;)
+ -[MsS] [Fix] SERVJOIN introduced. Made a function in basFunctions. (also gives +qo)
+ -[MsS] [Fix] SERVPART introduced. Made a function in basFunctions.
+ -[NS] [Bug] Registering the services master nick didnt get you access level of 100
+             as it should :P
+03/05/2004 - w00t
+ -Incremented version 0.0.1.2 -> 0.0.1.8 and build description esthetic -> rootage
+ -[CO] [Bug] Removed Public vars: PASS PROTOCTL and SERVER from basMain
+ -[CO] [Bug] Removed PROTOCTL alltogether. We want RFC as far as possible :P
+ -[CO] [Fix] Option Explicit enabled. on frmServer and basFunctions
+ -[AG] [Fix] UMode added
+ -[NS] [Fix] Added some more reporting code.
+ -[NS] [Bug] If < 2 parameters passed to identify, module would exit silently.
+ -[NS] [Bug] If nick was already registered, errmsg send- then register anyway.
+02/05/2004 - w00t
+ -Optomised a lot of the code, including the parsing of parameters through spaces,
+  instead of getting them manually and guessing which one we needed :|
+ -A fair bit of the framework is now complete, therefore incremented version
+  0.0.0.1 -> 0.0.1.2
+ -Today's task: Access lists and more module API functions.
+ -Nick changes no longer break services. It tracks the nickchanges ;) yay
+ -Made pseudoclient introduction modular ready for botserv.
+ -Made masserv help
+ -Added debugserv so I dont have to add debug commands to adminserv which i then have
+  to remove after i finish ;)
+ -Began the adding of a permissions based system.
+ -Botserv stub added, not quite yet finished.
+ -Began the adding of database routines leading up to NS register/NS identify.
+ -YAY ME! Rudimentary NS register/identify added!
+ -Fixed floodlevels (the parameter parsing system broke them)
+01/05/2004 - w00t
+ -INCREMENTED BUILD DESCRIPTION: chrysantheum -> esthetic
+ -Wow. A version that actually compiles after all these changes...
+ -Added module Replies - So we can eventually use different languages! :D
+ -Began using numeric descriptors to track users rather than passing the nickname
+ -Added service name - Default to "Services"
+ -Fixed bug in basFunctions.GetTarget that meant it returned the wrong parameter.
+ -Introduced user tracking via NICK and QUIT
+ -Tracking of user modes
+ -Services class created. Attributes: Nick, Hostmask
+ -Added so user can use nickserv set communication to choose if they want services to notice, or privmsg.
+ -Added masserv pseudoclient ready ;)
+ -Added floodlevels
+30/04/2004 - w00t
+ -Project start - Arisen phoenix-like from the remains of nRC.
+
+[-----------------------------------]
+Services Permission Levels:
+ 100 - Services Root Administrator (aka Master)
+  99 - Services Administrator (aka comaster) (unlimited)
+  50 - Services Operator
+  10 - Services User
+ ChanServ  0  AdminServ  99
+ NickServ  0  RootServ   100
+ HostServ  10  Agent     Any, with AbuseTeam flag
+ BotServ   50  Global    n/a
+ OperServ  10  MassServ  50
+ MemoServ 0
+[-----------------------------------]
+Suggested services access for a net of, 400 people:
+ (if this would even RUN on a net of 400...)
+ 1 SRA ] -Mostly admin position
+ 1 SA  ] -Mostly admin position
+ 3 SO  ] -Basic admin, mostly user assistance. (ie setting a bot up)
+ 10 SU ] -Mostly a "helper" role (ie report abuse for abuseteam checking)
+ Perhaps around 5-8 people with abuse team access.
+[-----------------------------------]
+
+ChanServ Access Levels:
+Access Levels:
+100 +qo
+90  +ao
+80  +a
+50  +o
+40  +h
+30  +v

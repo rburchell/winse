@@ -34,6 +34,14 @@ Public Sub AdminservHandler(Cmd As String, Sender As Integer)
         Exit Sub
     End If
     Select Case UCase(Parameters(0))
+        'imho, those with access 10 shouldnt be able to jupe... --w00t
+        Case "JUPE"
+            If UBound(Parameters) < 2 Then
+                Call basFunctions.SendMessage(basMain.Service(5).Nick, SenderNick, Replies.InsufficientParameters)
+            Else
+                'remember to add "sender" to jupe paramlist
+                Call sAdminServ.Jupe(Sender, Parameters)
+            End If
         Case "HELP"
             Call sAdminServ.Help(Sender)
         Case "VERSION"
@@ -48,7 +56,7 @@ Public Sub AdminservHandler(Cmd As String, Sender As Integer)
             End If
             Call sAdminServ.Access(Sender, Parameters(1), CByte(Parameters(2)))
         Case "FLAGS"
-            Call sAdminServ.flags(Sender, Parameters(1), Parameters(2))
+            Call sAdminServ.Flags(Sender, Parameters(1), Parameters(2))
         Case "GVERSION"
             Call sAdminServ.GlobalVersion(Sender)
         Case Else
@@ -93,7 +101,7 @@ Private Sub Version(Sender As Integer)
     Call basFunctions.SendMessage(basMain.Service(5).Nick, basFunctions.ReturnUserName(Sender), AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(5).Nick & "[" & sAdminServ.ModVersion & "]")
 End Sub
 
-Private Function flags(Sender As Integer, Action As String, TargetNick As String)
+Private Function Flags(Sender As Integer, Action As String, TargetNick As String)
     Dim UserId As Integer
     Select Case UCase(Action)
         Case "ABUSETEAMADD"
@@ -148,3 +156,33 @@ Private Function Access(Sender As Integer, TargetNick As String, NewAccess As By
         Call basFunctions.SendMessage(basMain.Service(5).Nick, basMain.Users(Sender).Nick, Replies.UserDoesntExist)
     End If
 End Function
+
+Public Sub Jupe(Sender As Integer, Parameters() As String)
+    Dim Message As String
+    Dim i As Integer
+    'ASSUMPTIONS:
+    'P[0] - JUPE
+    'P[1] - Instruction.
+    'P[2] - Servername
+    'P[3>] (if given) - Message/description.
+    If InStr(Parameters(2), ".") = 0 Then
+        'Unreal doesnt like servernames without periods in them for some reason.
+        'If this check isnt here, it crashes. So we'd best send a scream out about
+        'someone trying to crash services??
+        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replace(Replies.AdminServJupeFishyNameCheck, "%n", basMain.Users(Sender).Nick))
+        Exit Sub
+    End If
+    For i = 3 To UBound(Parameters)
+        Message = Message & " " & Parameters(i)
+    Next i
+    Select Case UCase(Parameters(1))
+        Case "ADD"
+            'first, ensure server isnt connected (else things could get messy!)
+            Call basFunctions.DelServer(Parameters(2), Message)
+            'now send SERVER.
+            Call basFunctions.AddServer(Parameters(2), Message)
+        Case "DEL"
+            'just send a delserver, we need no message.
+            Call basFunctions.DelServer(Parameters(2))
+    End Select
+End Sub

@@ -28,9 +28,9 @@ Public Function ParseBuffer(ByVal Buffer As String) As Variant
     ' - aquanight
     'Actually, I didnt :| VB has too many functions anyway *blush* --w00t
     ParseBuffer = Split(Buffer, " ")
-    If Left(Buffer, 1) = ":" Then
-        Buffer = Right(Buffer, Len(Buffer) - 1)
-    End If
+    'If Left(Buffer, 1) = ":" Then
+    '    Buffer = Right(Buffer, Len(Buffer) - 1)
+    'End If
 End Function
 
 Public Sub LogEvent(Header As String, Message As String)
@@ -102,7 +102,7 @@ Public Sub IntroduceClient(Nick As String, Host As String, Name As String, Optio
     '"vhost" as the real host in User, why is this
     'necessary anyway? - aquanight
         'I was thinking bots, but you are right about the USER thing. Unnecessary. --w00t
-    Call basFunctions.SendData(":" & Nick & " SETHOST " & Host)
+    'Call basFunctions.SendData(":" & Nick & " SETHOST " & Host)
 End Sub
 
 Public Sub JoinServicesToChannel(Sender As Integer, Channel As String)
@@ -357,9 +357,15 @@ End Sub
 'JUPE. It can use this to make sure the JUPE'd server
 'is not linked. It can also use this to indicate
 'removal of a JUPE'd server. -aquanight
-Public Sub KillServer(ByVal Name As String, Optional ByVal Message As String = "")
+    'renamed DelServer cause I like that better. --w00t
+Public Sub DelServer(ByVal Name As String, Optional ByVal Message As String = "")
     Call basFunctions.SendData("SQUIT " & Name & " :" & IIf(Message <> "", " :" & Message, ""))
 End Sub
+
+Public Sub AddServer(ByVal Name As String, Optional ByVal Message As String = "Winse JUPE")
+    Call basFunctions.SendData("SERVER " & Name & " 1 :" & " " & Message & vbCrLf)
+End Sub
+
 
 Public Sub NotifyAllUsersWithServicesAccess(Message As String)
     Dim i As Integer
