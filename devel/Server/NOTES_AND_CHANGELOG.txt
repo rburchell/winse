@@ -34,6 +34,8 @@ Services:
   -[BS] [Add] Starting work here. Not really much yet.
   -[CO] [Fix] Fixed some collision yaynesses.
   -[CO] [Fix] Fixed a few things in the User class.
+  == COMMIT # 2 ==
+  -[HS] [Fix] A bunch of compile errors...
  21/11/2004 - Jason
   -[HS] [New] Created HostServ.  No security yet, no errors, bad commands just fail, but the basics are there.
  07/11/2004 - aquanight

@@ -32,15 +32,15 @@ Public Sub HostservHandler(ByVal Cmd As String, ByVal Sender As User)
             End If
         Case "SET"
             If UBound(Parameters) = 2 Then
-              Call basHostServ.DoSet(SenderNick, Parameters(1), Parameters(2))
+              Call sHostServ.DoSet(SenderNick, Parameters(1), Parameters(2))
             End If
         Case "UNSET"
             If UBound(Parameters) = 1 Then
-              Call basHostServ.DoUnSet(SenderNick, Parameters(1))
+              Call sHostServ.DoUnSet(SenderNick, Parameters(1))
             End If
         Case "LIST"
             If UBound(Parameters) = 0 Then
-              Call basHostServ.DoList(SenderNick)
+              Call sHostServ.DoList(SenderNick)
             End If
         Case "HELP"
             If UBound(Parameters) > 0 Then
@@ -49,7 +49,7 @@ Public Sub HostservHandler(ByVal Cmd As String, ByVal Sender As User)
               Call sHostServ.Help(Sender, "")
             End If
         Case "VERSION"
-            Call sNickServ.Version(Sender)
+            Call sHostServ.Version(Sender)
         Case Else
             Call basFunctions.SendMessage(basMain.Service(SVSINDEX_HOSTSERV).Nick, SenderNick, Replies.UnknownCommand)
     End Select
@@ -72,7 +72,7 @@ End Sub
 
 Private Sub DoList(Sender As String)
 Dim l As Integer, UsrExist As Boolean, i As Integer
-Call basFunctions.SendMessage(basMain.Service(SVSINDEX_HOSTSERV), Sender, "All vHosts (Bold if in use)")
+Call basFunctions.SendMessage(basMain.Service(SVSINDEX_HOSTSERV).Nick, Sender, "All vHosts (Bold if in use)")
 For l = LBound(sNickServ.DB) To UBound(sNickServ.DB)
   If Not sNickServ.DB(l).VHost = "" Then
     UsrExist = False
@@ -82,7 +82,7 @@ For l = LBound(sNickServ.DB) To UBound(sNickServ.DB)
         Exit For
       End If
     Next i
-    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_HOSTSERV), Sender, IIf(UsrExist, MIRC_BOLD) & sNickServ.DB(l).VHost & IIf(UsrExist, MIRC_BOLD))
+    Call basFunctions.SendMessage(basMain.Service(SVSINDEX_HOSTSERV).Nick, Sender, IIf(UsrExist, MIRC_BOLD, "") & sNickServ.DB(l).VHost & IIf(UsrExist, MIRC_BOLD, ""))
   End If
 Next l
 End Sub
@@ -119,13 +119,13 @@ If Users.Exists(Nick) Then
   Users(Nick).VirtHost = Host
   ReturnVal = ReturnVal Xor Returns_IRCNoUser
 End If
-If SetDBHost(Nick, Host) Then ReturnVal = ReturnVal Xor Returns_DBNoUser
-Call basFunctions.SendMessage(basMain.Service(SVSINDEX_HOSTSERV), Setter, IIf(ReturnVal And Returns_DBNoUser, IIf(ReturnVal And Returns_IRCNoUser, "No such user in database or online", "User not registered.  Session vHost Set."), "vHost Set"))
+If SetDBHost(Users(Nick), Host) Then ReturnVal = ReturnVal Xor Returns_DBNoUser
+Call basFunctions.SendMessage(basMain.Service(SVSINDEX_HOSTSERV).Nick, Setter, IIf(ReturnVal And Returns_DBNoUser, IIf(ReturnVal And Returns_IRCNoUser, "No such user in database or online", "User not registered.  Session vHost Set."), "vHost Set"))
 End Sub
 
 Private Sub DoUnSet(Setter As String, Nick As String)
-Call SetDBHost(Nick, "")
-Call basFunctions.SendMessage(basMain.Service(SVSINDEX_HOSTSERV), Setter, "vHost unset")
+If Users.Exists(Nick) Then Call SetDBHost(Users(Nick), "")
+Call basFunctions.SendMessage(basMain.Service(SVSINDEX_HOSTSERV).Nick, Setter, "vHost unset")
 End Sub
 
 ' Event And Remote Functions
@@ -141,8 +141,8 @@ End Function
 
 Private Function SetDBHost(Who As User, NewHost As String) As Boolean
 SetDBHost = False
-If sNickServ.DBIndexOf(Who) >= 0 Then
-  sNickServ.DB(sNickServ.DBIndexOf(Who)).VHost = NewHost
+If sNickServ.DBIndexOf(Who.IdentifiedToNick) >= 0 Then
+  sNickServ.DB(sNickServ.DBIndexOf(Who.IdentifiedToNick)).VHost = NewHost
   SetDBHost = True
 End If
 End Function

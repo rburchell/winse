@@ -223,9 +223,3 @@ Public Sub SetFlags(ByVal FlagMask As String)
     Next l
     Access = Result
 End Sub
-
-Public Property Get DefaultProperty() As String
-    LogEventWithMessage LogTypeWarn, "Deprecated implicit access of nickname! Fix this ASAP!"
-    Debug.Assert False 'Force code to stop here in debugger.
-    DefaultProperty = Nick
-End Property
