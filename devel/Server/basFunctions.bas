@@ -79,7 +79,7 @@ Public Sub IntroduceClient(ByVal Nick As String, ByVal Host As String, ByVal Nam
     If ExtraModes <> "" Then basFunctions.SendData ":" & Nick & " MODE " & Nick & " +" & ExtraModes
 End Sub
 
-Public Sub JoinServicesToChannel(ByVal Sender As Integer, ByVal channel As String)
+Public Sub JoinServicesToChannel(ByVal Sender As Integer, ByVal Channel As String)
     'This may need to be bumped to a larger
     'type to satisify Option Strict when we .NET-ize it :) --aquanight
     Dim i As Byte
@@ -88,12 +88,12 @@ Public Sub JoinServicesToChannel(ByVal Sender As Integer, ByVal channel As Strin
         Nick = basMain.Service(i).Nick
         Host = basMain.Service(i).Hostmask
         Name = basMain.Service(i).Name
-        Call basFunctions.SendData(":" & Nick & " JOIN " & channel)
-        basFunctions.SendData ":" & Nick & " MODE " & channel & " +ao " & Nick & " " & Nick
+        Call basFunctions.SendData(":" & Nick & " JOIN " & Channel)
+        basFunctions.SendData ":" & Nick & " MODE " & Channel & " +ao " & Nick & " " & Nick
     Next i
 End Sub
 
-Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal channel As String)
+Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal Channel As String)
     'See JoinServicesToChannel comment on this.  - aquanight
     Dim i As Byte
     Dim Nick, Host, Name As String
@@ -101,7 +101,7 @@ Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal channel As Str
         Nick = basMain.Service(i).Nick
         Host = basMain.Service(i).Hostmask
         Name = basMain.Service(i).Name
-        Call basFunctions.SendData(":" & Nick & " PART " & channel)
+        Call basFunctions.SendData(":" & Nick & " PART " & Channel)
     Next i
 End Sub
 
@@ -315,14 +315,25 @@ End Sub
 Public Sub RaiseCustomEvent(ByVal Source As String, ByVal EventName As String, ParamArray Parameters() As Variant)
     'Calls handlers formatted like this:
     'Public Sub HandleEvent(ByVal Source As String, ByVal EventName As String, Parameters() As Variant)
-    sAdminServ.HandleEvent Source, EventName, Parameters
-    sAgent.HandleEvent Source, EventName, Parameters
-    sChanServ.HandleEvent Source, EventName, Parameters
-    sDebugServ.HandleEvent Source, EventName, Parameters
-    sMassServ.HandleEvent Source, EventName, Parameters
-    sNickServ.HandleEvent Source, EventName, Parameters
-    sOperServ.HandleEvent Source, EventName, Parameters
-    sRootServ.HandleEvent Source, EventName, Parameters
+    Dim p() As Variant
+    'Apparanetly we have to make a copy of this.
+    ReDim p(LBound(Parameters) To UBound(Parameters))
+    Dim idx As Long
+    For idx = LBound(Parameters) To UBound(Parameters)
+        If IsObject(Parameters(idx)) Then
+            Set p(idx) = Parameters(idx)
+        Else
+            Let p(idx) = Parameters(idx)
+        End If
+    Next idx
+    sAdminServ.HandleEvent Source, EventName, p
+    sAgent.HandleEvent Source, EventName, p
+    sChanServ.HandleEvent Source, EventName, p
+    sDebugServ.HandleEvent Source, EventName, p
+    sMassServ.HandleEvent Source, EventName, p
+    sNickServ.HandleEvent Source, EventName, p
+    sOperServ.HandleEvent Source, EventName, p
+    sRootServ.HandleEvent Source, EventName, p
 End Sub
 
 Public Sub ParseCmd(ByVal Incoming As String)

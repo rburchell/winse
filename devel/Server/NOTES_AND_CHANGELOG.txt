@@ -26,6 +26,10 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 26/09/2004 - aquanight
+  -[CS] [Fix] Fixed an "oops" in DB saving.
+  -[AG] [Fix] Compile errors...
+  -[CO] [Fix] Compile errors...
  26/09/2004 - Jason
   -[NS] [Add] Ident to a nick you arent called
  22/09/2004 - aquanight

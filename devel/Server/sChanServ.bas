@@ -516,6 +516,9 @@ Public Sub Register(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
         newcol.Add Description, "description"
         newcol.Add "", "successor"
         newcol.Add Source.Nick & " F", "access_list"
+        newcol.Add "", "akicks"
+        newcol.Add "", "exempts"
+        newcol.Add "", "invites"
         newcol.Add False, "secure_ops"
         newcol.Add False, "secure_halfops"
         newcol.Add False, "secure_voices"
@@ -987,7 +990,7 @@ Public Sub InitChannel(ByVal Channel As Channel)
         Call JoinBot(Channel, Mid(v, 2))
     Next v
     DoMLOCK Channel, True
-    BotTopic Channel, newcol("last_topic"), newcol("topic_set_by"), newcol("topic_set_on")
+    BotTopic Channel, DB(Channel.Name)("last_topic"), DB(Channel.Name)("topic_set_by"), DB(Channel.Name)("topic_set_on")
 End Sub
 
 'Enforces the MLOCK of the given channel.
@@ -1008,12 +1011,15 @@ Public Sub DoMLOCK(ByVal Channel As Channel, Optional ByVal UpdateFloatingLimit 
     Dim bSet As Boolean
     Dim sSet As String, sUnSet As String 'Modes we can send w/o a parameter.
     Dim idx As Long, ch As String * 1
+    sSet = IIf(InStr(Channel.Modes, "r") > 0, "", "r")
+    sUnSet = ""
     For idx = 1 To Len(m(0))
         ch = Mid(m(0), idx, 1)
         If ch = "+" Then
             bSet = True
         ElseIf ch = "-" Then
             bSet = False
+        ElseIf ch = "r" Then 'Ignore it.
         ElseIf bSet And ch = "l" And UpdateFloatingLimit Then
             BotMode Channel, True, "+l " & CStr(Channel.Members.Count + 8)
         ElseIf Not bSet And InStr(1, Split(basMain.ChannelModes2, ",", 2)(1), ch, vbBinaryCompare) Then
@@ -1087,14 +1093,14 @@ End Sub
 
 Public Sub BotKick(ByVal Channel As Channel, ByVal Auto As Boolean, ByVal Target As User, ByVal Reason As String)
     Dim vBot As Variant
-    vBot = IIf(Auto, DB(Channel.Name)("bot_auto_kick"), DB(Channel.Name)("bot_kick"))
+    vBot = DB(Channel.Name)(IIf(Auto, "bot_auto_kick", "bot_kick"))
     If IsNull(vBot) Then vBot = Service(SVSINDEX_CHANSERV).Nick
     Channel.KickUser vBot, Target, Reason
 End Sub
 
 Public Sub BotMode(ByVal Channel As Channel, ByVal Auto As Boolean, ByVal Modes As String)
     Dim vBot As Variant
-    vBot = IIf(Auto, DB(Channel.Name)("bot_auto_mode"), DB(Channel.Name)("bot_mode"))
+    vBot = DB(Channel.Name)(IIf(Auto, "bot_auto_mode", "bot_mode"))
     If IsNull(vBot) Then vBot = Service(SVSINDEX_CHANSERV).Nick
     Channel.SendChannelModes vBot, Modes
 End Sub
@@ -1166,7 +1172,7 @@ End Sub
 Public Property Get AllFlags(ByVal Channel As String, ByVal User As String) As String
     If Channel = "" Or User = "" Then Exit Property
     Dim sACL As String
-    sACL = DB(Channel)("AccessList")
+    sACL = DB(Channel)("access_list")
     Dim vACL As Variant
     vACL = Split(sACL, vbTab)
     Dim idx As Long
@@ -1183,7 +1189,7 @@ End Property
 Public Property Let AllFlags(ByVal Channel As String, ByVal User As String, ByVal Flags As String)
     If Channel = "" Or User = "" Then Err.Raise 9, , "No such nick/channel"
     Dim sACL As String, vACL As Variant, bFound As Boolean
-    sACL = DB(Channel)("AccessList")
+    sACL = DB(Channel)("access_list")
     vACL = Split(sACL, vbTab)
     Dim idx As Long
     For idx = 0 To UBound(vACL)
@@ -1206,7 +1212,7 @@ Public Property Let AllFlags(ByVal Channel As String, ByVal User As String, ByVa
     sACL = Join(vACL, vbTab)
     While InStr(sACL, vbTab & vbTab): sACL = Replace(sACL, vbTab & vbTab, vbTab): Wend
     'Wish I could retain the order here but...
-    SetItem(DB(Channel), "AccessList") = sACL
+    SetItem(DB(Channel), "access_list") = sACL
 End Property
 
 Public Sub DelAllFlags(ByVal Channel As String, ByVal User As String)
@@ -1215,7 +1221,7 @@ End Sub
 
 Public Function GetFirstAKick(ByVal Channel As String, ByVal User As User) As String
     Dim sAK As String, vAK As Variant
-    sAK = DB(Channel)("AKicks")
+    sAK = DB(Channel)("akicks")
     vAK = Split(sAK, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vAK)
@@ -1230,7 +1236,7 @@ End Function
 
 Public Property Get AKickReason(ByVal Channel As String, ByVal AKickMask As String) As String
     Dim sAK As String, vAK As Variant
-    sAK = DB(Channel)("AKicks")
+    sAK = DB(Channel)("akicks")
     vAK = Split(sAK, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vAK)
@@ -1245,7 +1251,7 @@ End Property
 
 Public Property Get AKickExpiry(ByVal Channel As String, ByVal AKickMask As String) As Double
     Dim sAK As String, vAK As Variant
-    sAK = DB(Channel)("AKicks")
+    sAK = DB(Channel)("akicks")
     vAK = Split(sAK, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vAK)
@@ -1260,7 +1266,7 @@ End Property
 
 Public Property Let AKickExpiry(ByVal Channel As String, ByVal AKickMask As String, ByVal NewExpiry As Double)
     Dim sAK As String, vAK As Variant
-    sAK = DB(Channel)("AKicks")
+    sAK = DB(Channel)("akicks")
     vAK = Split(sAK, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vAK)
@@ -1269,7 +1275,8 @@ Public Property Let AKickExpiry(ByVal Channel As String, ByVal AKickMask As Stri
             vEntry(1) = CStr(NewExpiry)
             vAK(idx) = Join(vEntry, " ")
             sAK = Join(vAK, vbCrLf)
-            DB(Channel)("AKicks") = sAK
+            SetItem(DB(Channel), "akicks") = sAK
+            Exit For
         End If
     Next idx
 End Property
@@ -1277,14 +1284,14 @@ End Property
 Public Sub AddAKick(ByVal Channel As String, ByVal AKickMask As String, ByVal Expiry As Double, ByVal Reason As String)
     If AKickExpiry(Channel, AKickMask) >= 0 Then Exit Sub
     Dim sResult As String
-    sResult = DB(Channel)("AKicks")
+    sResult = DB(Channel)("akicks")
     sResult = sResult & vbCrLf & AKickMask & " " & CStr(Expiry) & " " & Reason
-    DB(Channel)("AKick") = sResult
+    SetItem(DB(Channel), "akicks") = sResult
 End Sub
 
 Public Sub DelAKick(ByVal Channel As String, ByVal AKickMask As String)
     Dim sResult As String, vSplit As Variant
-    sResult = DB(Channel)("AKicks")
+    sResult = DB(Channel)("akicks")
     vSplit = Split(sResult, vbCrLf)
     Dim idx As Long
     For idx = 0 To UBound(vSplit)
@@ -1296,11 +1303,12 @@ Public Sub DelAKick(ByVal Channel As String, ByVal AKickMask As String)
     sResult = Join(vSplit, vbCrLf)
     'Removed items will be vbCrLf vbCrLf
     While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
+    SetItem(DB(Channel), "akicks") = sResult
 End Sub
 
 Public Function GetFirstExempt(ByVal Channel As String, ByVal User As User) As String
     Dim sExempt As String, vExempt As Variant
-    sExempt = DB(Channel)("Exempts")
+    sExempt = DB(Channel)("exempts")
     vExempt = Split(sExempt, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vExempt)
@@ -1315,7 +1323,7 @@ End Function
 
 Public Property Get ExemptExpiry(ByVal Channel As String, ByVal ExemptMask As String) As Double
     Dim sExempt As String, vExempt As Variant
-    sExempt = DB(Channel)("Exempts")
+    sExempt = DB(Channel)("exempts")
     vExempt = Split(sExempt, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vExempt)
@@ -1330,7 +1338,7 @@ End Property
 
 Public Property Let ExemptExpiry(ByVal Channel As String, ByVal ExemptMask As String, ByVal NewExpiry As Double)
     Dim sExempt As String, vExempt As Variant
-    sExempt = DB(Channel)("Exempts")
+    sExempt = DB(Channel)("exempts")
     vExempt = Split(sExempt, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vExempt)
@@ -1339,7 +1347,7 @@ Public Property Let ExemptExpiry(ByVal Channel As String, ByVal ExemptMask As St
             vEntry(1) = CStr(NewExpiry)
             vExempt(idx) = Join(vEntry, " ")
             sExempt = Join(vExempt, vbCrLf)
-            DB(Channel)("Exempts") = sExempt
+            SetItem(DB(Channel), "exempts") = sExempt
         End If
     Next idx
 End Property
@@ -1347,14 +1355,14 @@ End Property
 Public Sub AddExempt(ByVal Channel As String, ByVal ExemptMask As String, ByVal Expiry As Double)
     If ExemptExpiry(Channel, ExemptMask) >= 0 Then Exit Sub
     Dim sResult As String
-    sResult = DB(Channel)("Exempts")
+    sResult = DB(Channel)("exempts")
     sResult = sResult & vbCrLf & ExemptMask & " " & CStr(Expiry)
-    DB(Channel)("Exempt") = sResult
+    SetItem(DB(Channel), "exempts") = sResult
 End Sub
 
 Public Sub DelExempt(ByVal Channel As String, ByVal ExemptMask As String)
     Dim sResult As String, vSplit As Variant
-    sResult = DB(Channel)("Exempts")
+    sResult = DB(Channel)("exempts")
     vSplit = Split(sResult, vbCrLf)
     Dim idx As Long
     For idx = 0 To UBound(vSplit)
@@ -1366,11 +1374,12 @@ Public Sub DelExempt(ByVal Channel As String, ByVal ExemptMask As String)
     sResult = Join(vSplit, vbCrLf)
     'Removed items will be vbCrLf vbCrLf
     While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
+    SetItem(DB(Channel), "exempts") = sResult
 End Sub
 
 Public Function GetFirstInvite(ByVal Channel As String, ByVal User As User) As String
     Dim sInvite As String, vInvite As Variant
-    sInvite = DB(Channel)("Invites")
+    sInvite = DB(Channel)("invites")
     vInvite = Split(sInvite, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vInvite)
@@ -1385,7 +1394,7 @@ End Function
 
 Public Property Get InviteExpiry(ByVal Channel As String, ByVal InviteMask As String) As Double
     Dim sInvite As String, vInvite As Variant
-    sInvite = DB(Channel)("Invites")
+    sInvite = DB(Channel)("invites")
     vInvite = Split(sInvite, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vInvite)
@@ -1400,7 +1409,7 @@ End Property
 
 Public Property Let InviteExpiry(ByVal Channel As String, ByVal InviteMask As String, ByVal NewExpiry As Double)
     Dim sInvite As String, vInvite As Variant
-    sInvite = DB(Channel)("Invites")
+    sInvite = DB(Channel)("invites")
     vInvite = Split(sInvite, vbCrLf)
     Dim idx As Long, vEntry As Variant
     For idx = 0 To UBound(vInvite)
@@ -1409,7 +1418,7 @@ Public Property Let InviteExpiry(ByVal Channel As String, ByVal InviteMask As St
             vEntry(1) = CStr(NewExpiry)
             vInvite(idx) = Join(vEntry, " ")
             sInvite = Join(vInvite, vbCrLf)
-            DB(Channel)("Invites") = sInvite
+            SetItem(DB(Channel), "invites") = sInvite
         End If
     Next idx
 End Property
@@ -1417,14 +1426,14 @@ End Property
 Public Sub AddInvite(ByVal Channel As String, ByVal InviteMask As String, ByVal Expiry As Double)
     If InviteExpiry(Channel, InviteMask) >= 0 Then Exit Sub
     Dim sResult As String
-    sResult = DB(Channel)("Invites")
+    sResult = DB(Channel)("invites")
     sResult = sResult & vbCrLf & InviteMask & " " & CStr(Expiry)
-    DB(Channel)("Invite") = sResult
+    SetItem(DB(Channel), "invites") = sResult
 End Sub
 
 Public Sub DelInvite(ByVal Channel As String, ByVal InviteMask As String)
     Dim sResult As String, vSplit As Variant
-    sResult = DB(Channel)("Invites")
+    sResult = DB(Channel)("invites")
     vSplit = Split(sResult, vbCrLf)
     Dim idx As Long
     For idx = 0 To UBound(vSplit)
@@ -1436,6 +1445,7 @@ Public Sub DelInvite(ByVal Channel As String, ByVal InviteMask As String)
     sResult = Join(vSplit, vbCrLf)
     'Removed items will be vbCrLf vbCrLf
     While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
+    SetItem(DB(Channel), "invites") = sResult
 End Sub
 
 Public Function AccessLevel(ByVal Channel As String, ByVal User As String) As Integer
