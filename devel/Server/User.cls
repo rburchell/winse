@@ -54,7 +54,6 @@ Public Property Get Memos() As Memos
 End Property
 
 Public Property Get Custom() As Collection
-    Set mChannels = New Channels
     Set Custom = mCustom
 End Property
 
