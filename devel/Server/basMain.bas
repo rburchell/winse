@@ -27,6 +27,15 @@ Public Const LogTypeWarn = "WARN"
 Public Const LogTypeNotice = "NOTICE"
 Public Const LogTypeDebug = "DEBUG"
 
+'Just because these are normally untype-able.
+'They probably aren't mIRC specific but I don't care.
+Public Const MIRC_CTCP = "" 'CTCP Character
+Public Const MIRC_BOLD = "" 'mIRC Bold Attribute
+Public Const MIRC_UNDERLINE = "" 'mIRC Underline Attribute
+Public Const MIRC_REVERSE = "" 'mIRC Reverse Attribute
+Public Const MIRC_COLOR = "" 'mIRC Color Attribute
+Public Const MIRC_PLAIN = "" 'mIRC Plain (Reset All) Attribute
+
 '[ACCESS FLAGS]
 Public Const AccFullAccess As String = "MmgoriIak"
 Public Const AccFlagMaster As String * 1 = "M"
@@ -60,6 +69,8 @@ Public Type ConfigVars
 End Type
 
 Public Config As ConfigVars
+
+Public MOTD As String 'The cached MOTD
 
 'WinSe: WINdows SErvices, also a "pune" or "play on words" (wince, geddit??)
 '... hasn't made me wince yet ^.- - aquanight
@@ -101,13 +112,6 @@ Public Service(TotalServices - 1) As Service
 
 Public Buffer(32767) As String
 Public BufferElements As Integer
-
-'DA DATABASES
-Public NickServDB As Database
-Public ChanServDB As Database
-Public MemoServDB As Database
-Public OperServDB As Database
-Public BotServDB As Database
 
 Sub Main()
     'DO NOT REORDER THE SERVICES! eg chanserv (or whatever you call it) should be #0

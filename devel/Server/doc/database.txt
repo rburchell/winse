@@ -1,0 +1,93 @@
+DB Structures:
+
+NickServ Database:
+
+Name = Text. This is the nickname. Make it primary key if you can. No maxlen because that's
+             decided by the IRCd :P .
+Password = Text. This is the password. If you want to put a no spaces constraint, go ahead
+                 but I doubt it'll be necessary ;p . Maxlen should be reasonable, like 40.
+LastAddress = Text. This is the last seen address. Maxlen should be around 100.
+LastQuit = Text. This is the last quit message. Maxlen should be at least 307, since that
+                 is Unreal's limit and the highest I've seen so far.
+EMail = Text. This is the email address. Maxlen should be around 100 or more.
+AccessList = Text. Space seperated list of access list entries.
+GroupedNicks = Text. Space seperated list of other nicknames in this group.
+Secure = Boolean. The SET SECURE option.
+NoAutoOp = Boolean. The SET NOAUTOOP option - makes you exempt from ChanServ +give.
+Message = Boolean. The SET MESSAGESTYLE option.
+Greet = Text. The SET GREET option.
+Private = Boolean. The SET PRIVATE option.
+HideQuit = Boolean.    \
+HideEMail = Boolean.   |- Hide info from INFO, like lastquit, email, and userhost.
+HideAddress = Boolean. /
+LastSeenTime = Date/Time. Time of last logout. Used in expire checking too.
+Access = Text. Access flags.
+
+ChanServ Database:
+Name = Text (Primary Key). The channel name.
+Password = Text. The channel password for getting temp +f.
+Description = Text. The channel description.
+Successor = Text. Should be a nick from the nickserv db ;p .
+SecureOps = Boolean.
+SecureHalfOps = Boolean.
+SecureVoices = Boolean.
+Restricted = Boolean.
+Secure = Boolean.
+LeaveOps = Boolean.
+TopicLock = Boolean.
+StrictStatus = Boolean.
+StrictList = Boolean.
+LearnBans = Boolean.
+ForgetBans = Boolean.
+Give = Boolean.
+StrictMode = Boolean.
+MLock = Text. See chanflags.txt for how this will be formatted.
+Bots = Text. Space seperated list of assigned bots and associated botcommand prefix (or ?
+             if no prefix is set - ? is reserved for OperServ special botcommands).
+BotKick = Text. Nick of an assigned bot, or ChanServ.
+BotMode = Text. Nick of an assigned bot, or ChanServ.
+BotTopic = Text. Nick of an assigned bot, or ChanServ.
+BotGreet = Text. Nick of an assigned bot, or ChanServ.
+BotAutoKick = Text. Nick of an assigned bot, or ChanServ.
+BotAutoMode = Text. Nick of an assigned bot, or ChanServ.
+NoKickOps = Boolean.
+NoKickVoice = Boolean.
+NoBot = Boolean.
+KickBold = Number. -1 is off. 0 is on. >0 is on, with a ban placed after that many kicks.
+KickBadWords = "
+KickCaps = "
+KickColor = "
+KickFlood = "
+KickRepeat = "
+KickReverse = "
+KickUnderlines = "
+KickCapsMinimum = Number. Minimum # of caps in the message.
+KickCapsTrigger = Number. % of message for trigger.
+KickFloodLines = Number. Minimum # of lines to constitute a flood.
+KickFloodDur = Number. # of seconds to count lines.
+KickRepeat = Number. Minimum # of times a line must be repeated to trigger.
+KickBWList = Text. Tab seperated list of badword patterns.
+
+MemoServ Database:
+Name = Number (Primary Key). This will be randomly generated.
+From = Text. Nickname of the source.
+To = Text. Nickname/channelname of the target.
+Text = Text. Text of the memo. Maxlenghth of 400 should suffice. Any longer and one should
+       consider using e-mail instead ;p .
+
+Ban Database:
+Name = Text (Primary Key). One of:
+                            K:user@host - AKILL/GLINE
+                            Z:ipmask - GZLINE (CIDR supported?)
+                            N:realname - SVSNLINE
+                            Q:nickname - SQLINE
+                            C:channel - Trap channels - users that join get AKILLed.
+Expiry = Number. # of minutes before this ban expires. If -1, ban is perm.
+
+Bot Database:
+Name = Text (Primary Key). Bot nick. No maxlen should be put here - that's decided by the
+                           IRCd and would need to be validated at runtime anyway.
+Ident = Text. Bot ident.
+Host = Text. Bot VHost.
+RealName = Text. Bot Realname.
+Private = Boolean. Only assignable by IRCops.

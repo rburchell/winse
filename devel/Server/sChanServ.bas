@@ -83,51 +83,6 @@ Public Const CHANSERV_AOPDEFAULT = "oOHVkbeiugtma"
 Public Const CHANSERV_SOPDEFAULT = "pOHVkbeiugTsMcBEIaAm"
 Public Const CHANSERV_CFOUNDERDEFAULT = "f"
 
-'Structure of each channel record:
-'Each channel requires 2 records: one will be used for the access list.
-'Channel Settings Record:
-'Record Name is the name of the channel.
-'Fields:
-'DESC | Channel Description
-'PASSWORD | Channel Password
-'List item prefixes:
-'- : Normal.
-'$ : Sticky.
-'@ : Lock.
-'! : CoFounder Lock.
-'# : Founder Lock.
-'AKICK | Space seperated list of autokick entries.
-'EXEMPT | Space seperated list of exempt entries.
-'INVITE | Space seperated list of invite entries.
-'SUCCESSOR | Successor's nick.
-'SECUREOPS | ON/OFF (Non ACL members are +d)
-'SECUREHALFOPS | ON/OFF (Non ACL members are +D)
-'SECUREVOICES | ON/OFF (Non ACL members are +q)
-'RESTRICTED | ON/OFF (Non ACL members are +K)
-'SECURE | ON/OFF
-'LEAVEOPS | ON/OFF (First joiner isn't deopped, or netjoin ops aren't reversed.)
-'TOPICLOCK | ON/OFF
-'STRICTSTATUS | ON/OFF
-'STRICTLISTS | ON/OFF
-'LEARNBANS | ON/OFF/Number
-'FORGETBANS | ON/OFF
-'GIVE | ON/OFF
-'STRICTMODES | ON/OFF
-'MLOCK | [[[+|-]<unparameteredmode>]] [[[+]<parameteredmode(s)> <param(s)>]]
-'LOCK SET: Space seperated list of locked SET options. Prefix ! for +f lock, # for +F lock.
-'LOCK ACCESS: Space seperated list of locked ACEs (by nick). Prefix ! for +f lock, # for +F lock.
-'BOTS | Space seperated list of BotServ bots assigned to this channel.
-'BOTKICK | Nick of an assigned bot responsible for issuing requested KICKs.
-'BOTAUTOMODE | Nick of an assigned bot responsible for automatic mode setting (for +b, +o, etc).
-'BOTMODE | Nick of an assigned bot responsible for requested mode changes.
-'BOTTOPIC | Nick of an assigned bot responsible for TOPIC changes.
-'BOTGREET | Nick of an assigned bot responsible for saying GREET messages.
-'BOTAUTOKICK | Nick of an assigned bot responsible for issuing automatic KICKs.
-
-'Channel Access Record:
-'Record Name is "%s ACCESS LIST"
-'Fields are named by nickname, and value is flags.
-
 Public Sub ChanservHandler(ByVal Cmd As String, ByVal Sender As User)
     Dim Parameters() As String
     Dim SenderNick As String
@@ -136,27 +91,21 @@ Public Sub ChanservHandler(ByVal Cmd As String, ByVal Sender As User)
     Parameters() = basFunctions.ParseBuffer(Cmd)
     
     Select Case UCase(Parameters(0))
-        Case "ACCESS"
-            'ACCESS #thelounge ADD w00t 80
-            If UBound(Parameters) < 4 Then
-                'insufficient parameters.
-            End If
-            Call sChanServ.Access(Sender, Parameters)
         Case "REGISTER"
-            'REGISTER #thelounge testpass description
-            'P[0] - REGISTER
-            'P[1] - Name
-            'P[2] - Password
-            'P[3] - Description
-            If UBound(Parameters) < 3 Then
-                Call basFunctions.SendMessage(basMain.Service(0).Nick, SenderNick, Replies.InsufficientParameters)
-                Exit Sub
-            End If
-            Dim i As Integer
-            For i = 4 To UBound(Parameters)
-                Parameters(3) = Parameters(3) & " " & Parameters(i)
-            Next i
-            Call sChanServ.Register(Sender, Parameters(1), Parameters(2), Parameters(3))
+        Case "IDENTIFY"
+        Case "ACCESS"
+        Case "AKICK", "EXEMPTS", "INVITES"
+        Case "INVITE"
+        Case "UNBAN"
+        Case "VOICE", "DEVOICE", "HALFOP", "DEHALFOP", "OP", "DEOP", "PROTECT", "DEPROTECT", "OWNER", "DEOWNER"
+        Case "VOP", "HOP", "AOP", "SOP", "CFOUNDER"
+        Case "KICK", "BAN"
+        Case "TOPIC"
+        Case "MODE"
+        Case "SET"
+        Case "LOCK"
+        Case "UNLOCK"
+        Case "DROP"
         Case "HELP"
             'P[0] - HELP
             'P[1]> - Word
@@ -173,80 +122,65 @@ Public Sub ChanservHandler(ByVal Cmd As String, ByVal Sender As User)
     End Select
 End Sub
 
+Public Sub Register(ByVal Source As User, ByVal Channel As Channel, ByVal Password As String, ByVal Description As String)
+
+End Sub
+
+Public Sub Identify(ByVal Source As User, ByVal Channel As Channel, ByVal Password As String)
+
+End Sub
+
+Public Sub Access(ByVal Source As User, ByVal Channel As Channel, ByVal Subcommand As String, ByVal Nickname As String, Optional ByVal Flags As String = "")
+
+End Sub
+
+Public Sub ManageMaskList(ByVal Source As User, ByVal Channel As Channel, ByVal List As String, ByVal Subcommand As String, Optional ByVal Entry As String = "")
+
+End Sub
+
+Public Sub Invite(ByVal Source As User, ByVal Channel As Channel, ByVal Nick As User)
+
+End Sub
+
+Public Sub Unban(ByVal Source As User, ByVal Channel As Channel, ByVal User As User)
+
+End Sub
+
+Public Sub StatusChange(ByVal Source As User, ByVal Channel As Channel, ByVal What As String, ByVal Target As User)
+
+End Sub
+
+Public Sub StandardList(ByVal Source As User, ByVal Channel As Channel, ByVal What As String, ByVal Target As String)
+
+End Sub
+
+Public Sub BootUser(ByVal Source As User, ByVal Channel As Channel, ByVal Target As User, ByVal Message As String, Optional ByVal BanType As Byte = -1)
+
+End Sub
+
+Public Sub Topic(ByVal Source As User, ByVal Channel As Channel, ByVal NewTopic As String)
+
+End Sub
+
+Public Sub Mode(ByVal Source As User, ByVal Channel As Channel, ByVal ModeChange As String)
+
+End Sub
+
+Public Sub LockChange(ByVal Source As User, ByVal Channel As Channel, ByVal Locking As Boolean, ByVal SubLock As String, ByVal Entry As String)
+
+End Sub
+
+Public Sub Drop(ByVal Source As User, ByVal Channel As Channel, Optional ByVal ConfirmationCode As String)
+
+End Sub
+
 Private Sub Help(ByVal Sender As User, Cmd)
     Dim SenderNick As String
     SenderNick = Sender.Nick
-    Select Case UCase(Cmd)
-        Case Else
-            Call basFunctions.SendMessage(basMain.Service(0).Nick, SenderNick, "ChanServ Commands:")
-            Call basFunctions.SendMessage(basMain.Service(0).Nick, SenderNick, " REGISTER")
-            Call basFunctions.SendMessage(basMain.Service(0).Nick, SenderNick, " ACCESS")
-    End Select
 End Sub
 
 Private Sub Version(Sender As User)
     Call basFunctions.SendMessage(basMain.Service(0).Nick, Sender.Nick, AppName & "-" & AppVersion & "[" & AppCompileInfo & "] - " & basMain.Service(0).Nick & "[" & sNickServ.ModVersion & "]")
-End Sub
-
-Private Sub Access(Sender As User, Parameters() As String)
-    'ACCESS #thelounge ADD w00t 80
-    'Check if the chan is registered first.
-    If Channels.Exists(Parameters(1)) = False Then
-        Call basFunctions.NotifyAllUsersWithServicesAccess(Replies.SanityCheckLostChannel)
-        Exit Sub
-    End If
-    If Not basFunctions.IsChanRegistered(Parameters(1)) Then
-        'chan not registered.
-        Call basFunctions.SendMessage(basMain.Service(0).Nick, basMain.Users(Sender).Nick, Replace(Replies.ChanServChannelNotRegistered, "%n", Parameters(1)))
-        Exit Sub
-    End If
-    
-    Select Case Parameters(2)
-        Case "ADD"
-        Case "DEL"
-    End Select
-End Sub
-
-Private Sub Register(Sender As User, ChannelToRegister As String, Password As String, Description As String)
-    ChannelToRegister = UCase(ChannelToRegister)
-    'We need to check for registration here.
-    Dim ChanIndex As Channel
-    Set ChanIndex = Channels(ChannelToRegister)
-    If ChanIndex Is Nothing Then
-        'This is a Bad Thing.
-        Call basFunctions.NotifyAllUsersWithServicesAccess(Replies.SanityCheckLostChannel)
-        'For the sake of not proceeding on with an
-        'invalid index... - aquanight
-        Exit Sub '!!!
-        'Alternatively, we can RTE. - aquanight
-            'Dear god, did I really forget that Exit?? *checks old code* Oops. --w00t
-    End If
-
-    With basMain.Channels(ChanIndex)
-        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "Topic", "Registered by " & basMain.Users(Sender).Nick)
-        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "TopicSetBy", basMain.Service(0).Nick)
-        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "Founder", basMain.Users(Sender).Nick)
-        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "FounderPassword", Password)
-        Call basFileIO.SetInitEntry(App.Path & "\databases\channels.db", ChannelToRegister, "MLock", "+ntr")
-    End With
-    Dim TotalRegisteredChannels As Variant
-    TotalRegisteredChannels = CDec(basFileIO.GetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredChannels", -1))
-    TotalRegisteredChannels = CStr(TotalRegisteredChannels + 1)
-    Call basFileIO.SetInitEntry(App.Path & "\databases\index.db", "Totals", "TotalRegisteredChannels", CStr(TotalRegisteredChannels))
-    Call basFileIO.SetInitEntry(App.Path & "\databases\index.db", "Channels", "RegisteredChannel" & TotalRegisteredChannels, ChannelToRegister)
-    
-    'Channel registered. Get cs to set the topic :P
-    Call basFunctions.SendData(":" & basMain.Service(0).Nick & " TOPIC " & ChannelToRegister & " :Registered by " & basMain.Users(Sender).Nick)
-    'now get cs to set the modes yay
-    'Putting +nt isn't a good idea IMHO. The chanop
-    'may not want this behavior :P . I'm not gonna
-    'change it right away, though, since no channel in
-    'their right mind would run without +n (dunno about
-    '+t). Assuming everyone is in the right mind,
-    'however, is just plain stupid :P - aquanight
-        'It will be configurable eventually when I get around to it. Too much coding, too little time.
-        '--w00t
-    basFunctions.SendData (":" & basMain.Service(0).Nick & " MODE " & ChannelToRegister & " :+ntr")
 End Sub
 
 'Callin subs for channel mode changes

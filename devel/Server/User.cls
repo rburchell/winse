@@ -65,11 +65,6 @@ Public Function IsOper() As Boolean
 End Function
 
 Public Sub KillUser(ByVal Message As String, Optional ByVal Killer As String = "Agent")
-    'I think some kind of validation should be put
-    'here... because we could theoretically call
-    'KillUser with a positive UserId that is still
-    'invalid. It shouldn't happen, but it'd be
-    'good to know :) . -aquanight
     If Nick = "" Then
         'For now, I'm throwing a Bad Call Error
         'Yes it's old fashioned, but if it where
@@ -81,17 +76,32 @@ Public Sub KillUser(ByVal Message As String, Optional ByVal Killer As String = "
         Message = Killer & " (" & Message & ")"
     End If
     basFunctions.SendData (":" + Killer + " KILL " & Nick & " :" & Message)
-    Access = ""
-    Modes = ""
-    Nick = ""
-    Requests = 0
-    MsgStyle = False
+    Dispose
+End Sub
+
+Public Sub SVSKillUser(ByVal Message As String, Optional ByVal Killer As String = "Agent")
+    Call basFunctions.SendData(":" + Killer + " SVSKILL " + Nick + " :" + Message)
+    Dispose
+End Sub
+
+'Clears this client out of the Users and Channels array. Theoretically, this would result in the object
+'becoming unreferenced, and thus deleted. Useful if something we did or received resulted in a client
+'being dropped, but we really shouldn't do this while a valid client exists.
+Public Sub Dispose()
     basMain.Users.Remove Nick
     Dim c As Channel
     On Error Resume Next
     For Each c In basMain.Channels
         c.Members.Remove Nick
+        If c.Members.Count = 0 Then
+            Channels.Remove c
+        End If
     Next c
+    Access = ""
+    Modes = ""
+    Nick = ""
+    Requests = 0
+    MsgStyle = False
 End Sub
 
 Public Sub CheckFloodLevel()

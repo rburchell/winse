@@ -26,6 +26,13 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 21/08/2004 - aquanight
+  -[CS] [---] Getting ready for the redesign - I've laid out the base commands :) .
+  -[CO] [---] Added some functions to add mIRC formatting.
+  -[CO] [---] Another rewrite of the DB API :( .
+  -[CO] [---] ADMIN command implemented.
+  -[CO] [---] Added User.Dispose, to remove all references to a user. Use this for things
+              like KILL, SVSKILL, QUIT, etc.
  09/08/2004 - aquanight
   -[AL] [---] Changed the whole user and channel tracking mechanisms, because I got
               sick of mucking with arrays and standard collections and what not.
@@ -375,13 +382,3 @@ Suggested services access for a net of, 400 people:
  10 SU ] -Mostly a "helper" role (ie report abuse for abuseteam checking)
  Perhaps around 5-8 people with abuse team access.
 [-----------------------------------]
-
-ChanServ Access Levels:
-Access Levels:
-100 +qo
-90  +ao
-80  +a
-50  +o
-40  +h
-30  +v
-

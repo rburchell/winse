@@ -1,0 +1,404 @@
+This is the flag scheme I'm considering for ChanServ...
+
+Boolean channel settings set in ChanServ SET are referred to as +/-setting.
+
+When referring to the Access List, two abbreviations are used:
+ACL = Access Control List. This is the entire Access List, controlled by ChanServ ACCESS.
+ACE = Access Control Entry. A single entry in the Access List, consisting of a nickname
+      designating a Registered User, and a flag string.
+
+Note on +f and +F: +f and +F override are assumed to have ALL positive flags set, and ALL
+negative flags unset, with the exception that users with only +f do NOT have +F, +n, or +N.
+Only one user can have +F: the Founder set when the channel is registered. +F may be
+transferred to another user via SET FOUNDER, which can only be used by the +F user. In doing
+so, the +F user becomes treated as an IDENTIFY'd user (+f until LOGOUT/quit/etc). This
+means that he can still add himself to the access list if he hasn't done so already.
+Obviously, once logged out, he will revert to whatever flags he has in the access list.
+Multiple users may have +f, which can be set or unset by the +F user. It can also be granted
+temporarily by using the IDENTIFY command.
+
+Flags used: aAbBcCdDeEfFgGhHiI--kKlLmMnNoOpPqQ--sStTuUvV--xXyYzZ
+Flags free: ------------------jJ--------------rR--------wW------
+
+F = Permanent Founder.
+    Required to set: REGISTER the channel.
+f = Co-Founder.
+    Required to set: +F or IDENTIFY to ChanServ.
+
+a = May LIST the ACL and VIEW specific entries.
+    Required to set: A
+A = Implies +a. May ADD and DEL users, as well as MODIFY flags, assuming the user have the
+    required flags (as listed below).
+    Required to set: f
+
+NOTE: v, h, o, p, n are considered "level flags" meaning that if the target's highest flag
+is higher than user's highest flags, positive flags cannot be unset, and negative flags
+cannot be set in the target.
+
+"What stops another user with o from -o'ing me?"
+See the "Required to set" field, which indicates that other flags may be required to modify
+the flag. Thus being the same or higher level, and having +A is not enough.
+
+
+v = Voice. May use VOICE and DEVOICE commands on self only.
+    Required to set: V
+V = Voice Manager. May use VOICE and DEVOICE on anyone. Implies +v.
+    Required to set: h
+q = Quiet. User may never be voiced. Any attempt to do so will either fail or be reversed.
+    Required to set: V
+Q = SuperQuiet. For Unreal servers, will set a ~q (quiet) and ~n (nonickchange) ban on the
+    user on join.
+    Required to set: h
+
+h = HalfOp. May use HALFOP and DEHALFOP commands on self only.
+    Required to set: H
+H = HalfOp Manager. May use HALFOP and DEHALFOP on anyone. Implies +h.
+    h is specified explicitly.
+    Required to set: o
+D = DeHalfOp. User may never be halfoped. Any attempt to do so will either fail or be
+    reversed.
+    Required to set: o
+
+o = Op. May use OP and DEOP commands on self only.
+    Required to set: O
+O = Op Manager. May use OP and DEOP commands on anyone. Implies +o.
+    Required to set: p
+d = Deop. User may never be opped. Any attempt to do so will either fail or be reversed.
+    Required to set: p
+
+p = Protected. May use PROTECT and DEPROTECT commands on self only.
+    (+p users are typically +o as well, but there is no requirement.)
+    Also called Admin in some IRCds.
+    Required to set: P
+P = Protected User Manager. May use PROTECT and DEPROTECT commands on anyone. Implies +p.
+    Also called Admin Manager in some IRCds.
+    Required to set: n
+
+n = Owner. May use OWNER and DEOWNER commands on self only.
+    Required to set: N
+N = Owner Manager. May use OWNER and DEOWNER commands on anyone. Implies +n.
+    Required to set: F
+
+NOTE:
+For IRCds that do not support +a or +q as denoting a protected user, ChanServ will enforce
+them manually by kicking any op that kicks a p or n user, and by kicking any p user that
+kicks an n user. It will also reverse any status removal on these users by an unauthorized
+user.
+
+k = Kick Allowed. Allowed to use the KICK command.
+    Required to set: h
+K = AutoKick. Kick/ban this user from the channel when he joins.
+    Required to set: B
+
+b = Ban Allowed. Allowed to use the BAN command.
+    Required to set: h
+B = Ban Operator. Allowed to (un)set the K flag, and manage the seperate AKICK list.
+    Required to set: f
+
+e = Excepted from Bans. ChanServ will place a +e mask before adding any ban that affects
+    this user.
+    Required to set: E
+E = Exempt Operator. Allowed to (un)set the e flag, and manage the seperate EXEMPT list.
+    Required to set: f
+
+i = Invite Allowed. Allowed to use the INVITE command to invite himself to a +i channel.
+    Required to set: I
+I = Invite Operator: Allowed to (un)set the i flag, and use INVITE on other users. For IRCds
+    that support it, may also manage the INVITES list.
+    Required to set: f
+
+m = Mode Operator. May use ChanServ MODE. For +strictmode channels, ChanServ won't reverse
+    IRCd MODE changes unless they violate the MLock.
+    Required to set: f
+
+c = CLEAR access. Co-operates with these flags:
+    k = USERS allowed (kick everyone out)
+    b = BANS allowed (clear the +b list)
+    u = Also BANS allowed
+    E = EXEMPTS allowed (clear the +e list)
+    I = INVITES allowed (clear the +I list, if supported)
+    O = OPS allowed (-qaoh everyone)
+    V = VOICES allowed (-v everyone)
+    m = MODES allowed (clear all Class B, C, and D modes except MLOCKd modes).
+    M = MODES allowed (clear all Class B, C, and D modes including MLOCKd modes).
+    Required to set: f
+
+t = Topic Operator. May use ChanServ TOPIC if +topiclock.
+    Required to set: T
+T = Topic Manager. May (un)set the t flag. Implies +t.
+    Required to set: f
+
+g = GetKey. May use GETKEY if the channel is set +k.
+    Required to set: G
+G = May (un)set the g flag. May use SETKEY for floating key channels. Implies +g
+    Required to set: f
+
+u = Unban. May use the UNBAN command to remove all bans affecting the user.
+    Required to set: U
+U = May (un)set the u flag. Implies +u
+
+M = Memo Admin. May send MEMOs to the channel, which can be read by anyone on the ACL.
+    Required to set: f
+
+C = May use BotServ Channel Commands.
+    Required to set: A
+
+x = BotServ BADWORDS and SET are allowed.
+    Required to set: f
+X = BotServ SAY and ACT are allowed.
+    Required to set: O
+
+y = BotServ GREET are allowed.
+    Required to set: A
+Y = Not kicked by any autokicks.
+    Required to set: f
+
+z = Allowed to use ChanServ INFO with the ALL modifier.
+    Required to set: f
+Z = KICKs and BANs are not signed or prefixed.
+    Required to set: f
+
+s = Allowed to SET options, except those LOCKed by a +S user.
+    Required to set: f
+S = Allowed to LOCK and UNLOCK SET options. LOCKed SET options can only be changed by a +S
+    user.
+    Required to set: f
+
+l = Allowed to LOCK and UNLOCK ACEs. LOCKed ACEs can only be modified by a +l user.
+    Required to set: f
+L = Allowed to LOCK and UNLOCK AKICK, EXEMPT, and INVITES list entries. LOCKed entries are
+    readonly to non +L users.
+    Required to set: f
+
+(NOTE: Any option LOCKed by a founder (+f or +F) cannot be UNLOCKed with +S, +l, or +L
+alone. A setting LOCKed by a +f user can only be UNLOCKed or modified by a +f or +F user. A
+setting LOCKed by the +F user can only be UNLOCKed or modified by the +F user.)
+
+XOP Flag Mappings:
+VOP = +vyiua
+HOP = +hVkbiugta
+AOP = +oOHVkbeiugtma
+SOP = +pOHVkbeiugtTsMcBEIam
+COFOUNDER = +f
+
+These can be changed by the Founder (+F) at any time.
+
+Now for the SET command scheme.
+
+ON/OFF options can be set using:
+SET #channel OPTIONNAME ON|OFF
+SET #channel [+|-]OPTIONNAME (+ assumed if not given)
+UNSET OPTIONNAME (same as SET -OPTIONNAME)
+where SET +OPTION is equivalent to SET OPTION ON, and SET -OPTION (or UNSET OPTION)
+is equivalent to SET OPTION OFF.
+When using +option format, multiple options can be set at once. For example:
+SET #MyChannel +secure +secureops -leaveops +topiclock
+This requires explicitly using the + character.
+
+Option FOUNDER
+Type: Nickname
+Requires: +F
+Use this option to give Permanent Founder Status (+F) to the specified Registered Nick
+(which may NOT be a nick that is in danger of expiring, even if a SUCCESSOR has been
+set).
+This option cannot be UNSET.
+
+Option PASSWORD
+Type: Single Word
+Requires: +F
+Use this command to change the channel password used in IDENTIFY.
+This option cannot be UNSET.
+
+Options DESC
+Type: Free Text
+Requires: +F
+Use this command to change the channel description shown in INFO.
+
+Option SUCCESSOR
+Type: Nickname
+Requires: +F
+Use this option to explicitly designate a successor, which will gain Permanent Founder
+access to the channel if the current Permanent Founder's nick is dropped.
+This option is initially UNSET. It will be UNSET if the Successor's nick is dropped, or if
+the Founder's nick is dropped, and the Successor becomes the new Founder.
+
+NOTE: Automatic Successor Selection System
+Sometimes a founder completely forgets to name a successor, or the successor is dropped just
+before or just after the founder. Any other service package would drop the channel at this
+point; however, I think it would be best to make a guess as to who should be the next
+founder.
+There are a few rules when selecting a new successor. This applies even when SUCCESSOR _is_
+set:
+- The selected nick is not suspended or AKILLed.
+- The selected nick is not in danger of expiring (ie within 3 days of the cutoff), or not
+  "half registered" (ie pending E-Mail verification - if we implement it :P ).
+- The selected nick does not have any negative flags in the channel.
+- The selected nick is not listed in the AKICK list.
+Now, this is the order of precedence for selecting a nick. If a nick does not meet the
+conditions, or the set indicated is empty, we move on.
+- The SUCCESSOR value.
+- COFOUNDERs, in order of last join. The most recent to join has precedece.
+- ChanServ IDENTIFY'd users. (IOW, users with temp +f.)
+- Users with +N, then +n, +P, then +p, +O, +o, +H, +h, +V, +v. Most recent to join has
+  precedence within the given set.
+If no founder could be selected, the channel becomes "founderless". The first eligible
+successor to join becomes the successor. A "founderless" will expire much quicker than a
+normal channel.
+
+Option SECUREOPS
+Type: ON/OFF
+When set, treats users not on the ACL as if they were +d.
+
+Option SECUREHALFOPS
+Type: ON/OFF
+When set, treats users not on the ACL as if they were +D.
+
+Option SECUREVOICES
+Type: ON/OFF
+When set, treats users not on the ACL as if they were +q.
+
+Option RESTRICTED
+Type: ON/OFF
+When set, treats users not on the ACL as if they were +K.
+
+Option SECURE
+Type: ON/OFF
+When set, a user MUST identify to his nickname to take part in the ACL.
+(This does not apply to +d, +D, +q, +Q, +K, or any other negative flags.)
+
+Option LEAVEOPS
+Type: ON/OFF
+When set, ChanServ won't deop the first user, or users joining in a netsplit.
+(If SECUREOPS is set, ChanServ will still deop them unless they are on the ACL.
+ChanServ may also still deop a user if he has +d in his ACE.)
+
+Option TOPICLOCK
+Type: ON/OFF
+When set, topic changes will be restricted to +t users. Also restricts use
+of TOPIC to +t users.
+When unset, TOPIC may be used by any Channel Operator (@) regardless of access.
+Thus, when TOPICLOCK is off, Flag +t is meaningless.
+
+Option STRICTSTATUS
+Type: ON/OFF
+When set, restricts who may use the IRCd's /MODE command to give channel
+status to other users. Illegal changes are reversed.
+
+NOTE: Violation of SECURE* settings, or +dDqQ flags, will ALWAYS be reversed.
+
+Option STRICTLISTS
+Type: ON/OFF
+When set, restricts who may add bans or exempts. A user not having the BAN
+privilege will have ban additions bounced, and a user not having UNBAN
+privilege will have ban removals bounced. Also exempt additions/removals
+will be bounced if the user does not have the EXEMPT list privilege.
+
+NOTE: Regardless of this setting:
+- Adding a ban matching a user with +e will always be bounced.
+- Removing a ban enforced by AKICK STICK will always be bounced.
+
+Option LEARNBANS
+Type: ON/OFF or number
+When set, ChanServ will learn +b additions and add them to the AKICK list
+if the operator setting it has the AKICK privilege. If a number is used, it
+is the same as ON, but sets the default expiration time for the ban. Longer
+bans must be added using AKICK. If ON is used, the default from the configuration
+is used as 'number'.
+
+Option FORGETBANS
+Type: ON/OFF or STICKONLY
+When set, ChanServ will delete AKICK entries when the corresponding +b ban is
+removed via the IRCd's /MODE command, but only if the operator doing so has
+permission to edit the AKICK list. If not, AKICK STICK bans will be readded
+as normal.
+If STICKONLY is used, ChanServ will only delete STICKed entries in this way.
+
+Option GIVE
+Type: ON/OFF
+When set, ChanServ will automatically give status to a user according to their
+flags:
+v : Get +v on join.
+h : Get +h on join.
+o : Get +o on join.
+p : Get +ao on join.
+n : Get +qo on join.
+
+Option STRICTMODE
+Type: ON/OFF
+When set, restricts who may set modes using the IRCd /MODE command.
+Only operators having the +m flag may make Class B, C, or D MODE changes.
+Any other change will be reversed.
+
+NOTE: MODE Changes violating an MLOCK will ALWAYS be reversed.
+
+Option MLOCK
+Type: ModeString
+Sets what modes are enforced on the channel.
+You cannot MLOCK any Prefix or Class A (List) mode. You can use MLOCK for any
+Class B, C, or D mode that the IRCd supports. The parameter list is used for
+setting modes, and must be in the same order as the IRCd would expect it. ChanServ
+does not reorder the mode flags, so that parameters can match up with the
+correct flags.
+The Mode Format is as follows:
+<binaryflagstring> <parameteredflagstring>
+<binaryflagstring> can be: [+<modestoset>][-<modestounset>][<binaryflagstring>]
+<modestoset> must consist only of Class D modes, with the exception of the special case
++l, which may be included. If so, ChanServ will set the channel limit to be 8 more than
+the current channel membership count. ChanServ will, however, wait a few seconds after
+a join before updating the limit. Thus, ChanServ effectively uses +l to control
+join-flooding a channel (this is not effective, however, against join/part-floods).
+<modestounset> may consist of any Class B, C, or D mode.
+<parameteredflagstring> consists of Class B or C modes that are to be set. Each character
+to set requires a parameter.
+<parameteredflagstring> = <parammodestoset> [[<params>]]
+<parammodestoset> are a collection of Class B or C modes to set. <params> are associated
+with each parameter.
+You can also use the format [[+<parammodechar> <param>]]
+To assure that parameters are associated correctly, parametered modes are sent one by one.
+Example:
+SET #MyChannel MLOCK +nt +lf 30 *5:10
+ChanServ will first send MODE +nt, then MODE +l 30, then MODE +f *5:10.
+SET #AnotherChannel MLOCK +ntl +k mykey +L #FloodersRUS
+ChanServ will first send MODE +nt. ChanServ will then count the members, and set the limit
+to 8 more than that amount, and then finally send MODE +L #FloodersRUS.
+
+CGI:IRC NOTE: When neither a + or a - is placed at the start of a mode string, a + is
+assumed. This is mainly to accomodate various CGI:IRC clients' inability to use a plus
+character due to the HTTP plus -> space transformation. It is also done to be in step with
+the fact that the IRCd MODE command follows this behavior as well.
+
+-- BotServ Options --
+Multiple bots can be assigned to a channel. Also, all of the standard services act as
+assignable bots; however, only ChanServ is assignable by normal users.
+
+When a channel is first registered, either no bots will be assigned, or ChanServ will
+be assigned.
+
+Which bot does what must be set with the options described below. They default to ChanServ.
+ChanServ may be selected as an option even if it is not assigned.
+
+BOTKICK
+Determines which bot will preform kicks generated by the ChanServ KICK and BAN commands.
+
+BOTMODE
+Determines which bot will preform mode changes generated by the ChanServ MODE, (DE)VOICE,
+(DE)HALFOP, (DE)OP, (DE)PROTECT, and (DE)OWNER commands. It will also set +bs generated
+by the BAN command.
+
+BOTTOPIC
+Determines which bot will preform topic changes generated by the ChanServ TOPIC command, or
+by enforcement of TOPICLOCK or KEEPTOPIC.
+
+BOTGREET
+Determines which bot will greet users. If ChanServ is selected, but not assigned to the
+channel, no greet messages are displayed.
+
+BOTAUTOKICK
+Determines which bot will generate automatic kicks, as a result of the the BotServ KICK
+configuration, the AKICK list, or the +K flag. (Bans for these are generated by BOTAUTOMODE
+bot.)
+
+BOTAUTOMODE
+Determines which bot will generate automated mode changes, as a result of an autokicked
+user joining, BotServ KICK ban setting, +K flag, as well as for voices/ops/etc when the
+channel is +give.

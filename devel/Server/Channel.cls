@@ -16,18 +16,18 @@ Option Explicit
 Public Name As String
 Public Topic As String
 Public TopicSetBy As String
-Public TopicSetOn As Long    'Not sure if this is really needed... --w00t
+Public TopicSetOn As Long                   'Not sure if this is really needed... --w00t
 Public FounderPassword As String
-Public MLock As String    'modes for mlock
+Public MLock As String                      'modes for mlock
 Public TotalUsersOnAccessList As Integer
 Public Modes As String
 Private mMembers As Members
 'Now for the extended modes that require parameters (+flL etc)
 Private mBans As Collection
 Private mExcepts As Collection
-Private mInvites As Collection    'For hybrid :)
+Private mInvites As Collection              'For hybrid :)
 Public ChannelKey As String
-Public FloodProtection As String    'chanmode +f
+Public FloodProtection As String            'chanmode +f
 Public OverflowChannel As String
 Public OverflowLimit As Long
 'Anything else services need to store?

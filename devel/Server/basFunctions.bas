@@ -447,3 +447,53 @@ Public Function StringRepeat(ByVal Str As String, ByVal Count As Long)
     Next Count
     StringRepeat = sWork
 End Function
+
+'These do simple mIRC format code conversions:
+'%a <-> CTCP
+'%b <-> Bold
+'%c <-> Color
+'%_ <-> Underline
+'%v <-> Reverse
+'%o <-> Plain
+'Case doesn't matter.
+Public Function EscapeMIRCFormatting(ByVal Text As String) As String
+    Dim sWork As String
+    sWork = Text
+    sWork = Replace(sWork, MIRC_CTCP, "%A", , , vbBinaryCompare)
+    sWork = Replace(sWork, MIRC_BOLD, "%B", , , vbBinaryCompare)
+    sWork = Replace(sWork, MIRC_COLOR, "%C", , , vbBinaryCompare)
+    sWork = Replace(sWork, MIRC_UNDERLINE, "%_", , , vbBinaryCompare)
+    sWork = Replace(sWork, MIRC_REVERSE, "%V", , , vbBinaryCompare)
+    sWork = Replace(sWork, MIRC_PLAIN, "%O", , , vbBinaryCompare)
+End Function
+
+Public Function UnescapeMIRCFOrmatting(ByVal Text As String) As String
+    Dim sWork As String
+    sWork = Text
+    sWork = Replace(sWork, "%A", MIRC_CTCP, , , vbTextCompare)
+    sWork = Replace(sWork, "%B", MIRC_BOLD, , , vbTextCompare)
+    sWork = Replace(sWork, "%C", MIRC_COLOR, , , vbTextCompare)
+    sWork = Replace(sWork, "%_", MIRC_UNDERLINE, , , vbTextCompare)
+    sWork = Replace(sWork, "%V", MIRC_REVERSE, , , vbTextCompare)
+    sWork = Replace(sWork, "%O", MIRC_PLAIN, , , vbTextCompare)
+End Function
+
+Public Function MakeBold(ByVal Text As String) As String
+    MakeBold = MIRC_BOLD & Text & MIRC_BOLD
+End Function
+
+Public Function MakeUnderline(ByVal Text As String) As String
+    MakeUnderline = MIRC_UNDERLINE & Text & MIRC_UNDERLINE
+End Function
+
+Public Function MakeReverse(ByVal Text As String) As String
+    MakeReverse = MIRC_REVERSE & Text & MIRC_REVERSE
+End Function
+
+Public Function MakeColor(ByVal Text As String, Optional ByVal FGColor As Byte = 0, Optional ByVal BGCOlor As Byte = 255)
+    MakeColor = MIRC_COLOR & CStr(FGColor) & IIf(BGCOlor <= 15, "," & CStr(BGCOlor), "") & Text & MIRC_COLOR
+End Function
+
+Public Function MakeCTCP(ByVal Text As String)
+    MakeCTCP = MIRC_CTCP & Text & MIRC_CTCP
+End Function

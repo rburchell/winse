@@ -62,7 +62,8 @@ Public Sub CmdPong(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
 End Sub
 
 Public Sub CmdTKL(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
-
+    'Idea: we can learn AKILLs set by the server in here :) .
+    'Same Idea fo SZLINE SNLINE or SQLINE.
 End Sub
 
 Public Sub CmdError(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
@@ -154,6 +155,8 @@ Public Sub CmdNick(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             'COLLISION!!!!!!!!
             'For services nicks, we ALWAYS win.
             basFunctions.PutQuick ":" + basMain.Config.ServerName + " KILL " + Args(0) + " :" + basMain.Config.ServerName + " (Nick Collision (" + basMain.Config.UplinkName + " <- " + basMain.Config.ServerName + "))"
+            'Remove the user (under his old nick) from our data.
+            Users(sNick).Dispose
             'Send out a warning...
             Call basFunctions.LogEventWithMessage(basMain.LogTypeWarn, Replies.SanityCheckServicesNickInUse + Args(0) + "!" + Args(2) + "@" + Args(3))
             Exit Sub
@@ -204,9 +207,9 @@ Public Sub CmdPrivMsg(ByVal Source As String, ByRef Args() As String, ByVal RawC
     End If
     'Now one thing we need to deal with is CTCP crap.
     Dim sCTCP As String, sCTCPArgs As String
-    If Left(Args(1), 1) = Chr(1) Then
+    If Left(Args(1), 1) = MIRC_CTCP Then
         sCTCP = Mid(Args(1), 2)
-        If Right(sCTCP, 1) = Chr(1) Then sCTCP = Left(sCTCP, Len(sCTCP) - 1)
+        If Right(sCTCP, 1) = MIRC_CTCP Then sCTCP = Left(sCTCP, Len(sCTCP) - 1)
         If InStr(sCTCP, " ") > 0 Then
             sCTCPArgs = Mid(sCTCP, InStr(sCTCP, " ") + 1)
             sCTCP = Left(sCTCP, InStr(sCTCP, " ") - 1)
@@ -214,10 +217,10 @@ Public Sub CmdPrivMsg(ByVal Source As String, ByRef Args() As String, ByVal RawC
         Select Case sCTCP
             Case "PING"
                 basFunctions.LogEventWithMessage LogTypeNotice, sNick & " pinged " & Args(0) & " (" & Args(1) & ")"
-                basFunctions.Notice Args(0), sNick, Chr(1) + "PING " + Args(1) + Chr(1)
+                basFunctions.Notice Args(0), sNick, MakeCTCP("PING " + Args(1))
             Case "VERSION"
                 basFunctions.LogEventWithMessage LogTypeNotice, sNick & " versioned " & Args(0) & " (" & Args(1) & ")"
-                basFunctions.Notice Args(0), sNick, Chr(1) + "NOTICE " + basMain.AppName + " " + basMain.AppVersion + "-" + basMain.AppCompileInfo + " " + basMain.AppCompileDate
+                basFunctions.Notice Args(0), sNick, MakeCTCP("VERSION " + basMain.AppName + " " + basMain.AppVersion + "-" + basMain.AppCompileInfo + " " + basMain.AppCompileDate)
         End Select
     End If
     'First send out the PRIVMSG.
@@ -272,9 +275,12 @@ Public Sub CmdKill(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         Dim u As User
         Set u = basMain.Users(ExtractNickFromNUH(Args(0)))
         'Let admins know.
-        Call LogEventWithMessage(basMain.LogTypeNotice, "KILL: " + u.Nick + "!" + u.UserName + "@" + u.HostName + " from " + sNick + " Path: " + Args(1))
+        'Change this to make it look like IRCd KILL notices.
+        Call LogEventWithMessage(basMain.LogTypeNotice, "Received KILL message for " + u.Nick + "!" + u.UserName + "@" + u.HostName + " from " + sNick + " Path: " + Args(1))
         'Remove it.
         Dim s(0) As String
+        'Note on Local Kills: most IRCds send these out as QUIT :Local kill by <oper> (<reason>)
+        'so we don't have to determine the difference here :) .
         s(0) = "KILL " + Args(1)
         Call CmdQuit(Args(0), s, RawCmd)
     ElseIf IsServicesNick(ExtractNickFromNUH(Args(0))) Then
@@ -286,6 +292,17 @@ Public Sub CmdKill(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             End If
         Next
         Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, Replace(Replies.UserKilledService, "%n", sNick))
+        'IMHO, we should have configurable punishments here. My thoughts are:
+        'Warn: Just tell the user not to kill services. Remember, we may have ChanServ sitting in a channel,
+        '      so an oper may accidentally kill ChanServ (or a BotServ bot) by hitting TAB not enough/too
+        '      many times.
+        'Deoper: DEOPER the user.
+        'Deny: DEOPER and DENY.
+        'Kill: We send a KILL
+        'SuperKill: We send an SVSKill.
+        'GLine: We send an AKILL/GLINE/TKL + G (temp).
+        'PGLine: We send a perm AKILL/GLINE/TKL + G.
+        'Other?
         If Not bSrvKill Then Call Users(sNick).KillUser(Replies.KillReasonKilledService)
     End If
 End Sub
@@ -311,11 +328,7 @@ Public Sub CmdQuit(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
         Call basFunctions.LogEventWithMessage(LogTypeError, Replies.SanityCheckLostUser)
         Exit Sub
     End If
-    Users.Remove sNick
-    Dim c As Channel: For Each c In Channels
-        On Error Resume Next
-        c.Members.Remove sNick
-    Next c
+    Users(sNick).Dispose
     'K that outta do it :)
 End Sub
 
@@ -497,6 +510,9 @@ Public Sub CmdMotd(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
     'UseMOTD: Do we reply to MOTD at all?
     'The actual MOTD could also be hardcoded, or partially hardcoded (ie "running winse")
     'Uh, that's about it. Enjoy the latest w00tCode(tm) :) --w00t
+    
+    'Did you know Unreal has SVSMOTD? Meaning we could make the services MOTD part of the Unreal
+    'MOTD at startup? :) -aquanight
     Dim MOTDLine As String
     Dim sNick As String
     Dim i As Integer, u As User
@@ -519,6 +535,9 @@ Public Sub CmdMotd(ByVal Source As String, ByRef Args() As String, ByVal RawCmd 
             basFunctions.SendData (":" & basMain.Config.ServerName & " 425 " & basMain.Users(i).Nick & " :Services MOTD file is missing")
         Else
             Call basFunctions.LogEvent(basMain.LogTypeDebug, "MOTD: Does exist, sending.")
+            'Just in case lame mIRC/other clients think the random MOTD is from the server it is connected
+            'to:
+            basFunctions.Notice basMain.Config.ServerName, Users(i).Nick, "*** - Message of the day, " + basMain.Config.ServerName
             basFunctions.SendData (":" & basMain.Config.ServerName & " 375 " & basMain.Users(i).Nick & " :- " & basMain.Config.ServerName & " Message of the Day")
             Do While Not EOF(j)
                 'This should really be cached, and refreshed on rehash, but I'll leave such things
@@ -543,7 +562,44 @@ Public Sub CmdVersion(ByVal Source As String, ByRef Args() As String, ByVal RawC
 
     sNick = ExtractNickFromNUH(Source)
     Set u = Users(sNick)
-    basFunctions.SendData (":" & basMain.Config.ServerName & " 351 " & basMain.Users(i).Nick & " " & basMain.AppName & "[" & basMain.AppVersion & "] " & basMain.Config.ServerName & " " & basMain.AppCompileInfo & " " & basMain.AppCompileDate)
+    Call basFunctions.SendData(":" & basMain.Config.ServerName & " 351 " & sNick & " " & basMain.AppName & "[" & basMain.AppVersion & "] " & basMain.Config.ServerName & " " & basMain.AppCompileInfo & " " & basMain.AppCompileDate)
+End Sub
+
+Public Sub CmdAdmin(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
+    'ADMIN reply...
+    Dim sNick As String
+    sNick = ExtractNickFromNUH(Source)
+    Call basFunctions.SendData(":" & basMain.Config.ServerName & " 256 " & sNick & " " & basMain.Config.ServerName & " :Administrative info")
+    'First Line: Name and Info of the server
+    Call basFunctions.SendData(":" & basMain.Config.ServerName & " 257 " & sNick & " :" & basMain.Config.ServerName & " " & basMain.Config.ServerDescription)
+    'Second Line: The permenant Services Master (and email?)
+    Call basFunctions.SendData(":" & basMain.Config.ServerName & " 258 " & sNick & " :" & basMain.Config.ServicesMaster)
+    'Third Line: List of online service ops (nick only). Put comasters in bold, and master in bold and underline.
+    Dim sSOPs As String, u As User
+    For Each u In Users
+        If u.Access <> "" Then
+            If InStr(1, u.Access, "M", vbBinaryCompare) Then 'I need to be anal about casematching here :) .
+                sSOPs = sSOPs & MakeBold(MakeUnderline(u.Nick)) & " "
+            ElseIf InStr(1, u.Access, "m", vbBinaryCompare) Then
+                sSOPs = sSOPs & MakeBold(u.Nick) & " "
+            Else
+                sSOPs = sSOPs & u.Nick & " "
+            End If
+        End If
+    Next u
+    sSOPs = RTrim(sSOPs)
+    'We need to check this, to be sure we don't go over 510 bytes :/
+    Dim sSendString As String
+    sSendString = ":" & basMain.Config.ServerName & " 259 " & sNick & " :Online Operators: " & sSOPs
+    If Len(sSendString) > 510 Then
+        'Oh dear, we have that many operators (and/or their nicks are that long?).
+        sSendString = ":" & basMain.Config.ServerName & " 259 " & sNick & " :Online Operators: " & MakeBold(MakeColor("A LOT", 4)) & " - Try " & MakeBold("/stats o " & basMain.Config.ServerName) & " to see them."
+    End If
+    Call basFunctions.SendData(sSendString)
+End Sub
+
+Public Sub CmdRehash(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
+    'stub
 End Sub
 
 Public Sub CmdProtoctl(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
@@ -559,5 +615,8 @@ Public Sub CmdServer(ByVal Source As String, ByRef Args() As String, ByVal RawCm
 End Sub
 
 Public Sub CmdNetinfo(ByVal Source As String, ByRef Args() As String, ByVal RawCmd As String)
-    'stub
+'Format of this is:
+':server NETINFO <maxglobal> <TS of EOS> <unreal proto> <cloak hash> 0 0 0 :<network name>
+'For now, we'll just send exactly what they sent us :) .
+    Call basFunctions.SendData(":" + basMain.Config.ServerName & " NETINFO " & Mid(RawCmd, InStr(RawCmd, "NETINFO ") + 8))
 End Sub
