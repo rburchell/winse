@@ -505,21 +505,27 @@ Public Sub ParseCmd(ByVal Incoming As String)
 End Sub
 
 Public Function SetChannelModes2(ChanID As Integer, Modes As String)
+    'Indexes, for the character and parameter
     Dim iChar As Integer, iParam As Integer
+    'Strings to store said character and parameter
     Dim sChar As String, sParam As String
+    'Two arrays: one for holding the parsed mode string
+    'and the other for holding the modes that are valid.
     Dim sMode As Variant, sValid As Variant
+    'Are we setting or unsetting a mode?
     Dim bSet As Boolean
-    bSet = True
-    sMode = Split(Modes, " ")
-    sValid = Split(basMain.ChannelModes2, ",")
-    iParam = 1
+    bSet = True 'Start off in + by default.
+    sMode = Split(Modes, " ") 'Parse the modes.
+    sValid = Split(basMain.ChannelModes2, ",") 'And these too.
+    iParam = 1 'Init the parameter index.
     For iChar = 1 To Len(sMode(0))
-        sChar = Mid(sMode(0), iChar, 1)
-        If sChar = "+" Then
+        sChar = Mid(sMode(0), iChar, 1) 'Get the modeflag
+        If sChar = "+" Then 'Now setting modes
             bSet = True
-        ElseIf sChar = "-" Then
+        ElseIf sChar = "-" Then 'Now unsetting modes
             bSet = False
         ElseIf InStr(basMain.ChanModesForAccess, sChar) > 0 Then
+            'Prefix mode: controls channel privs
             If iParam <= UBound(sMode) Then
                 sParam = sMode(iParam)
                 iParam = iParam + 1
@@ -529,6 +535,7 @@ Public Function SetChannelModes2(ChanID As Integer, Modes As String)
                 NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
             End If
         ElseIf InStr(sValid(0), sChar) > 0 Then
+            'Type A: Mode flag controls a list.
             If iParam <= UBound(sMode) Then
                 sParam = sMode(iParam)
                 iParam = iParam + 1
@@ -538,17 +545,22 @@ Public Function SetChannelModes2(ChanID As Integer, Modes As String)
                 NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
             End If
         ElseIf InStr(sValid(1), sChar) > 0 Then
+            'Type B: Use param for set and unset.
             If iParam <= UBound(sMode) Then
                 sParam = sMode(iParam)
                 iParam = iParam + 1
                 DispatchModeTypeB ChanID, bSet, sChar, sParam
             ElseIf bSet = False Then
+                'Some wacky IRCd might let us get away
+                'unsetting a mode w/o parameter
+                '*coughunrealircdcough*
                 DispatchModeTypeB ChanID, False, sChar, ""
             Else
                 'EEEEEEEEEK!
                 NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
             End If
         ElseIf InStr(sValid(2), sChar) > 0 Then
+            'Type C: Use param only for set
             If bSet Then
                 If iParam <= UBound(sMode) Then
                     sParam = sMode(iParam)
@@ -562,6 +574,7 @@ Public Function SetChannelModes2(ChanID As Integer, Modes As String)
                 DispatchModeTypeC ChanID, bSet, sChar
             End If
         ElseIf InStr(sValid(3), sChar) > 0 Then
+            'Type D: Never use a param
             DispatchModeTypeD ChanID, bSet, sChar
         Else
             'EEEEEEEEEK!

@@ -206,3 +206,25 @@ Public Function Identify(Sender As Integer, NickToIdentify As String, Password A
         Call basFunctions.SendMessage(basMain.Service(1).Nick, basMain.Users(Sender).Nick, Replies.NickServIdentificationBadPassword)
     End If
 End Function
+
+'Callin subs for channel mode changes
+Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+
+End Sub
+
+Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+
+End Sub
+
+Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+
+End Sub
+
+Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+
+End Sub
+
+Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+
+End Sub
+

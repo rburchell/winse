@@ -138,3 +138,25 @@ Private Sub Register(Sender As Integer, ChannelToRegister As String, Password As
         '--w00t
     basFunctions.SendData (":" & basMain.Service(0).Nick & " MODE " & ChannelToRegister & " :+ntr")
 End Sub
+
+'Callin subs for channel mode changes
+Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+
+End Sub
+
+Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+
+End Sub
+
+Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+
+End Sub
+
+Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+
+End Sub
+
+Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+
+End Sub
+

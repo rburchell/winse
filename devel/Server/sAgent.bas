@@ -260,3 +260,25 @@ Private Sub FPart(Sender As Integer, Nick As String, Channel As String)
     Call basFunctions.LogEventWithMessage(basMain.LogTypeNotice, basMain.Users(Sender).Nick & " AGENT FPARTed " & Nick & " from " & Channel)
     Call basFunctions.SendData("SVSPART " & Nick & " " & Channel)
 End Sub
+
+'Callin subs for channel mode changes
+Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+
+End Sub
+
+Public Sub HandleModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+
+End Sub
+
+Public Sub HandleModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+
+End Sub
+
+Public Sub HandleModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+
+End Sub
+
+Public Sub HandleModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+
+End Sub
+
