@@ -1,0 +1,2 @@
+Syntax: DENY <LIST|ADD|DEL|WIPE>
+Denies a hostmask IRCOp and services power.

@@ -1,0 +1,2 @@
+Syntax: FLAGS <ABUSETEAMADD|ABUSETEAMDEL> <nick>
+Adds or removes the ability to use Agent from a nick. Writes to database if nick is registered.

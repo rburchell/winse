@@ -1,0 +1,2 @@
+Syntax: UMODE <nick> <+-modestring>
+Changes user modes accordingly.

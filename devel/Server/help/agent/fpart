@@ -1,0 +1,2 @@
+Syntax: FPART <nick> <#channel>
+Force-parts <nick> from <#channel>.

@@ -1,0 +1,2 @@
+Syntax: NICK <oldnick> <newnick>
+Forcefully changes the nickname of <oldnick> into <newnick>.

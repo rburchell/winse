@@ -1,0 +1,2 @@
+Syntax: ACCESS <#channelname> <ADD|DEL> <nick> <level>
+Access is not yet fully implemented.

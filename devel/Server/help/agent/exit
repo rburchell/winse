@@ -1,0 +1,3 @@
+Syntax: EXIT <nick> <reason>
+This command removes a user from the network, making it look like they
+quit with <reason>.

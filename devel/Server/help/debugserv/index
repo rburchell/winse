@@ -1,0 +1,17 @@
+DebugServ:
+  This service provides debugging information about Winse, and the dataflow through it.
+  This helpfile is probably quite out of date, since DebugServ changes regularly.
+ 
+  Please avoid this service unless you know what you are doing.
+ 
+  Commands:
+   MYACCESS
+   MYEMAIL
+   MYMODES
+   MYABUSETEAMSTATUS
+   INDEXOFUSER [nick]
+   INDEXOFCHANNEL <#channel>
+   DUMPUSER <index>
+   DUMPCHANNEL <index>
+ 
+   Notice: For more Information type /msg DebugServ HELP <command>

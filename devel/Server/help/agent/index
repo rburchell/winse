@@ -1,0 +1,24 @@
+Agent Commands:
+  Agent is a highly abusive service, restricted to special users with the AbuseTeam flag.
+  Even a services master cannot access Agent unless he explicitly marks himself as an
+  AbuseTeam member.
+ 
+  Be aware that any use of this service is regarded as highly abusive, and you should
+  consider what you do carefully, else you may risk losing users, or your privilages.
+ 
+  Commands:
+   EXIT
+   NICK
+   KICK
+   KILL
+   FJOIN
+   FPART
+   UMODE
+   UNIDENTIFY
+   DEOPER
+   DENY
+   *MODE         Give mode to nick in channel.
+   *IGNORE     - Manipulate the IGNORE list
+   *ZLINE      - Add a global Z:LINE to the network
+ 
+   Notice: For more Information type /msg DebugServ HELP <command>

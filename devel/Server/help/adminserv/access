@@ -1,0 +1,2 @@
+Syntax: ACCESS <nick> <flags>
+Gives flags to nick. Flags are written to database, if nick is registered.

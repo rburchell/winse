@@ -1,0 +1,2 @@
+Syntax: DUMPCHANNEL <index>
+Gives information about the channel in position <index> in the channels array.

@@ -1,0 +1,19 @@
+AdminServ:
+  This service provides a level of administration to the network, 
+  especially in managing staff operations and overall control, 
+  such as news functions. 
+ 
+  This service is only available for opered services admins, 
+  who are identified to services master or comaster nicks.
+ 
+  Commands:
+   ACCESS <nick> <flags>
+   FLAGS <ABUSETEAMADD|ABUSETEAMDEL> <nick>
+   GVERSION              - Show version status of all services.
+   JUPE <ADD|DEL> <servername> [reason]
+   *SET                  - Set various global Services options
+   *SETTINGS             - View Services settings
+   *STATS                - Show status of Services and network
+   *SETODESC             - Add note in whois for Services Operator
+ 
+   Notice: For more Information type /msg AdminServ HELP <command>

@@ -1,0 +1,12 @@
+ChanServ Commands:
+  ChanServ is used to register and control channels. With this, you can ensure that a
+  channel remains yours, so you can do what you wish with it. It is not intended to be
+  a method of facilitating channel takeovers, or being overtly hostile towards others.
+ 
+  ChanServ is publically available.
+ 
+  Commands:
+   REGISTER
+   ACCESS
+ 
+   Notice: For more Information type /msg ChanServ HELP <command>

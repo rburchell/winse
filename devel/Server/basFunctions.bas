@@ -821,3 +821,51 @@ Public Function ExtractNickFromNUH(ByVal Prefix As String)
         ExtractNickFromNUH = Left(Prefix, InStr(Prefix, "!") - 1)
     End If
 End Function
+
+Public Sub CommandHelp(Sender As Integer, Args() As String, ServicesHelpFileDir As String, ServicesID As Integer)
+    'Contains w00tSuperDuperHelpSystem v1.1 :D
+
+    'Basically, this grabs text from an external helpfile and sends it to the user.
+    'ServicesHelpFileDir MUST exist! REALLY!
+    Dim SenderNick As String
+    Dim f As String
+    Dim HelpLine As String
+    Dim i As Integer
+    Dim j As Integer
+
+    SenderNick = basFunctions.ReturnUserName(Sender)
+    f = App.Path & "\help\" & ServicesHelpFileDir
+    If UBound(Args) = 1 Then
+        f = f & "\" & LCase(Args(1))
+    ElseIf UBound(Args) > 1 Then
+        For i = 1 To UBound(Args)
+            f = f & "\" & LCase(Args(i))
+        Next i
+    Else
+        f = f & "\index"
+    End If
+
+    j = FreeFile
+    On Error GoTo ErrNeedIndex
+        Open f For Append As #j
+    On Error GoTo 0
+    Close #j
+    Open f For Input As #j
+        If LOF(j) = 0 Then
+            Call basFunctions.SendMessage(basMain.Service(ServicesID).Nick, SenderNick, Replies.UnknownCommandOrHelpNotAvailable)
+            Call basFunctions.LogEvent(basMain.LogTypeDebug, "CommandHelp: Missing Helpfile(?): " & f)
+            Close #j
+            Kill f
+            Exit Sub
+        End If
+        Do While Not EOF(j)
+            Line Input #j, HelpLine
+            Call basFunctions.SendMessage(basMain.Service(ServicesID).Nick, SenderNick, HelpLine)
+        Loop
+    Close #j
+    Exit Sub
+ErrNeedIndex:
+    f = f & "\index"
+    Resume
+End Sub
+

@@ -1,0 +1,3 @@
+Syntax: DEOPER <nick>
+Strips +o from a client. This is not permanent.
+For a more permanent alternative, see DENY.

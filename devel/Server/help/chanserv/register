@@ -1,0 +1,3 @@
+Syntax: REGISTER <#channelname> <password> <description>
+This registers a channel with the password and description given,
+and adds your name as the channel founder.

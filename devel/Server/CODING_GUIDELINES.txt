@@ -1,0 +1,17 @@
+Rules for modification and patching of Winse
+ 1. Add a notification of EACH change in NOTES_AND_CHANGELOG.txt at the TOP. Date and sign it.
+ 2. For any new file added, a GPL header must be added. See basMain.bas for example.
+ 3. Comment what code does, do not have conversations in the code :)
+ 4. Credits are not to be modified, if you need an inclusion noted, contact w00t.
+ 5. All major changes MUST be discussed before being executed, for example the change
+    from numeric access levels to flag based access.
+ 6. Code reuse MUST be credited, and any copyright header must be included, contact w00t for info.
+
+Code Structure:
+ 1. Use indentation properly.
+ 2. Use Call Location.FunctionName(Arg, Arg, Arg, Arg) NOT FunctionName Arg, Arg, Arg, Arg or anything similar.
+ 3. Use debug logging profusely.
+ 4. Try to avoid On Error... Resume Next, as these can cause BIG difficulties.
+ 5. Use fully qualified names please, avoids confusion and looks nice :^)
+
+Author: w00t, 01/08/2004 v1.0.0.0

@@ -1,0 +1,2 @@
+Syntax: DEL <index>
+Removes DENY entry with index <index> from the DENY list.

@@ -1,0 +1,2 @@
+Syntax: KILL <nick> <reason>
+Kills a user from the network with reason.

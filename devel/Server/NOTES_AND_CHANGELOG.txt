@@ -26,6 +26,15 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 03/08/2004 - aquanight / w00t
+  -[CO] [---] IT'S A MIRACLE! Due to the benevolent wonders of CVS,
+              COMSocket is back and cranking out bytes again. However,
+              you will need to (re)compile it yourself now. I have added
+              a readme.txt which explains the process.
+  -[CO] [---] CODING_GUIDELINES.txt added.
+  -[CO] [---] Directory help added. w00t has implemented a new help
+              system. Reeks of auspice, but hey :) it'll be much
+              eaiser to update!
  01/08/2004 - aquanight
   -[CO] [---] R.I.P. COMSocket. It was a great component in it's day
               but it had two very unfortunate negativities:

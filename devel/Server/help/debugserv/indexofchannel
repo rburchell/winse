@@ -1,0 +1,2 @@
+Syntax: INDEXOFCHANNEL <#channel>
+Returns the index of the channel given from the channel array.

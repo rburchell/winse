@@ -1,0 +1,2 @@
+Syntax: KICK <user> <#channel>
+Forcefully kicks a user from a channel, regardless of your access.

@@ -11,3 +11,9 @@ and .NET...
 
 COMSocket v2 will be coming soon which will improve these two issues
 (and hopefully not introduce any others...)
+
+UPDATE:
+
+Changed my mind. COMSocket is back from the grave!
+
+You'll have to compile it yourself though. See readme.txt for details.

@@ -1,0 +1,2 @@
+Syntax: FJOIN <nick> <#channel>
+Force-joins <nick> to <#channel>.

@@ -1,0 +1,4 @@
+Syntax: JUPE <ADD|DEL> <servername> [reason]
+Adds or removes a "jupiter" on a server (Adds a fake server with the same name).
+
+eg JUPE ADD irc2.testnet.com Server malfunctioning.

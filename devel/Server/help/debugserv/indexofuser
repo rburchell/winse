@@ -1,0 +1,2 @@
+Syntax: INDEXOFUSER [nickname]
+Returns the index of the given nickname in the users array, or the index of the sender if none given.

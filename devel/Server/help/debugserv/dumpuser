@@ -1,0 +1,2 @@
+Syntax: DUMPUSER <index>
+Gives information about the user in position <index> in the users array.

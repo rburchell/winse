@@ -1,0 +1,3 @@
+Syntax: UNIDENTIFY <nick>
+Removes services access from a user, this is NOT permanent.
+For more permanent denial of power, see DENY.

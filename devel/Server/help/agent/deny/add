@@ -1,0 +1,2 @@
+Syntax: DENY ADD <N!U@H>
+Adds a deny for Nick!User@Host to the DENY list.

@@ -226,3 +226,6 @@ Public Const ChanServKickSuspend = "This channel is suspended."
  'And for FORBIDden channels :P
  'Could we use 481 (Not IRCop) here?
 Public Const ChanServKickForbid = "This channel is forbidden."
+
+'Help System
+Public Const UnknownCommandOrHelpNotAvailable = "No help available."
