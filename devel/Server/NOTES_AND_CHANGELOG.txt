@@ -26,6 +26,10 @@ Services:
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /* 0.0.4.0-sense_datum */
+ 06/10/2004 - aquanight
+  -[--] [Add] COMSOCKET - Added RemoteHost, RemoteIP, and RemotePort to TCPSocket.
+                          Added an api.html documentation.
+  -[CS] [Add] Did a bit of work on it :) .
  26/09/2004 - aquanight
   -[CS] [Fix] Fixed an "oops" in DB saving.
   -[AG] [Fix] Compile errors...

@@ -1,0 +1,297 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+	<head>
+		<title>COMSocket API</title>
+		<meta content="JavaScript" name="vs_defaultClientScript">
+		<meta content="http://schemas.microsoft.com/intellisense/ie5" name="vs_targetSchema">
+		<meta content="Microsoft Visual Studio .NET 7.1" name="GENERATOR">
+		<meta content="VisualStudio.HTML" name="ProgId">
+		<meta content="Microsoft Visual Studio .NET 7.1" name="Originator">
+	</head>
+	<body>
+		<h1>COMSocket API</h1>
+		<p>The COMSocket COM and .NET Class Library is a Class Library allowing&nbsp;any 
+			COM Client to have access to an easy to use interface to the .NET Socket 
+			object. It provides almost all available functions including automatic 
+			conversion of DNS Hostnames to IP Addresses, connecting and listening, and 
+			support for multi-home systems. COMSocket is designed for use with text-based 
+			protocols such as IRC, HTTP, FTP, and maybe others. It's capability to operate 
+			with binary protocols such as Telnet and SSH cannot be gaurunteed. Also, 
+			COMSocket does not (yet) support SSL connections of any kind.</p>
+		<h2>COMSocket Object Model</h2>
+		<p>The COMSocket consists of only one class, the TCPSocket class, which contains 
+			all the methods to operate with a single socket.</p>
+		<h2>General Socket Tasks with COMSocket</h2>
+		<p>There are basically two things you can do with a COMSocket - connect to a 
+			server, or start a listener to act as a server.</p>
+		<p>In all instances, you will have to start with a new TCPSocket class. Note that 
+			you cannot reuse a TCPSocket instance. To create a new instance:</p>
+		<h4>Visual Basic:</h4>
+		<pre>Set <em>variable</em> = New TCPSocket</pre>
+		<p>Where <em>variable</em> is a variable declared of type <strong>Variant</strong>, <strong>
+				Object</strong>, or <strong>TCPSocket</strong>. I recommend you declare it 
+			as <strong>TCPSocket</strong> as this allows you to use the more efficient 
+			early-binding for method calls.</p>
+		<h3>Making an Outgoing Connection</h3>
+		<p>First thing you need to do&nbsp;is decide what you're going to connect to. You 
+			can use either a DNS Hostname or an IP Address in dotted-quad form. After that 
+			you decide what port to use, which must be a port the target machine is 
+			listening on. Then you call the Connection function with your values.</p>
+		<pre><em>variable</em>.Connect <em>server</em>, <em>port</em></pre>
+		<p>Where <em>variable</em> is your TCPSocket instance, <em>server</em> is a string 
+			naming the server to connect to, either by it's hostname or IP Address, and <em>port</em>
+			is the port to connect to. If the connection fails, a Run-Time Error will 
+			occur. Currently, the <strong>Err.Number</strong> value will be the same for 
+			all possible network errors, but the following are cases in which an error will 
+			occur:</p>
+		<ul>
+			<li>
+				The target server is not listening on <em>port</em>. This usually means that 
+				there is no server software running that uses that port. <em>Connection refused.</em>
+			<li>
+				The target server did not respond to the request at all. This means that the 
+				server's firewall is blocking that port, or that the server was specified by 
+				it's IP address, but the address is not valid. <em>Connection timed out.</em>
+			<li>
+				The target server exists, but no path to the server can be found. <em>No route to 
+					host.</em>
+			<li>
+				The system's default DNS server could not resolve the hostname. <em>Host not found.</em>
+			<li>
+				The&nbsp;WinSock DLLs could not allocate any more memory. Usually you can just 
+				wait a while and try again. <em>No buffer space available.</em>
+			<li>
+				The socket is already connected. Could be because you are calling Connect() 
+				twice? <em>Socket is already connected.</em>
+			<li>
+				The current execution zone denied permission to open a network connection or 
+				use a DNS server. <em>Permission denied.</em></li></ul>
+		<p>Ok, hopefully none of that happend, which means a valid connection now exists. 
+			But if you did get an error, don't worry! Usually you can simply retry the 
+			Connect call without having to destroy the socket and create a new one.</p>
+		<p>So if you got here, this means you now have a live connection to the server. 
+			Most text-based protocols require us to send something to the server at this 
+			point. For example, in IRC, I would have to send the PASS, USER, and NICK 
+			commands to establish my IRC client session. For HTTP, I send a GET request. 
+			For FTP, I'll send my login and password if necessary. Either way, I have to 
+			send something. So now I use the Send method to send data to the server.</p>
+		<pre><em>variable</em>.Send <em>data</em></pre>
+		<p>Again <em>variable</em> is my TCPSocket instance. <em>data</em> is the text 
+			string that I want to send, for example "USER username hostname server 
+			:realname". The socket will encode the data into ASCII bytes and send the data 
+			to the server. This shouldn't be of importance to you unless you want to send 
+			international characters. Sometimes you will want to examine the return value 
+			from Send (yes it has one), in which case you use the function call syntax 
+			(object.method(args)), and in most cases the returned value will just be the 
+			length of your string. Sometimes it will be less, meaning not all of the data 
+			was sent. Usually this just means you might be trying to send to much to the 
+			socket at once and it's telling you to break it up into smaller chunks. Usually 
+			you'll just cut the first<em>&nbsp;x</em> characters from your string where <em>x</em>
+			is what Send returned, then send the rest again. Sometimes, however, something 
+			goes horribly wrong, and TCPSocket has no choice but to raise an error.</p>
+		<ul>
+			<li>
+				The connection path encountered a dead network, usually the result of a dead 
+				hub/router/NIC or a problem with the WinSock DLLs themselves. <em>Network is down.</em>
+			<li>
+				A keep-alive activity detected a failure while an operation was in progress. <em>Network 
+					dropped connection on reset.</em>
+			<li>
+				The&nbsp;WinSock DLLs could not allocate any more memory. Usually you can just 
+				wait a while and try again. <em>No buffer space available.</em>
+			<li>
+				The TCPSocket instance is not connectioned... forgot to call Connect() :-P ? <em>Socket 
+					is not connected.</em>
+			<li>
+				A Send() was attempted after a Shutdown() call closed the outbound pipe. <em>Cannot 
+					send after socket shutdown.</em>
+			<li>
+				The connected party became unreachable, possibly due to a failure of an 
+				Internet router. <em>No route to host.</em>
+			<li>
+				The connection was aborted by the WinSock DLL or the TCP driver, usually due to 
+				a protocol error or transmission timeout. <em>Software caused connection abort.</em>
+			<li>
+				The connection was forcibly closed by your computer, the connected computer, or 
+				an Internet router in between. Often the result of either machine's 
+				application&nbsp;(or the&nbsp;machine itself)&nbsp;suddenly stopping (a crash, 
+				perhaps?). <em>Connection reset by peer.</em>
+			<li>
+				The other machine suddenly failed without warning, and thus failed to properly 
+				respond within the time alloted. <em>Connection timed out.</em></li></ul>
+		<p>In most cases, the connection becomes invalid, and you have no choice but to 
+			destroy the socket and create a new one. Make sure you call the Close() method 
+			before you do. As per .NET specification, Close() should never throw an 
+			exception unless something <strong>really</strong> bad happens, and in that 
+			case, usually the only possible recovery is for your application to close and 
+			restart. (Sometimes an operating system restart may even be required.)</p>
+		<p>Ok, so hopefully nothing bad happened, and you sent your first burst of data to 
+			the server ok. Now usually the server will respond with some data of it's own. 
+			For example, after I send my login IRC data, the server will&nbsp;send 
+			me&nbsp;all the Welcome and Server Info numerics, followed by user counts and 
+			the MOTD. I need to read all this info for display in my IRC client, for 
+			example, so lets look at how to read data.</p>
+		<pre><em>stringvar</em> = <em>variable</em>.Recv()</pre>
+		<p>That simple! Now most of the things that could go wrong here are the same as for 
+			Send, so I won't list them again - you can just scroll up :-) - but there is 
+			one thing I should point out. If there is no data waiting to be received, and 
+			the server has not initiated a graceful closure of the socket&nbsp;and the 
+			connection has not dropped for some reason, Recv() will <strong>hold execution</strong>
+			(block) until data is received. Very rarely is this what you want, so now we're 
+			going to look at how to ask the socket if data is waiting without freezing our 
+			time-critical application.</p>
+		<pre><em>boolean</em> = <em>variable</em>.PollRead()<br><em>boolean</em> = <em>variable</em>.PollWrite()<br><em>boolean</em> = <em>variable</em>.PollError()</pre>
+		<p>Basically these all poll specific states of the socket. Readable, Writable, and 
+			Error; they indicate the current condition of the socket. Readable means that 
+			you if you call the Recv() method, it will not block; it will return 
+			immediately -&nbsp;sucessfully or not. Remember that Recv will return 
+			immediately if there is no more data expected (the server is begun a shutdown 
+			of the connection), so in that case PollRead() will return True even when no 
+			data is waiting to be read. That's important to remember - it's the only way to 
+			know the connection is closed short of just reading Recv until you finally get 
+			an RTE of some kind&nbsp;(bad idea). But anyway, Writable means it's ok to use 
+			Send. If PollWrite is False it usually means the server doesn't want any more 
+			data from you, or you aren't connected (anymore). Error means there's some kind 
+			of error condition on the socket, but not a fatal one. For that use the 
+			GetError function to get the error code.</p>
+		<p>Now, how do I know how much data is waiting to be received? Maybe I don't want 
+			to read until there's a huge glob waiting, or maybe I want to check if the 
+			socket is closed without using Recv? That's where Available steps in.</p>
+		<pre><em>integer</em> = <em>variable</em>.Available()</pre>
+		<p>Available returns the total number of bytes (characters, since they'll be 
+			encoded into the normal String format once read), so it'll be 0 if nothing's 
+			waiting to be read. This means that code like this:</p>
+		<pre>If <em>variable</em>.PollRead() = True And <em>variable</em>.Available() = 0 Then</pre>
+		<p>would indicate if the remote host is disconnecting.</p>
+		<p>Now, the server can disconnect us when it wants to, what if we want to 
+			disconnect. That's where Shutdown() comes in.</p>
+		<pre><em>variable</em>.Shutdown(<em>method</em>)</pre>
+		<p>where <em>method</em> is 0 for Read, 1 for Write, 2 for Both. If 0, further 
+			calls to Recv() are not allowed (any data waiting to be read is lost - it's 
+			recommended you wait for the server to signal that it's done (see above) before 
+			you do this). If 1, further calls to Send() are not allowed. 2 combines the 
+			effects of 0 and 1.</p>
+		<p>Once you've shutdown a socket, or it becomes invalid because of an error, the 
+			next thing to do is to destroy the socket and release it's resources. To do 
+			that:</p>
+		<pre><em>variable</em>.Close()<br>Set <em>variable</em> = Nothing</pre>
+		<p>And that's it! Now, for your amusement, here's the MSDN preferred method of 
+			closing a connection, assuming <strong>sck</strong> is the name&nbsp;of our 
+			variable referencing a valid&nbsp;TCPSocket instance:</p>
+		<pre>Dim strFinalData As String<br>sck.Shutdown(1) 'Indicate we have nothing more to send. Other end will get into the PollRead = True And Available = 0 state here.<br>Do Until sck.PollRead() And sck.Available = 0<br>    strFinalData = strFinalData &amp; sck.Recv() 'Don't care about blocking, but if you want to do something else, it's a simple second PollRead check to add.<br>Loop<br>'Got here? That means we've read it all out.<br>sck.Shutdwon(0)<br>sck.Close<br>'That's all folks!</pre>
+		<p>And now for a full fledged example of a socket that reads the page <a href="http://www.google.com/">
+				http://www.google.com/</a>&nbsp;using HTTP 1.1.</p>
+		<pre>Dim sck As TCPSocket, strHTML As String<br>Set sck = New TCPSocket<br>Call sck.Connect("www.google.com", 80)<br>Call sck.Send("GET / HTTP/1.1" + vbCrLf)<br>Call sck.Send("Host: www.google.com" + vbCrLf + vbCrLf)<br>Call sck.Shutdown(1) 'Close the outbound pipe - we only read from here on out.<br>Do Until sck.PollRead() And sck.Available = 0<br>    If sck.PollRead() Then<br>        strHTML = strHTML &amp; sck.Recv()<br>    Else<br>        'Do any custom processing here.<br>        DoEvents<br>    End If<br>Loop<br>'Now we're ready to close our inward stuff.<br>sck.Shutdown(0)<br>sck.Close<br>'Now strHTML should contain the response headers and HTML code for the Google search page!</pre>
+		<p>Right! So now all the client side stuff should be well described, now it's time 
+			for some server-side action!</p>
+		<h3>Running a Server with COMSocket</h3>
+		<p>Now, in&nbsp;a server setup, you have one socket which receives notification of 
+			all incoming connections. Alongside, you have several normal client sockets for 
+			each connection you've accepted.</p>
+		<p>First thing we have to do is decide where we are going to listen. We could 
+			choose not to care, we could choose a specific port, or we could even listen on 
+			a specific IP. Either way, it's all done with one function:</p>
+		<pre><em>variable</em>.Bind(<em>local-interface</em>, <em>local-port</em>)</pre>
+		<p><em>local-interface</em> is a specific IP address we will listen with. This is 
+			only really required for a multi-homed connection. If you don't care, use 
+			"0.0.0.0" which is INADDR_ANY (any address), which makes you listen on any 
+			request from any network interface. <em>local-port</em> is the port clients 
+			will use in Connect() to get to you. Note that a NAT&nbsp;router can multilate 
+			this on you, so understand your router configuration and whether or not it will 
+			redirect the port on you if you have such a router.</p>
+		<p>Too bad nothing can work perfectly all the time, so yes, Bind can give you some 
+			grief if things go pie-shaped.</p>
+		<ul>
+			<li>
+				A general failure occured in the network subsystem. For Bind this is almost 
+				always a problem with the WinSock DLLs, but it could also be a borked NIC not 
+				letting you bind correctly. <em>Network is down.</em>
+			<li>
+				Another application or socket has exclusive access to the given address, or you 
+				don't have permission to bind to 0.0.0.0. <em>Permission denied.</em>
+			<li>
+				Another application is using the given address/port combination, or an 
+				application is already bound to a specific IP with the given port, and you are 
+				attempting to bind to that port with 0.0.0.0. Note that for&nbsp;Bind, this 
+				could occur later, such as when you attempt to&nbsp;call Listen(), if you are 
+				using INADDR_ANY.&nbsp;<em>Address already in use.</em>
+			<li>
+				The address is not a&nbsp;valid Internet Protocol 4 address, or the address is 
+				not a local IP Address. This could happen if you are using a hostname that 
+				points to your public hostname, but it is not the same as your real local 
+				address (such as when you're behind a router). It can also happen if the IP you 
+				give isn't yours :-P . <em>Cannot assign requested address.</em>
+			<li>
+				The socket is already bound by a previous call to Bind. <em>Invalid argument.</em>
+			<li>
+				There isn't enough memory to bind the socket. <em>No buffer space available.</em></li></ul>
+		<p>But hopefully that won't happen too much. Fun thing is, Bind() can be used for 
+			Outgoing sockets (where you call Connect()), though it's optional. That's only 
+			needed if you need to select a specific interface. However, it's required for a 
+			listener, and that's what we're here for, so without further ado...</p>
+		<pre><em>variable</em>.Listen <em>backlog</em></pre>
+		<p>That starts our socket listening on the selected address and port. If they're 
+			already in use, we'll definately get a complaint about it now. But <em>backlog</em>
+			is interesting, it's basically how big our listen queue is. Imagine&nbsp;your 
+			listening socket is&nbsp;a movie theater, and the backlog is how many seats you 
+			have. When a connection comes in to be evenutally accepted, you give&nbsp;it a 
+			ticket and put them in a seat, where&nbsp;it remains until it is accepted, or 
+			aborts the connect. If you run out of seats, you have no choice but to refuse 
+			any incoming connections until a spot is available. Now Listen() isn't 
+			errorless...</p>
+		<ul>
+			<li>
+				Another application is using the given address/port combination, or an 
+				application is already bound to a specific IP with the given port, and you are 
+				attempting to bind to that port with 0.0.0.0. Note that for&nbsp;Bind, this 
+				could occur later, such as when you attempt to&nbsp;call Listen(), if you are 
+				using INADDR_ANY.&nbsp;<em>Address already in use.</em>
+			<li>
+				The socket hasn't been bound. <em>Invalid argument.</em></li></ul>
+		<p>And others. But that won't happen normally, will it? Let's hope not! OK, so now 
+			we got the thing listening. At this point we'll use PollRead to determine if 
+			there are any connections waiting. Once PollRead says True we can...</p>
+		<pre>Set <em>newsocket</em> = <em>variable</em>.Accept()</pre>
+		<p>This accepts a waiting connection and creates a new TCPSocket isntance for that 
+			connection. When that happens, the new TCPSocket in <em>newsocket</em> is a 
+			client socket, which we use the functions above for. If you don't call Accept, 
+			the connection will usually wait indefinately, however eventually some kind of 
+			timeout will occur, but this isn't a good idea since you don't know who the new 
+			connection is until you accept it. Oh and guess what? Accept <strong>will block</strong>
+			if there are no connections waiting to be accepted. But things don't always go 
+			as planned...</p>
+		<ul>
+			<li>
+				A general failure occured in the network subsystem. For Bind this is almost 
+				always a problem with the WinSock DLLs, but it could also be a borked NIC not 
+				letting you bind correctly. <em>Network is down.</em>
+			<li>
+				The socket isn't listening. <em>Invalid argument.</em>
+			<li>
+				There are no more available&nbsp;socket handles. Sometimes having a second, 
+				third,&nbsp;or more&nbsp;threads can help us circumvent this. <em>Too many open 
+					files.</em></li></ul>
+		<p>When we're done with the listener, we call Close on it and set the variable 
+			reference to Nothing. This closes the port - any more incoming connections will 
+			get <em>Connection refused</em>.</p>
+		<p>Here's an example server loop that simply sets up a listener on port 9000 and 
+			sends a text string to all incoming connections. It does not expect to receive 
+			any data. The server will close down&nbsp;if it receives a connection from 
+			IP&nbsp;127.0.0.1.</p>
+		<pre>Dim sck As TCPSocket, asck As TCPSocket<br>Set sck = New TCPSocket<br>sck.Bind "0.0.0.0", 9000<br>sck.Listen 50<br>While Not sck Is Nothing<br>    If sck.PollRead Then<br>        Set asck = sck.Accept()<br>        asck.Send "Hello!"<br>        If asck.RemoteIP = "127.0.0.1" Then<br>            sck.Close<br>            Set sck = Nothing<br>        End If<br>        asck.Shutdown 2<br>        asck.Close<br>    End If<br>Wend        </pre>
+		<h2>Other Toys</h2>
+		<p>Three other properties that may be of use to you, especially for a Server 
+			application, are the RemoteIP, RemoteHost, and RemotePort properties. These are <strong>
+				read-only</strong>, and will return the IP, Hostname, and Port of the 
+			remote end of the connection. Note, RemoteHost will DNS Resolve the hostname <strong>
+				everytime</strong> it is requested. I recommend this be pulled only once 
+			and cached. COMSocket does not do this because DNS can sometimes suddenly 
+			change, even when a valid connection exists. If you want the up to date 
+			hostname, you only need to poll RemoteHost again. If DNS cannot reverse-resolve 
+			(this is "official" term for IP-&gt;hostname resoluation) the IP, RemoteHost 
+			will return the same value as RemoteIP. Note that RemoteHost does not validate 
+			the result of the reverse-resolution. If you want to validate the resultant 
+			hostname, it is recommended you somehow&nbsp;do forward-resolution on&nbsp;the 
+			hostname and compare the resultant IPs.</p>
+	</body>
+</html>

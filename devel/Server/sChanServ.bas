@@ -87,19 +87,226 @@ Public Const CHANSERV_SOPDEFAULT = CHANSERV_AOPDEFAULT + CHANSERV_PROTECT + CHAN
     '"vyiuahVkbgtHoOempTsMcBEIA"
 Public Const CHANSERV_CFOUNDERDEFAULT = CHANSERV_COFOUNDER + CHANSERV_OWNER
     '"fn"
+    
+Public Enum LOCKLEVEL
+    LOCK_NONE = 0
+    LOCK_LOCK = 1
+    LOCK_CFOUNDER = 2
+    LOCK_FOUNDER = 3
+End Enum
+    
+Public Type ACE
+    Nick As String
+    Flags As String
+    Lock As LOCKLEVEL
+End Type
 
-Public DB As Collection
+Public Type AutoKick
+    Mask As String
+    Expiry As Long
+    Reason As String
+    Lock As LOCKLEVEL
+End Type
+
+Public Type Exempt
+    Mask As String
+    Expiry As Long
+    Lock As LOCKLEVEL
+End Type
+
+Public Type ChanServDataRecord
+    Name As String
+    Password As String
+    Description As String
+    Suspended As Boolean
+    Successor As String
+    AccessList() As ACE
+    AKicks() As AutoKick
+    Exempts() As Exempt
+    Invites() As Exempt
+    SecureOps As Boolean
+    SecureHalfOps As Boolean
+    SecureVoices As Boolean
+    Restricted As Boolean
+    Secure As Boolean
+    LeaveOps As Boolean
+    TopicLock As Boolean
+    StrictStatus As Boolean
+    StrictList As Boolean
+    LearnBans As Boolean
+    ForgetBans As Boolean
+    Give As Boolean
+    StrictMode As Boolean
+    MLock As String
+    LastTopic As String
+    TopicSetBy As String
+    TopicSetOn As Long
+    TimeRegistered As Long
+    LastJoin As Long
+    Bots() As String
+    BotKick As String
+    BotMode As String
+    BotTopic As String
+    BotGreet As String
+    BotAutoKick As String
+    BotAutoMode As String
+    NoKickOps As Boolean
+    NoKickVoice As Boolean
+    NoBot As Boolean
+    KickBold As Integer
+    KickBadWords As Integer
+    KickCaps As Integer
+    KickColor As Integer
+    KickFlood As Integer
+    KickRepeat As Integer
+    KickReverse As Integer
+    KickUnderlines As Integer
+    KickCapsMinimum As Integer
+    KickCapsTrigger As Integer
+    KickFloodLines As Integer
+    KickFloodDuration As Integer
+    KickRepeatCount As Integer
+    KickBWList() As String
+End Type
+
+Public DB() As ChanServDataRecord
 
 'These two are important!!!
 Public Sub LoadData(ByVal conn As Connection)
-    Set DB = ReadTableIntoCollection(conn, "ChanServ")
+    Dim mDB As Collection
+    Set mDB = ReadTableIntoCollection(conn, "ChanServ")
     Dim idx As Long, subcol As Collection
-    'Key each subcollection under it's Name index.
-    For idx = 1 To DB.Count
-        Set subcol = DB(idx)
-        DB.Remove idx
-        DB.Add subcol, subcol("Name")
-        'We should add founder checks here, but I won't do that until DB access is STABLE.
+    ReDim DB(0 To mDB.Count - 1)
+    For idx = 1 To mDB.Count
+        Set subcol = mDB(idx)
+        With DB(idx - 1)
+            .Name = subcol("name")
+            .Password = subcol("password")
+            .Description = subcol("description")
+            .Suspended = subcol("suspended")
+            .Successor = subcol("successor")
+            Dim v As Variant, v2 As Variant, idx2 As Long
+            If Len(subcol("access_list")) > 0 Then
+                v = Split(subcol("access_list"), vbTab)
+                ReDim .AccessList(0 To UBound(v))
+                For idx2 = 0 To UBound(v)
+                    With .AccessList(idx2)
+                        v2 = Split(v(idx2), " ")
+                        If InStr("!#@", Left(v2(0), 1)) > 0 Then
+                            .Lock = Choose(InStr("!#@", Left(v2(0), 1)), LOCKLEVEL.LOCK_LOCK, LOCKLEVEL.LOCK_CFOUNDER, LOCKLEVEL.LOCK_FOUNDER)
+                            .Nick = Mid(v2(0), 2)
+                        Else
+                            .Lock = LOCK_NONE
+                            .Nick = v2(0)
+                        End If
+                        .Flags = v2(1)
+                    End With
+                Next idx2
+            Else
+                Erase .AccessList
+            End If
+            If Len(subcol("akicks")) > 0 Then
+                v = Split(subcol("akicks"), vbCrLf)
+                ReDim .AKicks(0 To UBound(v))
+                For idx2 = 0 To UBound(v)
+                    With .AKicks(idx2)
+                        v2 = Split(v(idx), " ", 3)
+                        If InStr("!#@", Left(v2(0), 1)) > 0 Then
+                            .Lock = Choose(InStr("!#@", Left(v2(0), 1)), LOCKLEVEL.LOCK_LOCK, LOCKLEVEL.LOCK_CFOUNDER, LOCKLEVEL.LOCK_FOUNDER)
+                            .Mask = Mid(v2(0), 2)
+                        Else
+                            .Lock = LOCK_NONE
+                            .Mask = v2(0)
+                        End If
+                        .Expiry = v2(1)
+                        .Reason = v2(2)
+                    End With
+                Next idx2
+            Else
+                Erase .AKicks
+            End If
+            If Len(subcol("exempts")) > 0 Then
+                v = Split(subcol("exempts"), vbCrLf)
+                ReDim .Exempts(0 To UBound(v))
+                For idx2 = 0 To UBound(v)
+                    With .Exempts(idx2)
+                        v2 = Split(v(idx), " ", 2)
+                        If InStr("!#@", Left(v2(0), 1)) > 0 Then
+                            .Lock = Choose(InStr("!#@", Left(v2(0), 1)), LOCKLEVEL.LOCK_LOCK, LOCKLEVEL.LOCK_CFOUNDER, LOCKLEVEL.LOCK_FOUNDER)
+                            .Mask = Mid(v2(0), 2)
+                        Else
+                            .Lock = LOCK_NONE
+                            .Mask = v2(0)
+                        End If
+                        .Expiry = v2(1)
+                    End With
+                Next idx2
+            Else
+                Erase .Exempts
+            End If
+            If Len(subcol("invites")) > 0 Then
+                v = Split(subcol("invites"), vbCrLf)
+                ReDim .Invites(0 To UBound(v))
+                For idx2 = 0 To UBound(v)
+                    With .Invites(idx2)
+                        v2 = Split(v(idx), " ", 2)
+                        If InStr("!#@", Left(v2(0), 1)) > 0 Then
+                            .Lock = Choose(InStr("!#@", Left(v2(0), 1)), LOCKLEVEL.LOCK_LOCK, LOCKLEVEL.LOCK_CFOUNDER, LOCKLEVEL.LOCK_FOUNDER)
+                            .Mask = Mid(v2(0), 2)
+                        Else
+                            .Lock = LOCK_NONE
+                            .Mask = v2(0)
+                        End If
+                        .Expiry = v2(1)
+                    End With
+                Next idx2
+            Else
+                Erase .Invites
+            End If
+            .SecureOps = subcol("secure_ops")
+            .SecureHalfOps = subcol("secure_halfops")
+            .SecureVoices = subcol("secure_voices")
+            .Restricted = subcol("restricted")
+            .Secure = subcol("secure")
+            .LeaveOps = subcol("leave_ops")
+            .TopicLock = subcol("topic_lock")
+            .StrictStatus = subcol("strict_status")
+            .StrictList = subcol("strict_list")
+            .LearnBans = subcol("learn_bans")
+            .ForgetBans = subcol("forget_bans")
+            .Give = subcol("give")
+            .StrictMode = subcol("strict_mode")
+            .MLock = subcol("mlock")
+            .LastTopic = subcol("last_topic")
+            .TopicSetBy = subcol("topic_set_by")
+            .TopicSetOn = subcol("topic_set_on")
+            .TimeRegistered = subcol("time_registered")
+            .LastJoin = subcol("last_join")
+            .Bots = Split(subcol("bots"), " ")
+            .BotKick = subcol("bot_kick")
+            .BotMode = subcol("bot_mode")
+            .BotTopic = subcol("bot_topic")
+            .BotGreet = subcol("bot_greet")
+            .BotAutoKick = subcol("bot_auto_kick")
+            .BotAutoMode = subcol("bot_auto_mode")
+            .NoKickOps = subcol("no_kick_ops")
+            .NoKickVoice = subcol("no_kick_voice")
+            .NoBot = subcol("no_bot")
+            .KickBold = subcol("kick_bold")
+            .KickBadWords = subcol("kick_bad_words")
+            .KickCaps = subcol("kick_caps")
+            .KickColor = subcol("kick_color")
+            .KickFlood = subcol("kick_flood")
+            .KickRepeat = subcol("kick_repeat")
+            .KickReverse = subcol("kick_reverse")
+            .KickUnderlines = subcol("kick_underlines")
+            .KickCapsMinimum = subcol("kick_caps_minimum")
+            .KickCapsTrigger = subcol("kick_caps_trigger")
+            .KickFloodLines = subcol("kick_flood_lines")
+            .KickFloodDuration = subcol("kick_flood_duration")
+            .KickRepeatCount = subcol("kick_repeat_count")
+            .KickBWList() = Split(subcol("kick_bw_list"), vbTab)
+        End With
     Next idx
 End Sub
 
@@ -161,32 +368,113 @@ Public Sub SaveData(ByVal conn As Connection)
     Fields(49) = "kick_flood_duration"
     Fields(50) = "kick_repeat_count"
     Fields(51) = "kick_bw_list"
-    Dim vals As Variant
+    Dim vals(0 To 51) As Variant, v As Variant
     With rs
-        Dim subcol As Collection
-        For Each subcol In DB
+        Dim idx As Long, idx2 As Long
+        For idx = 0 To UBound(DB)
+            vals(0) = DB(idx).Name
+            vals(1) = DB(idx).Password
+            vals(2) = DB(idx).Description
+            vals(3) = DB(idx).Suspended
+            vals(4) = DB(idx).Successor
+            ReDim v(0 To UBound(DB(idx).AccessList))
+            For idx2 = 0 To UBound(DB(idx).AccessList)
+                v(idx2) = IIf(DB(idx).AccessList(idx2).Lock <> 0, Choose(DB(idx).AccessList(idx2).Lock, "!", "#", "@"), "") + DB(idx).AccessList(idx2).Nick & " " & DB(idx).AccessList(idx2).Flags
+            Next idx2
+            On Error GoTo PooNoAKicks
+            ReDim v(0 To UBound(DB(idx).AKicks))
+            For idx2 = 0 To UBound(DB(idx).AKicks)
+                v(idx2) = IIf(DB(idx).AKicks(idx2).Lock <> 0, Choose(DB(idx).AKicks(idx2).Lock, "!", "#", "@"), "") + DB(idx).AKicks(idx2).Mask & " " & CStr(DB(idx).AKicks(idx2).Expiry) & " " & DB(idx).AKicks(idx2).Reason
+            Next idx2
+PooNoAKicks:
+            If Err Then
+                vals(6) = ""
+            Else
+                vals(6) = Join(v, vbTab)
+            End If
+            On Error GoTo PooNoExempts
+            ReDim v(0 To UBound(DB(idx).Exempts))
+            For idx2 = 0 To UBound(DB(idx).Exempts)
+                v(idx2) = IIf(DB(idx).Exempts(idx2).Lock <> 0, Choose(DB(idx).Exempts(idx2).Lock, "!", "#", "@"), "") + DB(idx).Exempts(idx2).Mask & " " & CStr(DB(idx).Exempts(idx2).Expiry)
+            Next idx2
+PooNoExempts:
+            If Err Then
+                vals(7) = ""
+            Else
+                vals(7) = Join(v, vbTab)
+            End If
+            On Error GoTo PooNoInvites
+            ReDim v(0 To UBound(DB(idx).Invites))
+            For idx2 = 0 To UBound(DB(idx).Invites)
+                v(idx2) = IIf(DB(idx).Invites(idx2).Lock <> 0, Choose(DB(idx).Invites(idx2).Lock, "!", "#", "@"), "") + DB(idx).Invites(idx2).Mask & " " & CStr(DB(idx).Invites(idx2).Expiry)
+            Next idx2
+PooNoInvites:
+            If Err Then
+                vals(8) = ""
+            Else
+                vals(8) = Join(v, vbTab)
+            End If
+            vals(9) = DB(idx).SecureOps
+            vals(10) = DB(idx).SecureHalfOps
+            vals(11) = DB(idx).SecureVoices
+            vals(12) = DB(idx).Restricted
+            vals(13) = DB(idx).Secure
+            vals(14) = DB(idx).LeaveOps
+            vals(15) = DB(idx).TopicLock
+            vals(16) = DB(idx).StrictStatus
+            vals(17) = DB(idx).StrictList
+            vals(18) = DB(idx).LearnBans
+            vals(19) = DB(idx).ForgetBans
+            vals(20) = DB(idx).Give
+            vals(21) = DB(idx).StrictMode
+            vals(22) = DB(idx).MLock
+            vals(23) = DB(idx).LastTopic
+            vals(24) = DB(idx).TopicSetBy
+            vals(25) = DB(idx).TopicSetOn
+            vals(26) = DB(idx).TimeRegistered
+            vals(27) = DB(idx).LastJoin
+            vals(28) = Join(DB(idx).Bots, " ")
+            vals(29) = DB(idx).BotKick
+            vals(30) = DB(idx).BotMode
+            vals(31) = DB(idx).BotTopic
+            vals(32) = DB(idx).BotGreet
+            vals(33) = DB(idx).BotAutoKick
+            vals(34) = DB(idx).BotAutoMode
+            vals(35) = DB(idx).NoKickOps
+            vals(36) = DB(idx).NoKickVoice
+            vals(37) = DB(idx).NoBot
+            vals(38) = DB(idx).KickBold
+            vals(39) = DB(idx).KickBadWords
+            vals(40) = DB(idx).KickCaps
+            vals(41) = DB(idx).KickColor
+            vals(42) = DB(idx).KickFlood
+            vals(43) = DB(idx).KickRepeat
+            vals(44) = DB(idx).KickReverse
+            vals(45) = DB(idx).KickUnderlines
+            vals(46) = DB(idx).KickCapsMinimum
+            vals(47) = DB(idx).KickCapsTrigger
+            vals(48) = DB(idx).KickFloodLines
+            vals(49) = DB(idx).KickFloodDuration
+            vals(50) = DB(idx).KickRepeatCount
+            vals(51) = Join(DB(idx).KickBWList, vbTab)
             .MoveFirst
-            .Find "Name=" & subcol("Name")
+            .Find "Name=" & DB(idx).Name
             If .BOF Or .EOF Then
                 'Channel was registered since last update, so we need to create it.
-                vals = CollToArray(subcol, Fields)
                 .AddNew Fields, vals
                 .Update
             Else
                 'Channel was previously registered, in which case we are pointing to a valid record.
-                vals = CollToArray(subcol, Fields)
                 .Update Fields, vals
             End If
-        Next subcol
+        Next idx
         'Now we need to look for channels in the database that we don't have in the collection - these
         'were dropped between updates, so we need to remove them from the DB or they get mysteriously
         'reregistered :) .
         .MoveFirst
         While Not .EOF
             'Now see if the current record is in our memory cache.
-            On Error Resume Next
-            Set subcol = DB(.Fields("Name"))
-            If Err.Number = 9 Then
+            If DBIndexOf(.Fields("name")) = -1 Then
                 'Not found.
                 Err.Clear
                 .Delete 'Delete this record. Note that this doesn't move the record-pointer, which means
@@ -489,9 +777,9 @@ Public Sub Register(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
     '- Channel isn't an official channel listed in the configuration (Help, Operations, Debug).
     If Channel.Name = "#" Then
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServCantReg, "%s", "Null channel cannot be registered."), "%c", Channel.Name))
-    ElseIf CollectionContains(DB, Channel.Name) Then
+    ElseIf DBIndexOf(Channel.Name) >= 0 Then
         'It's already registered.
-        If DB(Channel.Name)("suspended") And DB(Channel.Name)("password") = "" Then
+        If DB(DBIndexOf(Channel.Name)).Suspended And DB(DBIndexOf(Channel.Name)).Password = "" Then
             Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServCantReg, "%s", "Channel is forbidden"), "%c", Channel.Name))
         Else
             Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServAlreadyRegd, "%c", Channel.Name))
@@ -507,61 +795,41 @@ Public Sub Register(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
         Call basFunctions.SendMessage(basMain.Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.ChanServYouArentRegistered)
     Else
         'Otherwise, we're okay to register.
-        Dim newcol As Collection, nTime As Double
+        Dim nTime As Double
         nTime = basUnixTime.GetTime()
-        Set newcol = New Collection
-        newcol.Add Channel.Name, "name"
-        newcol.Add False, "suspended"
-        newcol.Add Password, "password"
-        newcol.Add Description, "description"
-        newcol.Add "", "successor"
-        newcol.Add Source.Nick & " F", "access_list"
-        newcol.Add "", "akicks"
-        newcol.Add "", "exempts"
-        newcol.Add "", "invites"
-        newcol.Add False, "secure_ops"
-        newcol.Add False, "secure_halfops"
-        newcol.Add False, "secure_voices"
-        newcol.Add False, "restricted"
-        newcol.Add False, "secure"
-        newcol.Add False, "leave_ops"
-        newcol.Add False, "topic_lock"
-        newcol.Add False, "strict_status"
-        newcol.Add False, "strict_list"
-        newcol.Add False, "learn_bans"
-        newcol.Add False, "forget_bans"
-        newcol.Add False, "give"
-        newcol.Add False, "strict_mode"
-        newcol.Add "+nt", "mlock"
-        newcol.Add "This channel has been registered.", "last_topic"
-        newcol.Add Service(SVSINDEX_CHANSERV).Nick, "topic_set_by"
-        newcol.Add nTime, "topic_set_on"
-        newcol.Add nTime, "time_registered"
-        newcol.Add nTime, "last_join"
-        newcol.Add "!" & Service(SVSINDEX_CHANSERV).Nick, "bots"
-        newcol.Add Null, "bot_kick"
-        newcol.Add Null, "bot_mode"
-        newcol.Add Null, "bot_topic"
-        newcol.Add Null, "bot_greet"
-        newcol.Add Null, "bot_auto_kick"
-        newcol.Add Null, "bot_auto_mode"
-        newcol.Add False, "no_kick_ops"
-        newcol.Add False, "no_kick_voices"
-        newcol.Add False, "no_bot"
-        newcol.Add -1, "kick_bold"
-        newcol.Add -1, "kick_bad_words"
-        newcol.Add -1, "kick_caps"
-        newcol.Add -1, "kick_color"
-        newcol.Add -1, "kick_flood"
-        newcol.Add -1, "kick_repeat"
-        newcol.Add -1, "kick_reverse"
-        newcol.Add -1, "kick_underline"
-        newcol.Add 5, "kick_caps_minimum"
-        newcol.Add 10, "kick_caps_trigger"
-        newcol.Add 5, "kick_flood_lines"
-        newcol.Add 10, "kick_flood_duration"
-        newcol.Add 3, "kick_repeat_count"
-        newcol.Add "", "kick_bw_list"
+        ReDim Preserve DB(UBound(DB) + 1)
+        With DB(UBound(DB))
+            .Name = Channel.Name
+            .Password = Password
+            .Description = Description
+            ReDim .AccessList(0)
+            .AccessList(0).Lock = LOCK_FOUNDER
+            .AccessList(1).Nick = Source.IdentifiedToNick
+            .AccessList(2).Flags = "F"
+            ReDim .Bots(0)
+            .Bots(0) = "!" + Service(SVSINDEX_CHANSERV).Nick
+            Erase .AKicks
+            Erase .Exempts
+            Erase .Invites
+            .BotAutoKick = ""
+            .BotAutoMode = ""
+            .BotGreet = ""
+            .BotKick = ""
+            .BotMode = ""
+            .BotTopic = ""
+            .ForgetBans = False
+            .Give = False
+            .KickBadWords = -1
+            .KickBold = -1
+            .KickBWList = Array()
+            .KickCaps = -1
+            .KickCapsMinimum = 10
+            .KickCapsTrigger = 25
+            .KickColor = -1
+            .KickFlood = -1
+            .KickFloodDuration = 10
+            .KickFloodLines = 5
+        End With
         'Now do what we need to do :).
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServREGISTEROK, "%c", Channel.Name))
     End If
@@ -576,17 +844,32 @@ Public Sub Identify(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
     ElseIf HasFlag(Channel.Name, Source.Nick, "+" + CHANSERV_COFOUNDER) Then
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyAlreadyIDd, "%c", Channel.Name))
     'Banned from the channel (via AKICK or +K flag)?
-    ElseIf GetFirstAKick(Channel.Name, Source) <> "" Or HasFlag(Channel.Name, Source.Nick, "+" + CHANSERV_AUTOKICK) Then
+    ElseIf (GetFirstAKick(Channel.Name, Source) >= 0 And GetFirstExempt(Channel.Name, Source) < 0) Or HasFlag(Channel.Name, Source.Nick, "+" + CHANSERV_AUTOKICK) Then
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyBanned, "%c", Channel.Name))
+        Call basFunctions.SendNumeric(Source.Nick, 474, Channel.Name + " :Cannot join channel (+b)")
+        Call basFunctions.SendData(FormatString(":{0} NOTICE @{1} :{2}", Service(SVSINDEX_CHANSERV).Nick, Channel.Name, Replace(Replace(Replace(Replies.ChanServIdentifyWALLCHOPSFailed, "%n", Source.Nick), "%u", Source.UserName & Source.VirtHost), "%r", "Banned from channel")))
     'Is the channel restricted, and the user not on the ACL (thus effectively +K'd)?
-    ElseIf DB(Channel.Name)("Restricted") And AllFlags(Channel.Name, Source.Nick) = "" Then
+    ElseIf DB(DBIndexOf(Channel.Name)).Restricted And ACLIndexOf(DBIndexOf(Channel.Name), Source.Nick) < 0 Then
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", Channel.Name))
+        Call basFunctions.SendNumeric(Source.Nick, 473, Channel.Name + " :Cannot join channel (+i)")
+        Call basFunctions.SendData(FormatString(":{0} NOTICE @{1} :{2}", Service(SVSINDEX_CHANSERV).Nick, Channel.Name, Replace(Replace(Replace(Replies.ChanServIdentifyWALLCHOPSFailed, "%n", Source.Nick), "%u", Source.UserName & Source.VirtHost), "%r", "+b")))
     'Is the channel +A, +O, or +z, and the user is not?
-    ElseIf (InStr(Channel.Modes, "A") > 0 And InStr(Source.Modes, "A") = 0) Or (InStr(Channel.Modes, "O") > 0 And InStr(Source.Modes, "o") = 0) Or (InStr(Channel.Modes, "z") > 0 And InStr(Source.Modes, "z") = 0) Then
+    ElseIf (InStr(Channel.Modes, "A") > 0 And InStr(Source.Modes, "A") = 0) Then
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", Channel.Name))
+        Call basFunctions.SendNumeric(Source.Nick, 519, Channel.Name + " :Cannot join channel (Admins only)")
+        Call basFunctions.SendData(FormatString(":{0} NOTICE @{1} :{2}", Service(SVSINDEX_CHANSERV).Nick, Channel.Name, Replace(Replace(Replace(Replies.ChanServIdentifyWALLCHOPSFailed, "%n", Source.Nick), "%u", Source.UserName & Source.VirtHost), "%r", "+A")))
+    ElseIf (InStr(Channel.Modes, "O") > 0 And InStr(Source.Modes, "o") = 0) Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", Channel.Name))
+        Call basFunctions.SendNumeric(Source.Nick, 520, Channel.Name + " :Cannot join channel (IRCops only)")
+        Call basFunctions.SendData(FormatString(":{0} NOTICE @{1} :{2}", Service(SVSINDEX_CHANSERV).Nick, Channel.Name, Replace(Replace(Replace(Replies.ChanServIdentifyWALLCHOPSFailed, "%n", Source.Nick), "%u", Source.UserName & Source.VirtHost), "%r", "+O")))
+    ElseIf (InStr(Channel.Modes, "z") > 0 And InStr(Source.Modes, "z") = 0) Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyRestricted, "%c", Channel.Name))
+        Call basFunctions.SendNumeric(Source.Nick, 489, Channel.Name + " :Cannot join channel (+z)")
+        Call basFunctions.SendData(FormatString(":{0} NOTICE @{1} :{2}", Service(SVSINDEX_CHANSERV).Nick, Channel.Name, Replace(Replace(Replace(Replies.ChanServIdentifyWALLCHOPSFailed, "%n", Source.Nick), "%u", Source.UserName & Source.VirtHost), "%r", "+z")))
     'Is the password correct?
-    ElseIf Password <> DB(Channel.Name)("Password") Then
+    ElseIf Password <> DB(DBIndexOf(Channel.Name)).Password Then
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.ChanServIdentifyBadPass)
+        Call basFunctions.SendData(FormatString(":{0} NOTICE @{1} :{2}", Service(SVSINDEX_CHANSERV).Nick, Channel.Name, Replace(Replace(Replace(Replies.ChanServIdentifyWALLCHOPSFailed, "%n", Source.Nick), "%u", Source.UserName & Source.VirtHost), "%r", "+k")))
         Source.BadIdentifies = Source.BadIdentifies + 1
         If Source.BadIdentifies >= basMain.Config.BadPassLimit Then
             Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.ChanServIdentifyBadPassLimit)
@@ -598,14 +881,222 @@ Public Sub Identify(ByVal Source As User, ByVal Channel As Channel, ByVal Passwo
         Channel.IdentifedUsers.Add Source
         Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServIdentifyOK, "%c", Channel.Name))
         If Channel.Members.Exists(Source) Then
-            Call basFunctions.SendData(":" + Service(SVSINDEX_CHANSERV).Nick + " MODE " + Channel.Name + " +ao " + Source.Nick + " " + Source.Nick)
-            Channel.SetChannelModes Service(SVSINDEX_CHANSERV).Nick, "+ao " + Source.Nick + " " + Source.Nick
+            BotMode Channel, True, "+ao " + Source.Nick + " " + Source.Nick
         End If
     End If
 End Sub
 
 Public Sub Access(ByVal Source As User, ByVal Channel As Channel, ByVal Subcommand As String, Optional ByVal NickName As String = "", Optional ByVal Flags As String = "")
-
+    Dim chptr As Long: chptr = DBIndexOf(Channel.Name)
+    Dim saceptr As Long, daceptr As Long
+    If chptr < 0 Then
+        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServChannelNotRegistered, "%c", Channel.Name))
+        Exit Sub
+    End If
+    saceptr = ACLIndexOf(chptr, Source.IdentifiedToNick)
+    Select Case Subcommand
+        Case "LIST"
+            If HasFlagIdx(chptr, saceptr, CHANSERV_ACLREAD) Then
+                'Prepare to dump the list on this guy.
+                Dim idx As Long
+                For idx = 0 To UBound(DB(chptr).AccessList)
+                    With DB(chptr).AccessList(idx)
+                        Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, FormatString("{0} {1} {2}", .Nick, .Flags, IIf(.Lock > LOCK_NONE, "LOCKED: " + Choose(.Lock, "Normal", "Co-Founder", "Founder"), "")))
+                    End With
+                Next idx
+            Else
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions)
+            End If
+        Case "ADD", "SET"
+            'Right, this will be fun. We can only change the other dude's flags if he has a lower level than
+            'us. And of course, if the sender even HAS ACLWRITE.
+            If Not HasFlagIdx(chptr, saceptr, CHANSERV_ACLRW) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions)
+                Exit Sub
+            End If
+            daceptr = ACLIndexOf(chptr, NickName)
+            'Now do a level comparison.
+            If Not AccessLevelIdx(chptr, saceptr) > AccessLevel(Channel.Name, NickName) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions)
+                Exit Sub
+            End If
+            'Check if the ACE is locked, and if we have the perm to lock it.
+            If ACLIndexOf(chptr, NickName) > 0 Then
+                If DB(chptr).AccessList(daceptr).Lock >= LOCK_LOCK And Not (HasAnyFlagIdx(chptr, saceptr, CHANSERV_LOCKACE, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Or Channel.IdentifedUsers.Exists(Source.Nick)) Then
+                    Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions)
+                    Exit Sub
+                ElseIf DB(chptr).AccessList(daceptr).Lock >= LOCK_CFOUNDER And Not (HasAnyFlagIdx(chptr, saceptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Or Channel.IdentifedUsers.Exists(Source.Nick)) Then
+                    Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions)
+                    Exit Sub
+                ElseIf DB(chptr).AccessList(daceptr).Lock >= LOCK_FOUNDER And Not HasFlagIdx(chptr, saceptr, CHANSERV_PERMFOUNDER) Then
+                    Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replies.InsufficientPermissions)
+                    Exit Sub
+                End If
+            End If
+            'Now check for flags the sender can't set.
+            If InStr(Flags, CHANSERV_PERMFOUNDER) > 0 And HasFlagIdx(chptr, cptr, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_PERMFOUNDER), "%r", Replace(Replace(Replies.ChanServACEIgnorePFounder, "%c", Channel.Name), "%n", NickName)))
+                Flags = Replace(Flags, CHANSERV_PERMFOUNDER, "")
+            ElseIf InStr(Flags, CHANSERV_PERMFOUNDER) > 0 And Not HasFlagIdx(chptr, cptr, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_PERMFOUNDER), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_PERMFOUNDER, "")
+            ElseIf InStr(Flags, CHANSERV_COFOUNDER) > 0 And Not HasFlagIdx(chptr, cptr, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_COFOUNDER), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_COFOUNDER, "")
+            ElseIf InStr(Flags, CHANSERV_ACLRW) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_ACLRW), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_ACLRW, "")
+            ElseIf InStr(Flags, CHANSERV_ACLREAD) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_ACLRW, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_ACLREAD), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_ACLREAD, "")
+            ElseIf InStr(Flags, CHANSERV_VOICE) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_VOICEOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_VOICE), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_VOICE, "")
+            ElseIf InStr(Flags, CHANSERV_VOICEOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_HALFOP, CHANSERV_HALFOPOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_VOICEOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_VOICEOP, "")
+            ElseIf InStr(Flags, CHANSERV_QUIET) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_VOICEOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_QUIET), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_QUIET, "")
+            ElseIf InStr(Flags, CHANSERV_SUPERQUIET) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_HALFOP, CHANSERV_HALFOPOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_SUPERQUIET), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_SUPERQUIET, "")
+            ElseIf InStr(Flags, CHANSERV_HALFOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_HALFOPOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_HALFOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_HALFOP, "")
+            ElseIf InStr(Flags, CHANSERV_HALFOPOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_OP, CHANSERV_OPOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_HALFOPOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_HALFOPOP, "")
+            ElseIf InStr(Flags, CHANSERV_DEHALFOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_OP, CHANSERV_OPOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_DEHALFOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_DEHALFOP, "")
+            ElseIf InStr(Flags, CHANSERV_OP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_OPOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_OP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_OP, "")
+            ElseIf InStr(Flags, CHANSERV_OPOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_PROTECT, CHANSERV_PROTECTOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_OPOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_OPOP, "")
+            ElseIf InStr(Flags, CHANSERV_DEOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_PROTECT, CHANSERV_PROTECTOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_DEOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_DEOP, "")
+            ElseIf InStr(Flags, CHANSERV_PROTECT) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_PROTECTOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_PROTECT), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_PROTECT, "")
+            ElseIf InStr(Flags, CHANSERV_PROTECTOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_OWNER, CHANSERV_OWNEROP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_PROTECTOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_PROTECTOP, "")
+            ElseIf InStr(Flags, CHANSERV_OWNER) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_OWNEROP, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_OWNER), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_OWNER, "")
+            ElseIf InStr(Flags, CHANSERV_OWNEROP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_OWNEROP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_OWNEROP, "")
+            ElseIf InStr(Flags, CHANSERV_CANKICK) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_HALFOP, CHANSERV_HALFOPOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_CANKICK), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_CANKICK, "")
+            ElseIf InStr(Flags, CHANSERV_AUTOKICK) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_BANOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_AUTOKICK), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_AUTOKICK, "")
+            ElseIf InStr(Flags, CHANSERV_CANBAN) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_BANOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_CANBAN), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_CANBAN, "")
+            ElseIf InStr(Flags, CHANSERV_BANOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_BANOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_BANOP, "")
+            ElseIf InStr(Flags, CHANSERV_EXEMPT) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_EXEMPTOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_EXEMPT), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_EXEMPT, "")
+            ElseIf InStr(Flags, CHANSERV_EXEMPTOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_EXEMPTOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_EXEMPTOP, "")
+            ElseIf InStr(Flags, CHANSERV_INVITE) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_INVITEOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_INVITE), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_INVITE, "")
+            ElseIf InStr(Flags, CHANSERV_INVITEOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_INVITEOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_INVITEOP, "")
+            ElseIf InStr(Flags, CHANSERV_MODEOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_MODEOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_MODEOP, "")
+            ElseIf InStr(Flags, CHANSERV_CLEAR) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_CLEAR), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_CLEAR, "")
+            ElseIf InStr(Flags, CHANSERV_TOPICOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_TOPICMAN, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_TOPICOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_TOPICOP, "")
+            ElseIf InStr(Flags, CHANSERV_TOPICMAN) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_TOPICMAN), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_TOPICMAN, "")
+            ElseIf InStr(Flags, CHANSERV_GETKEY) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_SETKEY, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_GETKEY), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_GETKEY, "")
+            ElseIf InStr(Flags, CHANSERV_SETKEY) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_SETKEY), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_SETKEY, "")
+            ElseIf InStr(Flags, CHANSERV_UNBAN) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_UNBANOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_UNBAN), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_UNBAN, "")
+            ElseIf InStr(Flags, CHANSERV_UNBANOP) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_UNBANOP), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_UNBANOP, "")
+            ElseIf InStr(Flags, CHANSERV_MEMOADMIN) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_MEMOADMIN), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_MEMOADMIN, "")
+            ElseIf InStr(Flags, CHANSERV_BOTCOMS) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_ACLRW, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_BOTCOMS), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_BOTCOMS, "")
+            ElseIf InStr(Flags, CHANSERV_BOTMODIFY) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_BOTMODIFY), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_BOTMODIFY, "")
+            ElseIf InStr(Flags, CHANSERV_BOTSPEAK) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_OPOP, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_BOTSPEAK), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_ACLREAD, "")
+            ElseIf InStr(Flags, CHANSERV_SHOWGREET) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_ACLRW, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_SHOWGREET), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_SHOWGREET, "")
+            ElseIf InStr(Flags, CHANSERV_BOTNOKICK) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_BOTNOKICK), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_BOTNOKICK, "")
+            ElseIf InStr(Flags, CHANSERV_INFOALL) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_INFOALL), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_INFOALL, "")
+            ElseIf InStr(Flags, CHANSERV_NOSIGNKICK) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_NOSIGNKICK), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_NOSIGNKICK, "")
+            ElseIf InStr(Flags, CHANSERV_SET) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_SET), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_SET, "")
+            ElseIf InStr(Flags, CHANSERV_SETLOCK) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_SETLOCK), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_SETLOCK, "")
+            ElseIf InStr(Flags, CHANSERV_SETLOCK) > 0 Then
+                'Not implemented...
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_ACLREAD), "%r", "This flag is currently not implemented."))
+                Flags = Replace(Flags, CHANSERV_ACLREAD, "")
+            ElseIf InStr(Flags, CHANSERV_LOCKACE) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_LOCKACE), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_LOCKACE, "")
+            ElseIf InStr(Flags, CHANSERV_LOCKLIST) > 0 And Not HasAnyFlagIdx(chptr, cptr, CHANSERV_COFOUNDER, CHANSERV_PERMFOUNDER) Then
+                Call basFunctions.SendMessage(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replace(Replies.ChanServACEFlagIgnored, "%n", CHANSERV_LOCKLIST), "%r", Replies.InsufficientPermissions))
+                Flags = Replace(Flags, CHANSERV_LOCKLIST, "")
+            End If
+            'Ok we weeded out all the stuff they can't set. See if there's still anything left to set.
+            If Len(Replace(Replace(Flags, "+", ""), "-", "")) = 0 Then
+                Call basFunctions.SendData(Service(SVSINDEX_CHANSERV).Nick, Source.Nick, Replace(Replies.ChanServACENotChanged, "%n", NickName))
+                Exit Sub
+            End If
+            'Now condense the flags.
+            While (InStr(Flags, "+-") + InStr(Flags, "-+") + InStr(Flags, "--") + InStr(Flags, "++")) > 0 Or (Right(Flags, 1) = "+" Or Right(Flags, 1) = "-")
+                Flags = Replace(Flags, "+-", "-")
+                Flags = Replace(Flags, "-+", "+")
+                Flags = Replace(Flags, "--", "-")
+                Flags = Replace(Flags, "++", "+")
+                If (Right(Flags, 1) = "+" Or Right(Flags, 1) = "-") Then Flags = Left(Flags, Len(Flags) - 1)
+            Wend
+            'Now go.
+            SetFlag Channel.Name, NickName, Flags
+        Case "DEL"
+    End Select
 End Sub
 
 Public Sub ManageMaskList(ByVal Source As User, ByVal Channel As Channel, ByVal List As String, ByVal Subcommand As String, Optional ByVal Entry As String = "", Optional ByVal Reason As String = "")
@@ -688,7 +1179,7 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
     If IsServicesNick(Source) Then Exit Sub
     If Source = "" Or InStr(Source, ".") > 0 Then
         'SERVER VOICE / (HALF)OP
-        If (Not DB(Chan.Name)("leave_ops")) And bSet Then
+        If (Not DB(DBIndexOf(Chan.Name)).LeaveOps) And bSet Then
             Select Case Char
                 Case "v" 'Do we really care about this?
                 Case "h"
@@ -768,13 +1259,13 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'strict_status and source doesn't have +V.
                     'So first thing is the sender's ACL check.
                     'EXCEPTION - USER VOICES SELF
-                    If DB(Chan.Name)("strict_status") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_VOICE & CHANSERV_VOICEOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If DB(DBIndexOf(Chan.Name)).StrictStatus And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_VOICE & CHANSERV_VOICEOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-v", Target.Nick
-                    ElseIf DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_VOICEOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    ElseIf DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_VOICEOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-v", Target.Nick
-                    ElseIf (DB(Chan.Name)("secure_voice") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasAnyFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_QUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER, "+" & CHANSERV_SUPERQUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    ElseIf (DB(DBIndexOf(Chan.Name)).SecureVoices And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasAnyFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_QUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER, "+" & CHANSERV_SUPERQUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-v", Target.Nick
                     End If
@@ -783,13 +1274,13 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'Target is +D
                     'secure_halfops and user isn't on the ACL.
                     'strict_status and source doesn't have +H.
-                    If DB(Chan.Name)("strict_status") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_HALFOP & CHANSERV_HALFOPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If DB(DBIndexOf(Chan.Name)).StrictStatus And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_HALFOP & CHANSERV_HALFOPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-h", Target.Nick
-                    ElseIf DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_HALFOPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    ElseIf DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_HALFOPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-h", Target.Nick
-                    ElseIf (DB(Chan.Name)("secure_halfops") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEHALFOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    ElseIf (DB(DBIndexOf(Chan.Name)).SecureHalfOps And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEHALFOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-h", Target.Nick
                     End If
@@ -798,13 +1289,13 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'Target is +d
                     'secure_ops and target isn't on the ACL.
                     'strict_status and source doesn't have +O.
-                    If DB(Chan.Name)("strict_status") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OP & CHANSERV_OPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If DB(DBIndexOf(Chan.Name)).StrictStatus And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OP & CHANSERV_OPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-o", Target.Nick
-                    ElseIf DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    ElseIf DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-o", Target.Nick
-                    ElseIf (DB(Chan.Name)("secure_ops") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    ElseIf (DB(DBIndexOf(Chan.Name)).SecureOps And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-o", Target.Nick
                     End If
@@ -813,13 +1304,13 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'Target is +d
                     'secure_ops and target isn't on the ACL.
                     'strict_status and source doesn't have +P.
-                    If DB(Chan.Name)("strict_status") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_PROTECT & CHANSERV_PROTECTOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If DB(DBIndexOf(Chan.Name)).StrictStatus And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_PROTECT & CHANSERV_PROTECTOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-a", Target.Nick
-                    ElseIf DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_PROTECTOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    ElseIf DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_PROTECTOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-a", Target.Nick
-                    ElseIf (DB(Chan.Name)("secure_ops") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    ElseIf (DB(DBIndexOf(Chan.Name)).SecureOps And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-a", Target.Nick
                     End If
@@ -828,13 +1319,13 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'Target is +d
                     'secure_ops and target isn't on the ACL.
                     'strict_status and source doesn't have +N.
-                    If DB(Chan.Name)("strict_status") And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OWNER & CHANSERV_OWNEROP & CHANSERV_PERMFOUNDER) Then
+                    If DB(DBIndexOf(Chan.Name)).StrictStatus And Source = Target.Nick And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OWNER & CHANSERV_OWNEROP & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-q", Target.Nick
-                    ElseIf DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OWNEROP & CHANSERV_PERMFOUNDER) Then
+                    ElseIf DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OWNEROP & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-q", Target.Nick
-                    ElseIf (DB(Chan.Name)("secure_ops") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    ElseIf (DB(DBIndexOf(Chan.Name)).SecureOps And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-q", Target.Nick
                     End If
@@ -848,7 +1339,7 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'strict_status and source doesn't have +V.
                     'Target is of a higher level.
                     'If target == source (ie devoicing self) we don't care.
-                    If Target.Nick <> Source And DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_VOICEOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If Target.Nick <> Source And DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_VOICEOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         'Bounce.
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+v", Target.Nick
                     ElseIf AccessLevel(Chan.Name, uSender.IdentifiedToNick) < AccessLevel(Chan.Name, Target.IdentifiedToNick) Then
@@ -859,7 +1350,7 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'Bounce if:
                     'strict_status and source doesn't have +H.
                     'Target is of a higher level.
-                    If Target.Nick <> Source And DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_HALFOPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If Target.Nick <> Source And DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_HALFOPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+h", Target.Nick
                     ElseIf AccessLevel(Chan.Name, uSender.IdentifiedToNick) < AccessLevel(Chan.Name, Target.IdentifiedToNick) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+h", Target.Nick
@@ -870,7 +1361,7 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'Target is of a higher level.
                     'Note: we can't pick service bot deops here. We'll have to use the MODE command
                     'callback for that.
-                    If Target.Nick <> Source And DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If Target.Nick <> Source And DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OPOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+o", Target.Nick
                     ElseIf AccessLevel(Chan.Name, uSender.IdentifiedToNick) < AccessLevel(Chan.Name, Target.IdentifiedToNick) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+o", Target.Nick
@@ -881,7 +1372,7 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'Target is of a higher level.
                     'Note: we can't pick service bot deops here. We'll have to use the MODE command
                     'callback for that.
-                    If Target.Nick <> Source And DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_PROTECTOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If Target.Nick <> Source And DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_PROTECTOP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+a", Target.Nick
                     ElseIf AccessLevel(Chan.Name, uSender.IdentifiedToNick) < AccessLevel(Chan.Name, Target.IdentifiedToNick) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+a", Target.Nick
@@ -892,7 +1383,7 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
                     'Target is of a higher level.
                     'Note: we can't pick service bot deops here. We'll have to use the MODE command
                     'callback for that.
-                    If Target.Nick <> Source And DB(Chan.Name)("strict_status") And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OWNEROP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If Target.Nick <> Source And DB(DBIndexOf(Chan.Name)).StrictStatus And HasFlag(Chan.Name, uSender.IdentifiedToNick, "-" & CHANSERV_OWNEROP & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+q", Target.Nick
                     ElseIf AccessLevel(Chan.Name, uSender.IdentifiedToNick) < AccessLevel(Chan.Name, Target.IdentifiedToNick) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "+q", Target.Nick
@@ -905,23 +1396,23 @@ Public Sub HandlePrefix(ByVal Source As String, ByVal Chan As Channel, ByVal bSe
         If bSet Then
             Select Case Char
                 Case "v"
-                    If (DB(Chan.Name)("secure_voice") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasAnyFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_QUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER, "+" & CHANSERV_SUPERQUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If (DB(DBIndexOf(Chan.Name)).SecureVoices And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasAnyFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_QUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER, "+" & CHANSERV_SUPERQUIET & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-v", Target.Nick
                     End If
                 Case "h"
-                    If (DB(Chan.Name)("secure_halfops") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasAnyFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEHALFOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If (DB(DBIndexOf(Chan.Name)).SecureHalfOps And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasAnyFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEHALFOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-h", Target.Nick
                     End If
                 Case "o"
-                    If (DB(Chan.Name)("secure_ops") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If (DB(DBIndexOf(Chan.Name)).SecureOps And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-o", Target.Nick
                     End If
                 Case "a"
-                    If (DB(Chan.Name)("secure_ops") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If (DB(DBIndexOf(Chan.Name)).SecureOps And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-a", Target.Nick
                     End If
                 Case "q"
-                    If (DB(Chan.Name)("secure_ops") And AllFlags(Chan.Name, Target.IdentifiedToNick) = "") Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
+                    If (DB(DBIndexOf(Chan.Name)).SecureOps And ACLIndexOf(DBIndexOf(Chan.Name), Target.IdentifiedToNick) < 0) Or HasFlag(Chan.Name, Target.IdentifiedToNick, "+" & CHANSERV_DEOP & "-" & CHANSERV_COFOUNDER & CHANSERV_PERMFOUNDER) Then
                         Chan.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-q", Target.Nick
                     End If
                 'End Case
@@ -981,23 +1472,24 @@ End Sub
 'Some general subs.
 Public Sub InitChannel(ByVal Channel As Channel)
     Dim s As String
-    s = DB(Channel.Name)("bots")
     Dim vBots() As String
-    vBots = Split(s, " ")
+    vBots = DB(DBIndexOf(Channel.Name)).Bots
     'The first character will be the prefix, so...
     Dim v As Variant
     For Each v In vBots
-        Call JoinBot(Channel, Mid(v, 2))
+        If Len(v) > 0 Then
+            Call JoinBot(Channel, Mid(v, 2))
+        End If
     Next v
     DoMLOCK Channel, True
-    BotTopic Channel, DB(Channel.Name)("last_topic"), DB(Channel.Name)("topic_set_by"), DB(Channel.Name)("topic_set_on")
+    BotTopic Channel, DB(DBIndexOf(Channel.Name)).LastTopic, DB(DBIndexOf(Channel.Name)).TopicSetBy, DB(DBIndexOf(Channel.Name)).TopicSetOn
 End Sub
 
 'Enforces the MLOCK of the given channel.
 Public Sub DoMLOCK(ByVal Channel As Channel, Optional ByVal UpdateFloatingLimit As Boolean = False)
-    Dim mlock As String
+    Dim MLock As String
     On Error Resume Next
-    mlock = DB(Channel.Name)("mlock")
+    MLock = DB(DBIndexOf(Channel.Name)).MLock
     If Err.Number <> 0 Then 'Not registered, so the mlock is -r and nothing more.
         If InStr(1, Channel.Modes, "r", vbBinaryCompare) Then
             Channel.SendChannelModes Service(SVSINDEX_CHANSERV).Nick, "-r"
@@ -1007,7 +1499,7 @@ Public Sub DoMLOCK(ByVal Channel As Channel, Optional ByVal UpdateFloatingLimit 
     'Now parse the mlock.
     'The mlock is formatted as <binaryflags> [[<paramflags> <params>]]
     Dim m() As String
-    m = Split(mlock, " ")
+    m = Split(MLock, " ")
     Dim bSet As Boolean
     Dim sSet As String, sUnSet As String 'Modes we can send w/o a parameter.
     Dim idx As Long, ch As String * 1
@@ -1092,53 +1584,79 @@ Public Sub JoinBot(ByVal Channel As Channel, ByVal Bot As String)
 End Sub
 
 Public Sub BotKick(ByVal Channel As Channel, ByVal Auto As Boolean, ByVal Target As User, ByVal Reason As String)
-    Dim vBot As Variant
-    vBot = DB(Channel.Name)(IIf(Auto, "bot_auto_kick", "bot_kick"))
-    If IsNull(vBot) Then vBot = Service(SVSINDEX_CHANSERV).Nick
+    Dim vBot As String
+    vBot = IIf(Auto, DB(DBIndexOf(Channel.Name)).BotAutoKick, DB(DBIndexOf(Channel.Name)).BotKick)
+    If vBot = "" Then vBot = Service(SVSINDEX_CHANSERV).Nick
     Channel.KickUser vBot, Target, Reason
 End Sub
 
 Public Sub BotMode(ByVal Channel As Channel, ByVal Auto As Boolean, ByVal Modes As String)
-    Dim vBot As Variant
-    vBot = DB(Channel.Name)(IIf(Auto, "bot_auto_mode", "bot_mode"))
-    If IsNull(vBot) Then vBot = Service(SVSINDEX_CHANSERV).Nick
+    Dim vBot As String
+    vBot = IIf(Auto, DB(DBIndexOf(Channel.Name)).BotAutoMode, DB(DBIndexOf(Channel.Name)).BotMode)
+    If vBot = "" Then vBot = Service(SVSINDEX_CHANSERV).Nick
     Channel.SendChannelModes vBot, Modes
 End Sub
 
 Public Sub BotTopic(ByVal Channel As Channel, ByVal Topic As String, ByVal SetBy As String, ByVal SetOn As Long)
-    Dim vBot As Variant
-    vBot = DB(Channel.Name)("bot_topic")
-    If IsNull(vBot) Then vBot = Service(SVSINDEX_CHANSERV).Nick
+    Dim vBot As String
+    vBot = DB(DBIndexOf(Channel.Name)).BotTopic
+    If vBot = "" Then vBot = Service(SVSINDEX_CHANSERV).Nick
     Channel.Topic = Topic
     Channel.TopicSetBy = SetBy
     Channel.TopicSetOn = SetOn
     Call basFunctions.SendData(FormatString(":{0} TOPIC {1} {2} {3} :{4}", vBot, Channel.Name, SetBy, SetOn, Topic))
 End Sub
 
-Public Function HasFlag(ByVal Channel As String, ByVal User As String, ByVal Flag As String) As Boolean
-    'Checks the ACL if the user has specified flag(s).
-    Dim sFlagsSet As String
-    Dim sFlagsUnset As String
-    Dim bSet As Boolean
-    bSet = True
-    Dim idx As Long, ch As String * 1
+'A slightly more efficient version of HasFlag when the caller already has the indexes...
+Public Function HasFlagIdx(ByVal chptr As Long, ByVal cptr As Long, ByVal Flag As String) As Boolean
+    Dim Flags As String
+    Flags = DB(chptr).AccessList(cptr).Flags
+    Dim idx As Long, bSet As Boolean
     For idx = 1 To Len(Flag)
-        ch = Mid(Flag, idx, 1)
-        Select Case ch
+        Select Case Mid(Flag, idx, 1)
             Case "+": bSet = True
             Case "-": bSet = False
-            Case Else: If bSet Then sFlagsSet = sFlagsSet + ch Else sFlagsUnset = sFlagsUnset + ch
+            Case Else:
+                If (bSet And InStr(Flags, Mid(Flag, idx, 1)) = 0) Or (Not bSet And InStr(Flags, Mid(Flag, idx, 1)) > 0) Then
+                    HasFlag = False
+                    Exit Function
+                End If
+            'End Case
         End Select
     Next idx
-    Dim sResult As String
-    sResult = AllFlags(Channel, User)
-    For idx = 1 To Len(sFlagsSet)
-        If InStr(1, sResult, Mid(sFlagsSet, idx, 1), vbBinaryCompare) = 0 Then Exit Function
-    Next idx
-    For idx = 1 To Len(sFlagsUnset)
-        If InStr(1, sResult, Mid(sFlagsUnset, idx, 1), vbBinaryCompare) > 0 Then Exit Function
+    HasFlag = True
+End Function
+
+Public Function HasFlag(ByVal Channel As String, ByVal User As String, ByVal Flag As String) As Boolean
+    Dim Flags As String
+    Flags = DB(DBIndexOf(Channel)).AccessList(ACLIndexOf(DBIndexOf(Channel), User)).Flags
+    Dim idx As Long, bSet As Boolean
+    For idx = 1 To Len(Flag)
+        Select Case Mid(Flag, idx, 1)
+            Case "+": bSet = True
+            Case "-": bSet = False
+            Case Else:
+                If (bSet And InStr(Flags, Mid(Flag, idx, 1)) = 0) Or (Not bSet And InStr(Flags, Mid(Flag, idx, 1)) > 0) Then
+                    HasFlag = False
+                    Exit Function
+                End If
+            'End Case
+        End Select
     Next idx
     HasFlag = True
+End Function
+
+Public Function HasAnyFlagIdx(ByVal chptr As Long, ByVal cptr As Long, ParamArray Flags() As Variant) As Boolean
+    Dim idx As Long
+    For idx = LBound(Flags) To UBound(Flags)
+        If Not IsMissing(Flags(idx)) Then
+            If HasFlagIdx(chptr, cptr, Flags(idx)) Then
+                HasAnyFlag = True
+                Exit Function
+            End If
+        End If
+    Next idx
+    HasAnyFlag = False
 End Function
 
 Public Function HasAnyFlag(ByVal Channel As String, ByVal User As String, ParamArray Flags() As Variant) As Boolean
@@ -1151,302 +1669,131 @@ Public Function HasAnyFlag(ByVal Channel As String, ByVal User As String, ParamA
             End If
         End If
     Next idx
+    HasAnyFlag = False
 End Function
 
 Public Sub SetFlag(ByVal Channel As String, ByVal User As String, ByVal Flag As String)
-    Dim bSet As Boolean
-    Dim idx As Long, ch As String * 1
-    Dim sResult As String
-    sResult = AllFlags(Channel, User)
+    Dim Flags As String
+    Dim chptr As Long, cptr As Long
+    chptr = DBIndexOf(Channel)
+    cptr = ACLIndexOf(chptr, User)
+    If cptr >= 0 Then
+        Flags = DB(chptr).AccessList(cptr).Flags
+    Else
+        Flags = ""
+    End If
+    Dim idx As Long, bSet As Boolean
     For idx = 1 To Len(Flag)
-        ch = Mid(Flag, idx, 1)
-        Select Case ch
+        Select Case Mid(Flag, idx, 1)
             Case "+": bSet = True
             Case "-": bSet = False
-            Case Else: If bSet Then sResult = sResult + ch Else sResult = Replace(sResult, ch, "")
+            Case Else:
+                If (bSet And InStr(Flags, Mid(Flag, idx, 1)) = 0) Then
+                    Flags = Flags & Mid(Flag, idx, 1)
+                ElseIf (Not bSet And InStr(Flags, Mid(Flag, idx, 1)) > 0) Then
+                    Flags = Replace(Flags, Mid(Flag, idx, 1), "")
+                End If
+            'End Case
         End Select
     Next idx
-    AllFlags(Channel, User) = sResult
-End Sub
-
-Public Property Get AllFlags(ByVal Channel As String, ByVal User As String) As String
-    If Channel = "" Or User = "" Then Exit Property
-    Dim sACL As String
-    sACL = DB(Channel)("access_list")
-    Dim vACL As Variant
-    vACL = Split(sACL, vbTab)
-    Dim idx As Long
-    For idx = 0 To UBound(vACL)
-        If Split(vACL(idx), " ")(0) = User Then
-            AllFlags = Split(vACL(idx), " ")(1)
-            Exit Property
-        End If
-    Next idx
-    'Not found so return null.
-    AllFlags = ""
-End Property
-
-Public Property Let AllFlags(ByVal Channel As String, ByVal User As String, ByVal Flags As String)
-    If Channel = "" Or User = "" Then Err.Raise 9, , "No such nick/channel"
-    Dim sACL As String, vACL As Variant, bFound As Boolean
-    sACL = DB(Channel)("access_list")
-    vACL = Split(sACL, vbTab)
-    Dim idx As Long
-    For idx = 0 To UBound(vACL)
-        If Split(vACL(idx), " ")(0) = User Then
-            If Flags = "" Then
-                'Mark it for removal.
-                vACL(idx) = ""
-            Else
-                vACL(idx) = Join(Array(Split(vACL(idx), " ")(0), Flags), " ")
-            End If
-            bFound = True
-            Exit For
-        End If
-    Next idx
-    If Not bFound Then
-        'We have to add it.
-        ReDim Preserve vACL(UBound(vACL) + 1)
-        vACL(UBound(vACL)) = User & " " & Flags
+    If cptr >= 0 Then
+        DB(chptr).AccessList(cptr).Flags = Flags
+    Else
+        ReDim DB(chptr).AccessList(UBound(DB(chptr).AccessList) + 1)
+        With DB(chptr).AccessList(UBound(DB(chptr).AccessList))
+            .Nick = User
+            .Flags = Flags
+            .Lock = LOCK_LOCK
+        End With
     End If
-    sACL = Join(vACL, vbTab)
-    While InStr(sACL, vbTab & vbTab): sACL = Replace(sACL, vbTab & vbTab, vbTab): Wend
-    'Wish I could retain the order here but...
-    SetItem(DB(Channel), "access_list") = sACL
-End Property
-
-Public Sub DelAllFlags(ByVal Channel As String, ByVal User As String)
-    AllFlags(Channel, User) = ""
 End Sub
 
-Public Function GetFirstAKick(ByVal Channel As String, ByVal User As User) As String
-    Dim sAK As String, vAK As Variant
-    sAK = DB(Channel)("akicks")
-    vAK = Split(sAK, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vAK)
-        vEntry = Split(vAK(idx), " ", 3)
-        If NUHMaskIsMatch(User, vEntry(0)) Then
-            GetFirstAKick = vEntry(0)
-            Exit Function
-        End If
+Public Function GetFirstAKick(ByVal Channel As String, ByVal User As User) As Long
+    Dim idx As Long, chptr As Long
+    chptr = DBIndexOf(Channel)
+    For idx = 0 To UBound(DB(chptr).AKicks)
+        With DB(chptr).AKicks(idx)
+            If NUHMaskIsMatch(User, .Mask) Then
+                GetFirstAKick = idx
+                Exit Function
+            End If
+        End With
     Next idx
-    GetFirstAKick = ""
+    GetFirstAKick = -1
 End Function
 
-Public Property Get AKickReason(ByVal Channel As String, ByVal AKickMask As String) As String
-    Dim sAK As String, vAK As Variant
-    sAK = DB(Channel)("akicks")
-    vAK = Split(sAK, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vAK)
-        vEntry = Split(vAK(idx), " ", 3)
-        If vEntry(0) = AKickMask Then
-            AKickReason = vEntry(2)
-            Exit Function
-        End If
+Public Function GetFirstExempt(ByVal Channel As String, ByVal User As User) As Long
+    Dim idx As Long, chptr As Long
+    chptr = DBIndexOf(Channel)
+    For idx = 0 To UBound(DB(chptr).Exempts)
+        With DB(chptr).Exempts(idx)
+            If NUHMaskIsMatch(User, .Mask) Then
+                GetFirstExempt = idx
+                Exit Function
+            End If
+        End With
     Next idx
-    AKickReason = ""
-End Property
-
-Public Property Get AKickExpiry(ByVal Channel As String, ByVal AKickMask As String) As Double
-    Dim sAK As String, vAK As Variant
-    sAK = DB(Channel)("akicks")
-    vAK = Split(sAK, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vAK)
-        vEntry = Split(vAK(idx), " ", 3)
-        If vEntry(0) = AKickMask Then
-            AKickExpiry = CDbl(vEntry(1))
-            Exit Property
-        End If
-    Next idx
-    AKickExpiry = -1
-End Property
-
-Public Property Let AKickExpiry(ByVal Channel As String, ByVal AKickMask As String, ByVal NewExpiry As Double)
-    Dim sAK As String, vAK As Variant
-    sAK = DB(Channel)("akicks")
-    vAK = Split(sAK, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vAK)
-        vEntry = Split(vAK(idx), " ", 3)
-        If AKickMask = vEntry(0) Then
-            vEntry(1) = CStr(NewExpiry)
-            vAK(idx) = Join(vEntry, " ")
-            sAK = Join(vAK, vbCrLf)
-            SetItem(DB(Channel), "akicks") = sAK
-            Exit For
-        End If
-    Next idx
-End Property
-
-Public Sub AddAKick(ByVal Channel As String, ByVal AKickMask As String, ByVal Expiry As Double, ByVal Reason As String)
-    If AKickExpiry(Channel, AKickMask) >= 0 Then Exit Sub
-    Dim sResult As String
-    sResult = DB(Channel)("akicks")
-    sResult = sResult & vbCrLf & AKickMask & " " & CStr(Expiry) & " " & Reason
-    SetItem(DB(Channel), "akicks") = sResult
-End Sub
-
-Public Sub DelAKick(ByVal Channel As String, ByVal AKickMask As String)
-    Dim sResult As String, vSplit As Variant
-    sResult = DB(Channel)("akicks")
-    vSplit = Split(sResult, vbCrLf)
-    Dim idx As Long
-    For idx = 0 To UBound(vSplit)
-        If Split(vSplit(idx), " ", 3)(0) = AKickMask Then
-            vSplit(idx) = ""
-        End If
-    Next idx
-    'Now rejoin them
-    sResult = Join(vSplit, vbCrLf)
-    'Removed items will be vbCrLf vbCrLf
-    While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
-    SetItem(DB(Channel), "akicks") = sResult
-End Sub
-
-Public Function GetFirstExempt(ByVal Channel As String, ByVal User As User) As String
-    Dim sExempt As String, vExempt As Variant
-    sExempt = DB(Channel)("exempts")
-    vExempt = Split(sExempt, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vExempt)
-        vEntry = Split(vExempt(idx), " ", 3)
-        If NUHMaskIsMatch(User, vEntry(0)) Then
-            GetFirstExempt = vEntry(0)
-            Exit Function
-        End If
-    Next idx
-    GetFirstExempt = ""
+    GetFirstExempt = -1
 End Function
 
-Public Property Get ExemptExpiry(ByVal Channel As String, ByVal ExemptMask As String) As Double
-    Dim sExempt As String, vExempt As Variant
-    sExempt = DB(Channel)("exempts")
-    vExempt = Split(sExempt, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vExempt)
-        vEntry = Split(vExempt(idx), " ", 3)
-        If vEntry(0) = ExemptMask Then
-            ExemptExpiry = CDbl(vEntry(1))
-            Exit Property
-        End If
+Public Function GetFirstInvite(ByVal Channel As String, ByVal User As User) As Long
+    Dim idx As Long, chptr As Long
+    chptr = DBIndexOf(Channel)
+    For idx = 0 To UBound(DB(chptr).Invites)
+        With DB(chptr).Invites(idx)
+            If NUHMaskIsMatch(User, .Mask) Then
+                GetFirstInvite = idx
+                Exit Function
+            End If
+        End With
     Next idx
-    ExemptExpiry = -1
-End Property
-
-Public Property Let ExemptExpiry(ByVal Channel As String, ByVal ExemptMask As String, ByVal NewExpiry As Double)
-    Dim sExempt As String, vExempt As Variant
-    sExempt = DB(Channel)("exempts")
-    vExempt = Split(sExempt, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vExempt)
-        vEntry = Split(vExempt(idx), " ", 3)
-        If ExemptMask = vEntry(0) Then
-            vEntry(1) = CStr(NewExpiry)
-            vExempt(idx) = Join(vEntry, " ")
-            sExempt = Join(vExempt, vbCrLf)
-            SetItem(DB(Channel), "exempts") = sExempt
-        End If
-    Next idx
-End Property
-
-Public Sub AddExempt(ByVal Channel As String, ByVal ExemptMask As String, ByVal Expiry As Double)
-    If ExemptExpiry(Channel, ExemptMask) >= 0 Then Exit Sub
-    Dim sResult As String
-    sResult = DB(Channel)("exempts")
-    sResult = sResult & vbCrLf & ExemptMask & " " & CStr(Expiry)
-    SetItem(DB(Channel), "exempts") = sResult
-End Sub
-
-Public Sub DelExempt(ByVal Channel As String, ByVal ExemptMask As String)
-    Dim sResult As String, vSplit As Variant
-    sResult = DB(Channel)("exempts")
-    vSplit = Split(sResult, vbCrLf)
-    Dim idx As Long
-    For idx = 0 To UBound(vSplit)
-        If Split(vSplit(idx), " ", 3)(0) = ExemptMask Then
-            vSplit(idx) = ""
-        End If
-    Next idx
-    'Now rejoin them
-    sResult = Join(vSplit, vbCrLf)
-    'Removed items will be vbCrLf vbCrLf
-    While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
-    SetItem(DB(Channel), "exempts") = sResult
-End Sub
-
-Public Function GetFirstInvite(ByVal Channel As String, ByVal User As User) As String
-    Dim sInvite As String, vInvite As Variant
-    sInvite = DB(Channel)("invites")
-    vInvite = Split(sInvite, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vInvite)
-        vEntry = Split(vInvite(idx), " ", 3)
-        If NUHMaskIsMatch(User, vEntry(0)) Then
-            GetFirstInvite = vEntry(0)
-            Exit Function
-        End If
-    Next idx
-    GetFirstInvite = ""
+    GetFirstInvite = -1
 End Function
 
-Public Property Get InviteExpiry(ByVal Channel As String, ByVal InviteMask As String) As Double
-    Dim sInvite As String, vInvite As Variant
-    sInvite = DB(Channel)("invites")
-    vInvite = Split(sInvite, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vInvite)
-        vEntry = Split(vInvite(idx), " ", 3)
-        If vEntry(0) = InviteMask Then
-            InviteExpiry = CDbl(vEntry(1))
-            Exit Property
-        End If
-    Next idx
-    InviteExpiry = -1
-End Property
-
-Public Property Let InviteExpiry(ByVal Channel As String, ByVal InviteMask As String, ByVal NewExpiry As Double)
-    Dim sInvite As String, vInvite As Variant
-    sInvite = DB(Channel)("invites")
-    vInvite = Split(sInvite, vbCrLf)
-    Dim idx As Long, vEntry As Variant
-    For idx = 0 To UBound(vInvite)
-        vEntry = Split(vInvite(idx), " ", 3)
-        If InviteMask = vEntry(0) Then
-            vEntry(1) = CStr(NewExpiry)
-            vInvite(idx) = Join(vEntry, " ")
-            sInvite = Join(vInvite, vbCrLf)
-            SetItem(DB(Channel), "invites") = sInvite
-        End If
-    Next idx
-End Property
-
-Public Sub AddInvite(ByVal Channel As String, ByVal InviteMask As String, ByVal Expiry As Double)
-    If InviteExpiry(Channel, InviteMask) >= 0 Then Exit Sub
-    Dim sResult As String
-    sResult = DB(Channel)("invites")
-    sResult = sResult & vbCrLf & InviteMask & " " & CStr(Expiry)
-    SetItem(DB(Channel), "invites") = sResult
-End Sub
-
-Public Sub DelInvite(ByVal Channel As String, ByVal InviteMask As String)
-    Dim sResult As String, vSplit As Variant
-    sResult = DB(Channel)("invites")
-    vSplit = Split(sResult, vbCrLf)
-    Dim idx As Long
-    For idx = 0 To UBound(vSplit)
-        If Split(vSplit(idx), " ", 3)(0) = InviteMask Then
-            vSplit(idx) = ""
-        End If
-    Next idx
-    'Now rejoin them
-    sResult = Join(vSplit, vbCrLf)
-    'Removed items will be vbCrLf vbCrLf
-    While InStr(sResult, vbCrLf + vbCrLf): sResult = Replace(sResult, vbCrLf + vbCrLf, vbCrLf): Wend
-    SetItem(DB(Channel), "invites") = sResult
-End Sub
+Public Function AccessLevelIdx(ByVal chptr As Long, ByVal sptr As Long) As Integer
+    'Returns a number indicating the "level" of a user:
+    'Voice - 1
+    'VoiceOp - 2
+    'HalfOp - 3
+    'HalfOpOp - 4
+    'Op - 5
+    'OpOp - 6
+    'Protected - 7
+    'ProtectedOp - 8
+    'Owner - 9
+    'OwnerOp - 10
+    'CoFounder - 11
+    'PermFounder - 12
+    If HasFlagIdx(chptr, cptr, CHANSERV_PERMFOUNDER) Then
+        AccessLevel = 12
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_COFOUNDER) Then
+        AccessLevel = 11
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_OWNEROP) Then
+        AccessLevel = 10
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_OWNER) Then
+        AccessLevel = 9
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_PROTECTOP) Then
+        AccessLevel = 8
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_PROTECT) Then
+        AccessLevel = 7
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_OPOP) Then
+        AccessLevel = 6
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_OP) Then
+        AccessLevel = 5
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_HALFOPOP) Then
+        AccessLevel = 4
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_HALFOP) Then
+        AccessLevel = 3
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_VOICEOP) Then
+        AccessLevel = 2
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_VOICE) Then
+        AccessLevel = 1
+    ElseIf HasFlagIdx(chptr, cptr, CHANSERV_AUTOKICK) Then
+        AccessLevel = -1
+    Else
+        AccessLevel = 0
+    End If
+End Function
 
 Public Function AccessLevel(ByVal Channel As String, ByVal User As String) As Integer
     'Returns a number indicating the "level" of a user:
@@ -1486,5 +1833,31 @@ Public Function AccessLevel(ByVal Channel As String, ByVal User As String) As In
         AccessLevel = 2
     ElseIf HasFlag(Channel, User, CHANSERV_VOICE) Then
         AccessLevel = 1
+    ElseIf HasFlag(Channel, User, CHANSERV_AUTOKICK) Then
+        AccessLevel = -1
+    Else
+        AccessLevel = 0
     End If
+End Function
+
+Public Function DBIndexOf(ByVal Name As String) As Long
+    Dim idx As Long
+    For idx = 0 To UBound(DB)
+        If DB(idx).Name = Name Then
+            DBIndexOf = idx
+            Exit Function
+        End If
+    Next idx
+    DBIndexOf = -1
+End Function
+
+Public Function ACLIndexOf(ByVal ChIdx As Long, ByVal User As String) As Long
+    Dim idx As Long
+    For idx = 0 To UBound(DB(ChIdx).AccessList)
+        If DB(ChIdx).AccessList(idx).Nick = User Then
+            ACLIndexOf = idx
+            Exit Function
+        End If
+    Next idx
+    ACLIndexOf = -1
 End Function

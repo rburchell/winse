@@ -99,7 +99,27 @@ Public Class TCPSocket
     Public Function GetError() As Integer
         If Not PollError() Then Return 0
         Return mSck.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error)
-    End Function
+	End Function
+
+	Public ReadOnly Property RemoteIP() As String
+		Get
+			Return DirectCast(mSck.RemoteEndPoint, IPEndPoint).Address.ToString()
+		End Get
+	End Property
+	Public ReadOnly Property RemoteHost() As String
+		Get
+			Try
+				Return Dns.Resolve(DirectCast(mSck.RemoteEndPoint, IPEndPoint).Address.ToString()).HostName
+			Catch ex As Exception
+				Return DirectCast(mSck.RemoteEndPoint, IPEndPoint).Address.ToString()
+			End Try
+		End Get
+	End Property
+	Public ReadOnly Property RemotePort() As Integer
+		Get
+			Return DirectCast(mSck.RemoteEndPoint, IPEndPoint).Port
+		End Get
+	End Property
 End Class
 
 

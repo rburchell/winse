@@ -81,6 +81,10 @@
         <Files>
             <Include>
                 <File
+                    RelPath = "api.htm"
+                    BuildAction = "Content"
+                />
+                <File
                     RelPath = "AssemblyInfo.vb"
                     SubType = "Code"
                     BuildAction = "Compile"

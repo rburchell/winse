@@ -37,7 +37,8 @@ Public Const UnknownSubCommand = "%c - Unknown subcommand."
 Public Const UserDoesntExist = "This user doesn't exist."
 'We could also send:
 ':services.* 481 Lamer :Permission denied - Insufficient services access.
-Public Const InsufficientPermissions = "I SPIT AT YOU THUSLY!"
+Public Const InsufficientPermissions = "Permission denied"
+Public Const InsufficientPermissionsAbusive = "I SPIT AT YOU THUSLY (Permission denied)."
 'We could also send:
 ':services.* 481 Lamer :Permission denied - You are not an IRC Operator.
 Public Const MustBeOpered = "You must be opered to use this service. [+o]"
@@ -95,6 +96,8 @@ Public Const KillReasonKilledService = "Do *NOT* /kill services!"
 Public Const KillReasonPasswordLimit = "Too many bad password attempts."
  'Replace() %n with GHOST user (could use n!u@h here?)
 Public Const KillReasonGhostKill = "GHOST Command used by %n."
+Public Const KillReasonRecoverKill = "RECOVER Command used by %n."
+Public Const KillReasonNickEnforce = "Nickname Enforcement"
 Public Const KillReasonFlooding = "Please do not flood services!"
  'Replace() %n with OperServ/whateverServ KILL user (n!u@h format?), and %r with KILL reason.
 Public Const KillReasonOperServ = "Requested (%n (%r))"
@@ -104,8 +107,11 @@ Public Const KillReasonOperServ = "Requested (%n (%r))"
 '(We should only do this if we are going to manually
 'autokill. If we use AKILL/GLINE/TKL + G, then we can
 'still use this string for the AKILL/GLINE/TKL Reason
-'field.
+'field.)
 Public Const KillReasonAutoKill = "AutoKilled by %n: %r"
+'Ghost kill reason for accounts. Remember, when we use AuthServ, GHOST != nick enforcement - the user being
+'ghosted must be identified to the same account as the sender.
+Public Const KillReasonAuthServGhost = "GHOST Command on account %a used by %n."
 
 'NickServ
 Public Const NickServCommunicationNotice = "Services will now communicate via NOTICE"
@@ -114,18 +120,42 @@ Public Const NickServNickAlreadyRegistered = "This nickname has already been reg
 Public Const NickServNickRegistered = "This nickname has been registered with NickServ. If it is yours, use /msg nickserv identify <pass>, otherwise please choose another nickname."
  'SVSNICK anyone? - aquanight Use these 3 for SET ENFORCE ON (normal)
 Public Const NickServEnforceIn60 = "Your nick will be changed in 60 seconds if you do not comply."
-Public Const NickServEnforceIn40 = "This nickname is registered. You have 40 seconds to identify or choose a different nick, or I will change your nick."
-Public Const NickServEnforceIn20 = "Final warning - you have 20 seconds to identify or choose a different nick. If you do not, your nickname will be changed."
+Public Const NickServEnforceIn60Kill = "You will be disconnected from this network in 60 seconds if you do not comply."
+Public Const NickServEnforceIn40 = "You now have 40 seconds to change your nick. The nick you are currently using is registered to another user."
+'DALnet seems to also send RPL_NICKNAMEINUSE nick :This nickname is registered. or something like it.
+Public Const NickServEnforceIn20 = "You now have 20 seconds to change your nick. If you do not comply, I will change your nick for you. This is your final warning."
+Public Const NickServEnforceIn20Kill = "You now have 20 seconds to change your nick. If you do not comply, I will disconnect you from the network. This is your final warning."
  'Use this for SET KILL/ENFORCE QUICK - aquanight
 Public Const NickServEnforceQuick = "Your nick will be changed in 20 seconds if you do not comply."
+Public Const NickServEnforceQuickKill = "You will be disconnected from this in 20 seconds if you do not comply."
  'Use this for SET KILL/ENFORCE IMMED if you implement it -aquanight
 Public Const NickServEnforceImmed = "This nickname is registered and protected. You may not use it."
+ 'Forbidden nicks.
+Public Const NickServEnforceForbid = "This nickname is forbidden. You may not use it."
  'Use this when using SVSNICK. Replace() %n with the target nick (Guest???????) - aquanight
 Public Const NickServEnforcingNick = "Your nick has been changed to %n."
+Public Const NickServEnforcingNickKill = "You are now being disconnected. The nick you were using is registered to another user. Please reconnect with a different nick."
 Public Const NickServIdentificationSuccessful = "Password accepted, you are now identified."
 Public Const NickServIdentificationBadPassword = "Your password is incorrect."
 Public Const NickServIdentificationNotRegistered = "Your nickname is not registered."
 Public Const NickServAlreadyIdentified = "You are already identified."
+Public Const NickServNotIdentified = "You are not currently identified. You must identify to your nick to use this command."
+Public Const NickServNickGhosted = "Your ghost connection under nick " + MIRC_BOLD + "%n" + MIRC_BOLD + " has been terminated."
+Public Const NickServNickRecover = "The user using your nick " + MIRC_BOLD + "%n" + MIRC_BOLD + " has had his nick forcibly changed to %g."
+Public Const NickServNickNotInUse = "No user is using nick " + MIRC_BOLD + "%n" + MIRC_BOLD + "."
+Public Const NickServGhostNickHeld = "Nick " + MIRC_BOLD + "%n" + MIRC_BOLD + " is being held by services. To release it, type " + MIRC_BOLD + "/msg NickServ RELEASE %n " + MIRC_UNDERLINE + "password" + MIRC_UNDERLINE + MIRC_BOLD + "."
+Public Const NickServNickRecoverKill = "Ths user using your nick " + MIRC_BOLD + "%n" + MIRC_BOLD + " has been forcibly disconnected."
+Public Const NickServRecoverRelease = "Your nick will be held unusable by services for 1 minute to prevent the user using it from retaking it immediately. To get it back sooner, type " + MIRC_BOLD + "/msg NickServ RELEASE %n " + MIRC_UNDERLINE + "password" + MIRC_UNDERLINE + MIRC_BOLD + "."
+Public Const NickServNickRelease = "Your nick " + MIRC_BOLD + "%n" + MIRC_BOLD + " has been released."
+Public Const NickServRelaseNotHeld = "Nick " + MIRC_BOLD + "%n" + MIRC_BOLD + " is not being held."
+
+'AuthServ replies. I will try to reuse the NickServ replies where possible, but these are the ones for which
+'that is not possible.
+'Replace %a with the account name for these two.
+Public Const AuthServAccountRegistered = "The account name you requested is already registered. If it is yours, type " + MIRC_BOLD + "/msg AuthServ IDENTIFY %a " + MIRC_UNDERLINE + "password" + MIRC_UNDERLINE + MIRC_BOLD + ". Other, choose a different name."
+Public Const AuthServNotRegistered = "No such account " + MIRC_BOLD + "%a" + MIRC_BOLD + "."
+Public Const AuthServNotIdentified = "You are not identified to an account. You must identify to an account for this command to be useful."
+
 'Might this be a good idea? - aquanight
     'Indeed. --w00t
 Public Const NickServTooManyBadPasswords = "You have tried to incorrectly identify too many times and as such are being disconnected."
@@ -201,6 +231,8 @@ Public Const ChanServIdentifyBadPassLimit = "You have incorrectly identified too
 Public Const ChanServIdentifyAlreadyIDd = "You are already identified to %c, or already have +" & CHANSERV_COFOUNDER & " access."
 'I don't think banned lamers should be able to try and crack the password and get around it :) .
 Public Const ChanServIdentifyBanned = "You can't identify to %c because you are banned."
+'And just to give the ops a heads up that someone may be trying to crack the password.
+Public Const ChanServIdentifyWALLCHOPSFailed = "*** Notice -- Failed IDENTIFY from %n (%u): %r"
 'For RESTRICTED and MLOCK +AOz.
 Public Const ChanServIdentifyRestricted = "You can't identify to %c because you aren't permitted to use it."
 'Some more responses we could use.
@@ -247,6 +279,13 @@ Public Const ChanServKickSuspend = "This channel is suspended."
  'And for FORBIDden channels :P
  'Could we use 481 (Not IRCop) here?
 Public Const ChanServKickForbid = "This channel is forbidden."
+ 'ACCESS command replies...
+Public Const ChanServACEChanged = "User %n Flags are now %f"
+Public Const ChanServACENotChanged = "No changes to be made to %n"
+Public Const ChanServACEFlagIgnored = "Flag %f ignored: %r"
+Public Const ChanServACEIgnorePFounder = "Only one permanent founder may exist. To transfer Permanent Founder control to someone else, use " + MIRC_BOLD + "/msg ChanServ SET %c FOUNDER %n" + MIRC_BOLD
+Public Const ChanServACEIgnoreAlreadySet = "The flag is already set."
+Public Const ChanServACEIgnoreAlreadyUnset = "The flag is already unset."
 
 'Help System
 Public Const UnknownCommandOrHelpNotAvailable = "No help available."

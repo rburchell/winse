@@ -55,7 +55,7 @@ Public Function IsChanRegistered(ByVal ChanName As String) As Boolean
     Dim Password As String
     'If we have a password, we must be registered ;)
     On Error Resume Next
-    Password = sChanServ.DB(ChanName)("Password")
+    'Password = sChanServ.DB(ChanName)("Password")
     IsChanRegistered = (Password <> "")
 End Function
 
@@ -656,7 +656,7 @@ Public Function NUHMaskIsMatch(ByVal User As User, ByVal Mask As String) As Bool
     '# and [ need to be "unspecialed" here.
     sMask = Replace(sMask, "[", "[[]")
     sMask = Replace(sMask, "#", "[#]")
-    NUHMaskIsMatch = (User.Nick & "!" & User.UserName & "@" & User.HostName Like Mask)
+    NUHMaskIsMatch = (User.Nick & "!" & User.UserName & "@" & User.HostName Like Mask) Or (User.VirtHost <> "" And User.Nick & "!" & User.UserName & "@" & User.VirtHost Like Mask)
 End Function
 
 Public Function CollToArray(ByVal col As Collection, Optional ByRef Keys As Variant) As Variant
