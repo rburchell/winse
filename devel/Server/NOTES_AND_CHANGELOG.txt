@@ -2,7 +2,7 @@ CREDITS:
 No name may be removed from this list, except by w00t (ie Code Reuse if no longer used :P)
 If you are working on Winse, contact w00t for your contribution to be noted here.
  [Coding]
-   w00t - w00t@netronet.org  | aquanight - aquanight@users.sourceforge.net
+   w00t - w00t@netronet.org | aquanight - aquanight@users.sourceforge.net | Jason - jasontik@users.sourceforge.net
  [Code Reuse]
    Tron - tron@ircd-net.org
 
@@ -40,6 +40,7 @@ Services:
 [-----------------------------------]
 
 24/07/2004 - Jason
+ -[RS] [---] Added rootserv INJECT, Services Master can INJECT to non-ircop services
  -[--] [---] DENY ADD now also automaticly enforces all active denys.
  -[AG] [Fix] Bugfix for DENY on Unreal
  -[AG] [Fix] Bugfix for DENY on other systems
