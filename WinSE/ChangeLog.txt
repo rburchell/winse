@@ -1,0 +1,15 @@
+Tags:
+[CO] = Core
+[PR] = Protocol Module (include name of module)
+[NS] = NickServ
+[CS] = ChanServ
+[MS] = MemoServ
+[OS] = OperServ
+[BS] = BotServ
+[AG] = Agent
+[AS] = AdminServ
+[RS] = RootServ
+[GN] = Global Noticer
+
+-- WinSE .NET 0.1 --
+02/??/2005 - aquanight

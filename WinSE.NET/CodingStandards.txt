@@ -1,0 +1,208 @@
+Guidelines for coding and patching WinSE:
+
+-- ChangeLog
+Add an entry to ChangeLog.txt for at least EVERY commit. Entries should look like this:
+
+mm/dd/yyyy - yourname
+List of changes, see ChangeLog.txt for more info on this.
+
+Major changes (such as the numeric -> flag for user access) must be discussed prior to doing.
+
+-- Credits
+MUST NOT BE MODIFIED. Ask w00t if you need to be included in or removed from the credits.
+Also document the source of any reused code (unless you're reusing your own code, I guess...).
+
+-- GPL Headers, Options, and Imports
+All Source files must have the following components:
+- GPL Header must start off the file.
+- Option Explicit and Strict must be enabled. Option Compare must be set to Binary. No exceptions. (Text compares can be done using UCase,
+  if it's necessary.)
+- The following namespaces must be imported: Microsoft.VisualBasic, System, System.Collections, System.Collections.Specialized
+  Additional namespaces may be imported if they are used frequently. Note that inside the core itself, WinSECore need not be imported.
+  Remember, all Importing does is allow the identifiers in a namespace to be used without qualification, so you don't have to Import a
+  namespace to use it's components. EG, System.Net.Sockets.Socket works fine, I don't have to Import System.Net or System.Net.Sockets.
+Newly added source files need to have these sections added. Also remember to do CVS Add on the file before you commit!
+The following is a basic snippet of what the first few lines of any VB source file should look like:
+[code]
+' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
+'
+' This program is free software; you can redistribute it and/or modify
+' it under the terms of the GNU General Public License as published by
+' the Free Software Foundation; either version 2 of the License, or
+' (at your option) any later version.
+'
+' This program is distributed in the hope that it will be useful,
+' but WITHOUT ANY WARRANTY; without even the implied warranty of
+' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+' GNU General Public License for more details.
+'
+' You should have received a copy of the GNU General Public License
+' along with this program; if not, write to the Free Software
+' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+Option Explicit On 
+Option Strict On
+Option Compare Binary
+Imports Microsoft.VisualBasic
+Imports System
+Imports System.Collections
+Imports System.Collections.Specialized
+[/code]
+Currently, WinSE's official language is VB.NET, but modules MAY be coded in C#. However, all WinSE official modules will be in VB.NET.
+
+-- Procedures, Invocation Thereof and Return Values
+In VB.NET there are two distinct types of procedures: methods and properties. It's very important that we understand the distinction here:
+- Methods are supposed to perform a given action, and optionally return a value indicating the result of that action. Functions that
+  do nothing more than return a value may be considered for being changed to a ReadOnly Property.
+- Properties are supposed to control values. PROPERTY READERS SHOULD NEVER EXECUTE SERIOUS CODE. Property Writers may take action in response 
+  to the value being assigned, including validation.
+- For ReadOnly Propertys, step back and look at your code and ask, "is this better suited for a Function"? If so, then remove the Get/End Get
+  lines and change the ReadOnly Property -> Function before someone does it for you :P . In particular if a Property takes more than one
+  argument is VERY likely to be better suited for a function. I may come up with a scoring system at some point to help decide if it should
+  be a Property or a Function, but ultimately you should use your best judgement on this.
+
+Incorrect:
+Public ReadOnly Property ReadFromServer() As String
+	Get
+		Dim b() AS New Byte = New Byte(sck.Available) {}
+		sck.Receive(b)
+		Return System.Text.Encoding.ASCII.GetString(b)
+	End Get
+End Property
+This is incorrect because it performs an unexpected action. Because the Visual Studio Debugger will evaluate properties for the debugging
+windows, this will cause the debugger to have side effects on the program that the program is not expecting. Plus the name suggests it's
+performing an action, which is inappropriate for a Property. This procedure should be a Function.
+Corrected:
+Public Function ReadFromServer() As String
+	Dim b() AS New Byte = New Byte(sck.Available) {}
+	sck.Receive(b)
+	Return System.Text.Encoding.ASCII.GetString(b)
+End Function
+
+Invocation:
+A big change from VB6 to VB.NET is that the parentheses around a Sub call are NO LONGER OPTIONAL. You MUST have parentheses around the
+arguments of a procedure call. The parentheses ARE optional when there are no arguments, but for readability sake, ALWAYS use parentheses
+even if there is nothing inside of them when invoking a Sub or Function. When reading a property do NOT use parentheses unless you need
+to pass arguments. Also, because parentheses are no longer optional for Subs, this makes the Call keyword obsolete. It is no longer needed.
+ 
+Return Values:
+VB.NET has changed the syntax for returning a value from a Function or Property reader. The old syntax was function/property name = value.
+The new syntax is simply Return <value>. Therefore:
+Incorrect:
+Public Function Square(ByVal x As Double) As Double
+	Square = x * *
+End Function
+Correct:
+Public Function Square(ByVal x As Double) As Double
+	Return x * x
+End Function
+The old syntax is still supported, but don't use it because it can result in ambiguities.
+
+-- Exception Handling
+If I see anyone in WinSE use the VB6 way of On Error <blah> I will personally hunt you down and strangle you to death. For the purpose of this
+project after the Point of No Return From .NET-ization, On Error does NOT EXIST. The VB.NET way is this:
+Try
+	<code>
+Catch ex As Exception (or type that Inherits Exception, such as ArgumentException or NullReferenceException)
+	<code to handle exception>
+End Try
+If you've ever used Java or C++, you should catch on to how it works really quickly. If not, F1 is your friend :P .
+
+-- Namespaces, and accessing Shared class members
+When accessing a Shared class member, it may be accessed like any normal Instance member (eg, Object.Method), or you can use the Class name
+in place of Object, but you cannot use the member unqualified unless you are inside the code of the class declaring the shared member. This
+applies to methods, properties, and fields (field is the fancy name for variable). For example, the Integer type (which is actually a 
+Structure, meaning even integer variables have members) has a shared readonly field called MinValue which holds the minimum value accepted
+for the Integer type. I can access it with Integer.MinValue (or the general .NET way, Int32.MinValue, Int32 == Integer - they are the same
+thing), or by taking any integer variable (like x) and do x.MinValue. For the purpose of relieving confusion, Shared members will be accessed
+through the class name, and never an instance.
+For namespaces, any namespace that is Imported may have it's classes accessed without qualification. However, only 4 namespaces are
+officially accepted for importing automatically:
+Microsoft.VisualBasic
+System
+System.Collections
+System.Collections.Specialized
+A namespace that is typed out more than 3 times per 5 lines of code may be added to the Import list FOR THAT CODE FILE to compress code
+space. If you import a namespace, you should import all of it's parent namespaces as well. Once added, do not remove an Import unless it
+becomes unused or a name conflict occurs with a more frequently used namespace. Note that this 3:5 isn't a technical limit; use your own
+judgement on if the namespace is used enough to warrant importing.
+The only exception is when importing namespace causes a name collision on an identifier that you may need to use. In this case, only one
+of the namespaces declaring that identifier may be imported. Use of the other namespaces must remain qualified.
+
+-- Visual Basic .NET IDE Notes
+There are several things that must be noted about the VB.NET IDE. These primarly concern indentation and commenting.
+Indentation:
+The VB.NET IDE accepts real tabs (ASCII character 9, like this: 	). The actual width of a tab can be configured in the IDE. For VB.NET
+code, I want to put these rules on indenting:
+1) ALWAYS use real tabs. To ensure that tabs are used, click Tools -> Options, in the option tree, select Text Editor, then All Languages,
+   then tabs, and in the dialog panel, set the radio to Keep Tabs. Set Tab Size and Indent size to whatever floats your boat but they must
+   be the same to ensure that VB only uses one tab for one level of indenting.
+2) VB.NET will auto-indent code. In most cases, let it. If you don't think it's indenting something correctly, check for compile errors
+   first. This is actually easier to do now: select View -> Show Tasks -> Build Errors. The Task Pane will pop up and list any immediately
+   detectable compiler errors. Resolve these errors and VB.NET should indent properly. If you don't like how VB.NET indents something, I'm
+   afraid you're going to have to live with it, because I most certainly will be using auto-indent and every time I check out the CVS
+   and open the solution, it's probably going to reindent everything :) . The only issue I have with auto-indenting is how VB.NET indents
+   comments on the same line as code. The only workaround to this is to keep all comments on their own lines. You shouldn't need to comment
+   each and every single line anyway; it's VB for cripes sake!
+
+Commenting:
+1) Comment siginficant blocks of code. Also, please please please please PLEASE document the purpose and usage of functions! I know the
+   initial import of this CVS won't follow this guideline 100% at first, but it will be easier to write an API documentation when we have the
+   actual content of said documentation already done in code comments :) .
+2) VB.NET's Task Pane has a nice integeration with comments, called Comment Tasks. This is where we go and add comments like 'TODO: blarp
+   and when you look in the task pane... :o there's a task called "TODO: blarp" and clicking it takes you right to the comment :) . To see
+   these types of comments, use View -> Show Tasks -> Comment (or All if you want to see Build Errors too). The priority of these tasks
+   will be determined by the prefix in the comment (VB.NET recognizes these tasks by the tag, like "TODO" in the example I mentioned).
+   I recommend the following tags be defined (Tools -> Options -> Environment -> Task List -> bottom half):
+   TODO: High Priorty - Use this to mark functions or sections thereof that need to be implemented. Visual Studio defines and locks this
+                        comment type - only the priorty can be modified.
+   FIXME: High Priorty - Use this to mark code that is very likely to be unstable.
+   HACK: Normal Priorty - Use this to mark code that does something very underhanded or sneaky. For example, hard coding values that should
+         be variable should marked with HACK. Also, roundabout ways of doing things could be marked with this as well.
+   BUG: High Priority - Use this to mark a known bug.
+   UNDONE: Normal Priority - Use this list tasks that aren't finished yet.
+   RESOLVED: Low Priorty - Use this to mark an issue you have just recently resolved. A RESOLVED tag may be removed if it is confirmed
+                           stable and working.
+   Optionally you can add the tag ASSIGNED<yourcodername> (where <yourcodername> is your coder name, eg aquanight) and set it high priorty
+   so that you can mark code sections that you've been assigned to. I recommend doing this...
+   Making a Comment Task in code is quite easy. Start with the comment marker, the tag, a colon, and then a description.
+   Some examples:
+   'TODO: Implement X function to turn Y widget into Z object.
+   'BUG: The doohickey on this thingamabob is winding out of synch with the whatchamacallit.
+   'FIXME: This contraption could fall apart if the thingie isn't properly turned in step with the blarpomatic.
+   'ASSIGNEDaquanight: This should be done in about a week...
+   
+-- WinSE API Structure
+The WinSE API is currently divided into a few significant chunks:
+- The Core where everything will be controlled. Think of the Core as the CPU of services; I intend for the Core to be the central focus
+  point of tasks. It will take care of reading commands from the server and passing them to the ircd for interpretation, loading modules
+  and ensuring they play nice with each other, and managing the single-threaded timers.
+- The IRC Map is WinSE's way of tracking every user and server that connects to the network. It also uses the IRC Map to track it's own
+  psuedo-servers and clients. Through this map the state of the network is tracked.
+- The API is where modules can interact with the WinSE Core, IRC Map, and other various functions.
+
+Everything is accessed through an instance of the Core object; I suppose this further emphasizes it's central function. The Core provides
+access to the API and both sides of the IRC Map.
+
+When adding a function to any of these compoments, put it where it belongs. In particular, observe these rules:
+Core and IRC Map:
+- MUST BE INSTANCE MEMBERS! In other words, do not make anything Shared.
+- The Core class should not contain every function in the book, that's what the API class is for. If the function is going to be used
+  heavily by modules, consider placing it in the API class.
+  
+API Class:
+- Members that must access the Core or IRC Map must be Instance (that is, not Shared) members. For example, the PutServ(*) and
+  FindNode(String) methods access the core and are therefore instance members. FMod and Mask are for common calculations, do not access the
+  Core, and are therefore Shared. Note that both instance and Shared members can be accessed equally (but see above about Shared members),
+  and for the time being, the API will be the only exception that shared members should be accessed through the class name.
+  
+WinSE Daemon:
+The Core itself is a mere DLL, so it can't run by itself. WinSE will use a Console Application which will serve to start the core. The reason
+this arrangement is necessary is because .NET does not permit adding a reference to an EXE file or a project that compiles to an EXE. The
+core is a DLL so that modules can reference the core and early-bind to it's functions (which results in much faster code). The console
+application provides the following and nothing more:
+- The spark to start the core. Since DLLs can't be executed by themselves, the EXE serves as the loader for the WinSE Core.
+- Responsible for logging messages to the Console, if so enabled.
+  
+This Document:
+Must not be modified without agreement from all coders.
+This document applies to the WinSE Core, Daemon, and all official modules. 
