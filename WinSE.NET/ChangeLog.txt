@@ -8,8 +8,14 @@ Tags:
 [BS] = BotServ
 [AG] = Agent
 [AS] = AdminServ
-[RS] = RootServ
-[GN] = Global Noticer
+[DS] = DebugServ
+[**] = ALL
 
 -- WinSE .NET 0.1 --
-02/??/2005 - aquanight
+02/12/2005 - aquanight
+-[**] [Add] Filled in AssemblyInfo.vb in everything, so that everything has proper version numbers, exe/dll info, etc.
+-[DS] [Add] DebugServ not automatically built in the Release configuration.
+-A few other things I don't remember...
+
+02/10/2005 - aquanight
+- Initial import of .NET CVS!

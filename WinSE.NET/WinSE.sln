@@ -100,7 +100,6 @@ Global
 		{DFEC1909-6C56-44A4-B79D-B46D58C5DFD4}.Debug.ActiveCfg = Debug|.NET
 		{DFEC1909-6C56-44A4-B79D-B46D58C5DFD4}.Debug.Build.0 = Debug|.NET
 		{DFEC1909-6C56-44A4-B79D-B46D58C5DFD4}.Release.ActiveCfg = Release|.NET
-		{DFEC1909-6C56-44A4-B79D-B46D58C5DFD4}.Release.Build.0 = Release|.NET
 	EndGlobalSection
 	GlobalSection(SolutionItems) = postSolution
 		ChangeLog.txt = ChangeLog.txt

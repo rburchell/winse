@@ -21,6 +21,9 @@ Imports Microsoft.VisualBasic
 Imports System
 Imports System.Collections
 Imports System.Collections.Specialized
+Imports System.IO
+Imports System.Text
+Imports System.Text.RegularExpressions
 'The Configuration Loader where we will parse everything down into a managable class of keys and values.
 '/// <summary>
 '/// Represents a single Value in a configuration. A Value must reside in a
@@ -438,3 +441,84 @@ End Class
 		MyBase.New(info, context)
 	End Sub
 End Class
+
+
+'/// <summary>
+'/// Parser used to provided a Structured Configuration Interface for
+'/// INI Format Configuraiton Files.
+'/// </summary>
+Public Class INIParser
+	Private Shared ReadOnly rxKey As New Regex("^\[(?<keyname>.+)\]\s*$", RegexOptions.Compiled Or RegexOptions.Singleline)
+	Private Shared ReadOnly rxValue As New Regex("^(?<name>[^=]+)=(?<value>.*)$", RegexOptions.Compiled Or RegexOptions.Singleline)
+	Private Shared ReadOnly rxShellComment As New Regex("^\s*(?<! \\)\#.*$", RegexOptions.Compiled Or RegexOptions.Multiline)
+	Private Shared ReadOnly rxCXXComment As New Regex("^\s*//.*$", RegexOptions.Compiled Or RegexOptions.Multiline)
+	Private Shared ReadOnly rxINIComment As New Regex("^\s*(?<! \\);.*$", RegexOptions.Compiled Or RegexOptions.Multiline)
+	Public Sub New()
+	End Sub
+	Private Function Preprocess(ByVal strIn As String) As String
+		'// Exterminate any comments.
+		Dim sWork As String = strIn
+		'// Strip out any \r since those will throw us a bone. :p
+		sWork = sWork.Replace("\r", "")
+		'// We can collapse line comments w/o worrying about screwing up the
+		'// block ones so we'll do that first.
+		sWork = rxCXXComment.Replace(sWork, "")
+		sWork = rxINIComment.Replace(sWork, "")
+		'// Now turn escaped comment characters into normal ones.
+		sWork = sWork.Replace("\\#", "#")
+		sWork = sWork.Replace("\\;", ";")
+		Return sWork
+	End Function
+	'/// <summary>
+	'/// Loads a configuration from an already opened stream.
+	'/// </summary>
+	'/// <remarks>The stream given will not be closed.</remarks>
+	'/// <param name="File">Stream from which config should be read.</param>
+	'/// <returns>Key object through which the entire document can be accessed as a structured configuration.</returns>
+	'/// <exception cref="System.Security.SecurityException">The method does not have the privileges required.</exception>
+	'/// <exception cref="System.IO.FileNotFoundException">The file couldn't be found.</exception>
+	'/// <exception cref="System.IO.IOException">An I/O Exception occured during file access.</exception>
+	'/// <exception cref="System.IO.PathTooLongException">The caller passed a path too long to be loaded.</exception>
+	'/// <exception cref="System.IO.DirectoryNotFoundException">The caller specified a path that doesn't exist.</exception>
+	'/// <exception cref="System.IO.EndOfStreamException">The parser unexpectedly reached the end of the file.</exception>
+	'/// <exception cref="ConfigFile.ConfigException">The parser encountered an error parsing the configuration (such as incorrect config-file syntax).</exception>
+	Public Function Load(ByVal File As StreamReader) As WinSECore.Key
+		Dim sFile As String = Nothing
+		Dim kRoot As New Key(Nothing)
+		Dim kCur As Key = Nothing
+		sFile = File.ReadToEnd()
+		sFile = Preprocess(sFile)
+		For Each sLine As String In sFile.Split(Chr(13))
+			'// What is it?
+			Dim m As Match = Nothing
+			If sLine = "" Then
+				'// Do nothing.
+			Else
+				m = rxKey.Match(sLine)
+				If m.Success Then
+					'// Key... 
+					'// Only tag is keyname... fun fun fun
+					kCur = New Key(m.Groups("keyname").Value, kRoot)
+					kRoot.SubKeys.Add(kCur)
+				Else
+					m = rxValue.Match(sLine)
+					If m.Success Then
+						'// Value...
+						'// Tags are name and value....
+						Dim nKey As String = m.Groups("name").Value
+						Dim nValue As String = m.Groups("value").Value
+						If kCur Is Nothing Then
+							Throw New ConfigException("Value outside of key.")
+						End If
+						kCur.Values.Add(New Value(nKey, nValue, kCur))
+					Else
+						'// Something else...
+						Throw New ConfigException("Syntax error: " + sLine)
+					End If
+				End If
+			End If
+		Next
+		Return kRoot
+	End Function
+End Class
+

@@ -55,10 +55,41 @@ End Class
 
 Public Structure Password
 	Public PassPhrase As String
-	Public CryptMethod As System.Security.Cryptography.HashAlgorithm
-	Public Shared Function HashPassword(ByVal password As String, ByVal method As System.Security.Cryptography.HashAlgorithm) As String
-
+	Private mCryptMethod As System.Type
+	Public Property CryptMethod() As System.Type
+		Get
+			Return mCryptMethod
+		End Get
+		Set(ByVal Value As System.Type)
+			If Not Value.IsSubclassOf(GetType(System.Security.Cryptography.HashAlgorithm)) Then Throw New ArgumentException("Invalid hasher type, must derive from System.Security.Cryptography.HashAlgorithm.")
+			mCryptMethod = Value
+		End Set
+	End Property
+	Public Shared Function HashPassword(ByVal password As String, ByVal method As System.Type) As String
+		Dim hasher As System.Security.Cryptography.HashAlgorithm
+		If method Is Nothing Then Return password
+		If Not method.IsSubclassOf(GetType(System.Security.Cryptography.HashAlgorithm)) Then Throw New InvalidCastException
+		hasher = DirectCast(method.GetConstructor(System.Type.EmptyTypes).Invoke(New Object(-1) {}), System.Security.Cryptography.HashAlgorithm)
+		hasher.Initialize()
+		Return System.Text.Encoding.ASCII.GetString(hasher.ComputeHash(System.Text.Encoding.ASCII.GetBytes(password)))
 	End Function
+	Public Overloads Overrides Function Equals(ByVal obj As Object) As Boolean
+		If TypeOf obj Is Password Then
+			With DirectCast(obj, Password)
+				Return Me.PassPhrase = .PassPhrase AndAlso Me.CryptMethod.Equals(.CryptMethod)
+			End With
+		ElseIf TypeOf obj Is String Then
+			Return HashPassword(DirectCast(obj, String), Me.CryptMethod) = Me.PassPhrase
+		End If
+	End Function
+	Public Sub New(ByVal Password As String)
+		Me.PassPhrase = Password
+		mCryptMethod = Nothing
+	End Sub
+	Public Sub New(ByVal Password As String, ByVal Method As System.Type)
+		If Not Method.IsSubclassOf(GetType(System.Security.Cryptography.HashAlgorithm)) Then Throw New ArgumentException("Invalid hasher type, must derive from System.Security.Cryptography.HashAlgorithm.")
+		mCryptMethod = Method
+	End Sub
 End Structure
 
 Public Structure Configuration

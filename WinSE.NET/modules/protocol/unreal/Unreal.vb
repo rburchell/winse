@@ -34,6 +34,10 @@ Public NotInheritable Class UnrealModule
 	Public Overrides Function ModLoad(ByVal params() As System.Collections.Specialized.StringCollection) As Boolean
 		Return False
 	End Function
+
+	Public Overrides Function GetHelpDirectory() As System.IO.DirectoryInfo
+		Return Nothing
+	End Function
 End Class
 
 Public Class Unreal
@@ -297,6 +301,29 @@ Public Class Unreal
 			End If
 		End Get
 	End Property
+	Public Overrides ReadOnly Property ChanModes() As String
+		Get
+			If ProtocolVersion >= 2306 Then
+				Return "beI,kfL,l,psmntirRcOAQKVGCuzNSMTG"
+			Else
+				Return "be,kfL,l,psmntirRcOAQKVGCuzNSMTG"
+			End If
+		End Get
+	End Property
+	Public Overrides ReadOnly Property UserModes() As String
+		Get
+			Return "iowghraAsORTVSxNCWqBzvdHtGp"
+		End Get
+	End Property
+	Public Overrides Function ServiceUMode() As String
+		Return "oS"
+	End Function
+	Public Overrides Function InvisServiceUMode() As String
+		Return "ioS"
+	End Function
+	Public Overrides Function ChServiceUMode() As String
+		Return "oSqp"
+	End Function
 	Private Function GetNSPrefix(ByVal Source As WinSECore.IRCNode) As String
 		If Source Is Nothing Then Throw New ArgumentNullException("Source")
 		If TypeOf Source Is WinSECore.Server Then Return "@" + IntToB64(Source.Numeric) Else Return ":" + Source.Name
@@ -356,28 +383,5 @@ Public Class Unreal
 			v = v + map(Asc(Mid(b64, idx, 1)))
 		Next idx
 		Return v
-	End Function
-	Public Overrides ReadOnly Property ChanModes() As String
-		Get
-			If ProtocolVersion >= 2306 Then
-				Return "beI,kfL,l,psmntirRcOAQKVGCuzNSMTG"
-			Else
-				Return "be,kfL,l,psmntirRcOAQKVGCuzNSMTG"
-			End If
-		End Get
-	End Property
-	Public Overrides ReadOnly Property UserModes() As String
-		Get
-			Return "iowghraAsORTVSxNCWqBzvdHtGp"
-		End Get
-	End Property
-	Public Overrides Function ServiceUMode() As String
-		Return "oS"
-	End Function
-	Public Overrides Function InvisServiceUMode() As String
-		Return "ioS"
-	End Function
-	Public Overrides Function ChServiceUMode() As String
-		Return "oSqp"
 	End Function
 End Class
