@@ -193,13 +193,14 @@ Public Property Set RecordField(ByRef dbInOut As Database, ByVal RecordName As S
 End Property
 
 Public Sub DeleteField(ByRef dbInOut As Database, ByVal RecordName As String, ByVal FieldName As String)
+    Dim idxLoc As Integer
     'Get ready for some fun...
     If RecordName = "" Then
         'Delete the entire database.
         Erase dbInOut.Records
     ElseIf FieldName = "" Then
         'Delete the entire record.
-        Dim idx As Integer, idxLoc As Integer
+        Dim idx As Integer
         idxLoc = -1
         With dbInOut
             For idx = 0 To UBound(.Records)
@@ -219,7 +220,6 @@ Public Sub DeleteField(ByRef dbInOut As Database, ByVal RecordName As String, By
     Else
         'Delete a single field in a record.
         Dim idxRec As Integer, idxFld As Integer
-        Dim idxLoc As Integer
         idxLoc = -1
         With dbInOut
             For idxRec = 0 To UBound(.Records)
@@ -235,7 +235,7 @@ Public Sub DeleteField(ByRef dbInOut As Database, ByVal RecordName As String, By
                         For idxFld = idxLoc + 1 To UBound(.Fields)
                             .Fields(idxFld - 1) = .Fields(idxFld)
                         Next idxFld
-                        ReDim Preserve Fields(UBound(.Fields) - 1)
+                        ReDim Preserve .Fields(UBound(.Fields) - 1)
                     End With
                     Exit Sub
                 End If

@@ -80,7 +80,7 @@ Public Function IsNickRegistered(NickName As String)
     IsNickRegistered = (Password <> "")
 End Function
 
-Public Sub IntroduceClient(Nick As String, Host As String, Name As String, Optional IsBot As Boolean = False)
+Public Sub IntroduceClient(Nick As String, Host As String, Name As String, Optional IsBot As Boolean = False, Optional ExtraModes As String = "")
     'stop erroring if the link died.
     On Error Resume Next
     Dim MyTime As String
@@ -94,6 +94,12 @@ Public Sub IntroduceClient(Nick As String, Host As String, Name As String, Optio
         'Whoops. Also, nice use of "Not" rather than a messy If statement aquanight! --w00t
     basFunctions.SendData ":" & Nick & " MODE " & Nick & " +qS"
     If Not IsBot Then basFunctions.SendData ":" & Nick & " MODE " & Nick & " +d"
+    'I've added an optional parameter to give extra
+    'modes. That way OperServ, DebugServ, AdminServ,
+    'Global, and RootServ can be invisible to non-IRCops
+    '(like they should be). Also, maybe make OperServ
+    '+o just for the fun of it ;p .
+    If ExtraModes <> "" Then basFunctions.SendData ":" & Nick & " MODE " & Nick & " +" & ExtraModes
     'This actually causes Unreal to set +xt for the user
     'which may not be what we want. Since we send our
     '"vhost" as the real host in User, why is this
@@ -202,6 +208,12 @@ Public Sub SendData(Buffer As String)
     'leave alone - aquanight
     basMain.Buffer(basMain.BufferElements) = Buffer & vbCrLf
     basMain.BufferElements = basMain.BufferElements + 1
+End Sub
+
+Public Sub PutQuick(ByVal Buffer As String)
+    'For putting important messages that can't wait,
+    'like PONGs. In other words - this doesn't buffer!
+    frmServer.tcpServer.Send Buffer
 End Sub
 
 Public Sub PrivMsg(Sender As String, Reciever As String, Message As String)
@@ -414,55 +426,57 @@ Public Sub SetUserModes(UserId As Integer, Modes As String)
   End With
 End Sub
 
-Public Function SetChannelModes(ChanID As Integer, Modes As String)
-    Dim Modes2 As String
-    Dim j As Byte 'better not > 255 :|
-    Dim ModeChar As String * 1
-    Dim RemoveModes As Boolean
-    Dim Result As Byte
-    'Copied from SetUserModes.
-    Modes = basFunctions.ReturnChannelOnlyModes(Modes)
-    With basMain.Channels(ChanID)
-        If Modes2 = "" Then Modes2 = .Modes
-        For j = 1 To Len(Modes)
-            ModeChar = Mid(Modes, j, 1)
-            If Asc(ModeChar) < 65 Or Asc(ModeChar) > 90 Then
-                If Asc(ModeChar) < 97 Or Asc(ModeChar) > 122 Then
-                    'Ignore as is invalid mode char. ie is not alphabet char.
-                    If ModeChar = "-" Then
-                        RemoveModes = True
-                    ElseIf ModeChar = "+" Then
-                        RemoveModes = False
-                    End If
-                    ModeChar = ""
-                End If
-            End If
-DontClearMode:
-            If ModeChar = "" Then GoTo Skip
-            Select Case RemoveModes
-                Case True
-                    'remove mode
-                    Result = InStr(Modes2, ModeChar)
-                    If Result <> 0 Then
-                        'remove that damn mode.
-                        'Mid just looks so much better. -aquanight
-                        Modes2 = Left(Modes2, Result - 1) & Mid(Modes2, Result + 1)
-                    End If
-                Case False
-                    'assume addmode
-                    'If we havent got it...
-                    If InStr(Modes2, ModeChar) = 0 Then
-                        'add it
-                        If InStr(ModeChar, basMain.ChannelModes) = 0 Then
-                            Modes2 = Modes2 & ModeChar
-                        End If
-                    End If
-            End Select
-Skip:
-        Next j
-        .Modes = Modes2
-    End With
-End Function
+'Based on the chatroom convos, I guess it's time to
+'retire this function... - aquanight
+'Public Function SetChannelModes(ChanID As Integer, Modes As String)
+'    Dim Modes2 As String
+'    Dim j As Byte 'better not > 255 :|
+'    Dim ModeChar As String * 1
+'    Dim RemoveModes As Boolean
+'    Dim Result As Byte
+'    'Copied from SetUserModes.
+'    Modes = basFunctions.ReturnChannelOnlyModes(Modes)
+'    With basMain.Channels(ChanID)
+'        If Modes2 = "" Then Modes2 = .Modes
+'        For j = 1 To Len(Modes)
+'            ModeChar = Mid(Modes, j, 1)
+'            If Asc(ModeChar) < 65 Or Asc(ModeChar) > 90 Then
+'                If Asc(ModeChar) < 97 Or Asc(ModeChar) > 122 Then
+'                    'Ignore as is invalid mode char. ie is not alphabet char.
+'                    If ModeChar = "-" Then
+'                        RemoveModes = True
+'                    ElseIf ModeChar = "+" Then
+'                        RemoveModes = False
+'                    End If
+'                    ModeChar = ""
+'                End If
+'            End If
+'DontClearMode:
+'            If ModeChar = "" Then GoTo Skip
+'            Select Case RemoveModes
+'                Case True
+'                    'remove mode
+'                    Result = InStr(Modes2, ModeChar)
+'                    If Result <> 0 Then
+'                        'remove that damn mode.
+'                        'Mid just looks so much better. -aquanight
+'                        Modes2 = Left(Modes2, Result - 1) & Mid(Modes2, Result + 1)
+'                    End If
+'                Case False
+'                    'assume addmode
+'                    'If we havent got it...
+'                    If InStr(Modes2, ModeChar) = 0 Then
+'                        'add it
+'                        If InStr(ModeChar, basMain.ChannelModes) = 0 Then
+'                            Modes2 = Modes2 & ModeChar
+'                        End If
+'                    End If
+'            End Select
+'Skip:
+'        Next j
+'        .Modes = Modes2
+'    End With
+'End Function
 
 Public Function ReturnChannelOnlyModes(ChannelModes As String)
     'Takes a given string of modes eg +pmoi and returns +pmi (ie those not
@@ -539,7 +553,9 @@ Public Sub ParseCmd(ByVal Incoming As String)
     If Err.Number <> 0 Then Debug.Print Err.Number, Err.Description
 End Sub
 
-Public Function SetChannelModes2(ChanID As Integer, Modes As String)
+'BEHOLD! The NEW AND IMPROVED Channel Mode Parser! :D
+'- aquanight
+Public Function SetChannelModes(ChanID As Integer, Modes As String)
     'Believe it or not, I like throwing errors over just
     'sending out a scream :) .
     If ChanID < 0 Then Err.Raise 9, , Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.SetChannelModes2")
@@ -567,7 +583,24 @@ Public Function SetChannelModes2(ChanID As Integer, Modes As String)
             If iParam <= UBound(sMode) Then
                 sParam = sMode(iParam)
                 iParam = iParam + 1
-                DispatchPrefix ChanID, bSet, sChar, ReturnUserIndex(sParam)
+                'Another extra check here - we may have
+                'killed  user that was trying to be opped
+                'via the IRCd. If that happens, then we
+                'get a -1 out of index, even though the
+                'change is supposedly valid. In this case
+                'we'll just do what Unreal does and send
+                'another KILL :P .
+                '(If we had continued onward to
+                'DispatchPrefix it would cause services
+                'to die under a very normal
+                'circumstance.)
+                If ReturnUserIndex(sParam) = -1 Then
+                    'Example of what this looks like:
+                    'services.winse.net KILL Ghostie :services.winse.net (Ghostie(?) <- irc.winse.net)
+                    PutQuick ":" + basMain.Config.ServerName + " KILL " + sParam + " :" + basMain.Config.ServerName + " (" + sParam + "(?) <- " + basMain.Config.UplinkName + ")"
+                Else
+                    DispatchPrefix ChanID, bSet, sChar, ReturnUserIndex(sParam)
+                End If
             Else
                 'EEEEEEEEEK!
                 NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)

@@ -35,9 +35,17 @@ Services:
  BotServ   [BS]  Global    [GN]
  OperServ  [OS]  MassServ  [MsS]
  MemoServ  [MS]  Core      [CO]
+ Database  [DB]
              All [AL]
 [-----------------------------------]
 
+23/07/2004 - aquanight
+ -[DB] [Fix] Squashed a few compilation errors.
+ -[CO] [Fix] Also fixed a potential crash in the new mode parser in
+             situations such as a user KILLed by services has an op
+             waiting in the receive buffer.
+ -[CO] [---] Retired the old mode parser. SetChannelModes is now the
+             new mode parser.
 19/07/2004 - aquanight
  -[CO] [---] It's been a while, and I bring you an improved DB routine! Yay!
 04/07/2004 - aquanight
