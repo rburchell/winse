@@ -149,8 +149,11 @@ Public Type UserStructure
     HostName As String          'User's real hostname.
     RealName As String          '"Real Name" of this user
     VirtHost As String          'Virtual Host, from stuff like GETHOST or NICKv2
+    Server As String            'Server this user is on.
     'Anything else services need to store?
-    Custom As New Collection
+    'BLAH. New in struct isn't going to port very well.
+    'Just don't let anyone forget to init it.
+    Custom As Collection
 End Type
 
 Private Type ChannelAccess
@@ -169,7 +172,7 @@ Public Type ChannelStructure
     'Topic Retention :) - aquanight
     Topic As String
     TopicSetBy As String
-    TopicSetOn As String 'Not sure if this is really needed... --w00t
+    TopicSetOn As Long 'Not sure if this is really needed... --w00t
     FounderPassword As String
     MLock As String 'modes for mlock
     
@@ -201,16 +204,18 @@ Public Type ChannelStructure
     'should make sure we don't forget to init them, but
     '.NET isn't going to like it very much ;p .
     ' - aquanight
-    Bans As New Collection
-    Excepts As New Collection
-    Invites As New Collection 'For hybrid :)
+    'BLAH. FUDGE IT. Just don't let anyone forget to
+    'init these in the channel create sections.
+    Bans As Collection
+    Excepts As Collection
+    Invites As Collection 'For hybrid :)
     ChannelKey As String
     FloodProtection As String 'chanmode +f
     OverflowChannel As String
     'This can be bigger than you think :) - aquanight
     OverflowLimit As Long
     'Anything else services need to store?
-    Custom As New Collection
+    Custom As Collection
 End Type
 
 Public Type Service
@@ -220,6 +225,8 @@ Public Type Service
 End Type
 
 'We should eventually move to Dynamic buffers here.
+'To be honest, I think dynamic buffers would make it
+'WAY*10^7 faster to loop through stuff... *sigh*
 Public Channels(32766) As ChannelStructure
 Public Users(32766) As UserStructure
 ' Made one smaller so that you can loop through them with a integer

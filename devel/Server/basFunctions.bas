@@ -30,7 +30,7 @@ Public Function ParseBuffer(ByVal Buffer As String) As Variant
     ParseBuffer = Split(Buffer, " ")
 End Function
 
-Public Sub LogEvent(Header As String, Message As String)
+Public Sub LogEvent(ByVal Header As String, ByVal Message As String)
     'Logs given event to file.
 
     'Header eg "BUG"
@@ -50,20 +50,20 @@ Public Sub LogEvent(Header As String, Message As String)
     Close #FreeFile - 1
 End Sub
 
-Public Sub LogEventWithMessage(Header As String, Message As String)
+Public Sub LogEventWithMessage(ByVal Header As String, ByVal Message As String)
     'Notifies all users with saccess, and logs event to file
     Call basFunctions.NotifyAllUsersWithServicesAccess(Header & " " & Message)
     Call basFunctions.LogEvent(Header, Message)
 End Sub
 
-Public Sub ForceChangeNick(Sender As Integer, OldNick As String, NewNick As String)
+Public Sub ForceChangeNick(ByVal Sender As Integer, ByVal OldNick As String, ByVal NewNick As String)
     'Now uses unix timestamp --w00t
     Dim TimeStamp As Long
     TimeStamp = basUnixTime.GetTime
     Call basFunctions.SendData("SVSNICK " & OldNick & " " & NewNick & " " & TimeStamp)
 End Sub
 
-Public Function IsChanRegistered(ChanName As String) As Boolean
+Public Function IsChanRegistered(ByVal ChanName As String) As Boolean
     Dim Password As String
     'If we have a password, we must be registered ;)
     Password = basFileIO.GetInitEntry("channels.db", UCase(ChanName), "Password")
@@ -72,7 +72,7 @@ Public Function IsChanRegistered(ChanName As String) As Boolean
     IsChanRegistered = (Password <> "")
 End Function
 
-Public Function IsNickRegistered(NickName As String)
+Public Function IsNickRegistered(ByVal NickName As String)
     Dim Password As String
     'If we have a password, we must be registered ;)
     Password = basFileIO.GetInitEntry("users.db", UCase(NickName), "Password")
@@ -80,7 +80,7 @@ Public Function IsNickRegistered(NickName As String)
     IsNickRegistered = (Password <> "")
 End Function
 
-Public Sub IntroduceClient(Nick As String, Host As String, Name As String, Optional IsBot As Boolean = False, Optional ExtraModes As String = "")
+Public Sub IntroduceClient(ByVal Nick As String, ByVal Host As String, ByVal Name As String, Optional ByVal IsBot As Boolean = False, Optional ByVal ExtraModes As String = "")
     'stop erroring if the link died.
     On Error Resume Next
     Dim MyTime As String
@@ -108,7 +108,7 @@ Public Sub IntroduceClient(Nick As String, Host As String, Name As String, Optio
     'Call basFunctions.SendData(":" & Nick & " SETHOST " & Host)
 End Sub
 
-Public Sub JoinServicesToChannel(Sender As Integer, Channel As String)
+Public Sub JoinServicesToChannel(ByVal Sender As Integer, ByVal Channel As String)
     'aquanight: This may need to be bumped to a larger
     'type to satisify Option Strict when we .NET-ize it :) .
         'Argh, dont prefix comments... I thought I said that at first :|
@@ -124,7 +124,7 @@ Public Sub JoinServicesToChannel(Sender As Integer, Channel As String)
     Next i
 End Sub
 
-Public Sub PartServicesFromChannel(Sender As Integer, Channel As String)
+Public Sub PartServicesFromChannel(ByVal Sender As Integer, ByVal Channel As String)
     'See JoinServicesToChannel comment on this.  - aquanight
     Dim i As Byte
     Dim Nick, Host, Name As String
@@ -136,7 +136,7 @@ Public Sub PartServicesFromChannel(Sender As Integer, Channel As String)
     Next i
 End Sub
 
-Public Function ReturnUserServicesPermissions(UserID As Integer) As Byte
+Public Function ReturnUserServicesPermissions(ByVal UserID As Integer) As Byte
 Err.Raise vbObjectError, "ReturnUserServicesPermissions(" & UserID & ")", "This function is outdated since flag based permissions, use HasFlag(UserID As Integer,Flag As String) ONLY ONE FLAG AT A TIME!"
 '    'Determines services permissions through a number of different factors.
 '
@@ -154,23 +154,23 @@ Err.Raise vbObjectError, "ReturnUserServicesPermissions(" & UserID & ")", "This 
 '    ReturnUserServicesPermissions = basMain.Users(UserID).Access
 End Function
 
-Public Function IsAbuseTeamMember(UserID As Integer) As Boolean
+Public Function IsAbuseTeamMember(ByVal UserID As Integer) As Boolean
     'Don't you love Booleans? :D - aquanight
     'God, what was I on!!! duh... it's already boolean... so why did I check? --w00t
     IsAbuseTeamMember = basMain.Users(UserID).AbuseTeam
 End Function
 
-Public Function IsServicesAdmin(UserID As Integer) As Boolean
+Public Function IsServicesAdmin(ByVal UserID As Integer) As Boolean
     'ick. I have to think when I see things like that :( :P
     'Go the booleans aquanight! --w00t
     IsServicesAdmin = (InStr(basMain.Users(UserID).Modes, "a") <> 0)
 End Function
 
-Public Function IsOper(UserID As Integer) As Boolean
+Public Function IsOper(ByVal UserID As Integer) As Boolean
     IsOper = (InStr(basMain.Users(UserID).Modes, "o") <> 0)
 End Function
 
-Public Function GetTarget(Buffer As String) As String
+Public Function GetTarget(ByVal Buffer As String) As String
     'What the heck? I've never seen this command before - aquanight
         'I've had problems with On--Resume next taking precedence in other proceedures.
         '"Local" seems to combat that. (perhaps some description of VB bug) --w00t
@@ -191,7 +191,7 @@ Public Function GetTarget(Buffer As String) As String
     GetTarget = Left(Cmd, FirstSpace)
 End Function
 
-Public Function GetSender(Buffer As String) As String
+Public Function GetSender(ByVal Buffer As String) As String
     'Your way stuffed up PRIVMSG handling, you can look into it if you want. For now,
     'the old code is back, yours is commented. --w00t
     'Dim s As Variant
@@ -203,7 +203,7 @@ Public Function GetSender(Buffer As String) As String
     GetSender = Right(Left(Buffer, FirstSpace), Len(Left(Buffer, FirstSpace)))
 End Function
 
-Public Sub SendData(Buffer As String)
+Public Sub SendData(ByVal Buffer As String)
     'With the new socket library, buffering might not
     'be needed anymore, but for now I think it's ok to
     'leave alone - aquanight
@@ -217,15 +217,15 @@ Public Sub PutQuick(ByVal Buffer As String)
     frmServer.tcpServer.Send Buffer
 End Sub
 
-Public Sub PrivMsg(Sender As String, Reciever As String, Message As String)
+Public Sub PrivMsg(ByVal Sender As String, ByVal Reciever As String, ByVal Message As String)
     basFunctions.SendData (":" & Sender & " PRIVMSG " & Reciever & " :" & Message)
 End Sub
 
-Public Sub Notice(Sender As String, Reciever As String, Message As String)
+Public Sub Notice(ByVal Sender As String, ByVal Reciever As String, ByVal Message As String)
     basFunctions.SendData (":" & Sender & " NOTICE " & Reciever & " :" & Message)
 End Sub
 
-Public Sub SendMessage(Sender As String, Reciever As String, Message As String)
+Public Sub SendMessage(ByVal Sender As String, ByVal Reciever As String, ByVal Message As String)
     Dim UserID As Integer
     'Wrapper for notice\privmsg. Checks which we should use, and uses it.
     UserID = basFunctions.ReturnUserIndex(Reciever)
@@ -242,7 +242,7 @@ End Sub
 
 'Changing Message to ByVal because we need to
 'do some multiliation to it to send KILLs properly. -aquanight
-Public Sub KillUser(UserID As Integer, ByVal Message As String, Optional Killer As String = "Agent")
+Public Sub KillUser(ByVal UserID As Integer, ByVal Message As String, Optional ByVal Killer As String = "Agent")
     If UserID >= 0 Then
         'I think some kind of validation should be put
         'here... because we could theoretically call
@@ -288,13 +288,13 @@ Public Sub KillUser(UserID As Integer, ByVal Message As String, Optional Killer 
     End If
 End Sub
 
-Public Function ReturnUserName(UserID As Integer) As String
+Public Function ReturnUserName(ByVal UserID As Integer) As String
     'If return "" then user doesnt exist.
     If UserID = -1 Then Exit Function
     ReturnUserName = basMain.Users(UserID).Nick
 End Function
 
-Public Sub GlobalMessage(Message As String)
+Public Sub GlobalMessage(ByVal Message As String)
     'I'm thinking that we should Global the easy way :)
     'IMHO, global messages should always be NOTICE,
     'but that's partly because mIRC does wierd things
@@ -313,7 +313,7 @@ Public Sub GlobalMessage(Message As String)
 '    Next i
 End Sub
 
-Public Sub CheckFloodLevel(UserID As Integer)
+Public Sub CheckFloodLevel(ByVal UserID As Integer)
     'Flood level. Goes up by 1 on each request.
     'When it hits 5, a warning. 10, a kill. 20, a gline (unless >= services admin)
     'Flood level goes down by 1 every 5 seconds?? --w00t
@@ -336,10 +336,10 @@ Public Sub CheckFloodLevel(UserID As Integer)
     basMain.Users(UserID).Requests = basMain.Users(UserID).Requests + 1
 End Sub
 
-Public Function ReturnUserIndex(NickName As String) As Integer
+Public Function ReturnUserIndex(ByVal NickName As String) As Integer
     Dim i As Integer
     'Returns -1 if user doesnt exist.
-    For i = 0 To basMain.TotalUsers
+    For i = 0 To UBound(Users)
         With basMain.Users(i)
             If UCase(NickName) = UCase(.Nick) Then
                 ReturnUserIndex = i
@@ -352,10 +352,10 @@ Public Function ReturnUserIndex(NickName As String) As Integer
     ReturnUserIndex = -1
 End Function
 
-Public Function ReturnChannelIndex(ChannelName As String)
+Public Function ReturnChannelIndex(ByVal ChannelName As String)
     Dim i As Integer
     'Returns -1 if chan doesnt exist.
-    For i = 0 To basMain.TotalChannels
+    For i = 0 To UBound(Channels)
         With basMain.Channels(i)
             If UCase(ChannelName) = UCase(.Name) Then
                 ReturnChannelIndex = i
@@ -384,11 +384,11 @@ Public Sub AddServer(ByVal Name As String, Optional ByVal Message As String = "W
     Call basFunctions.SendData("SERVER " & Name & " 1 :" & " " & Message & vbCrLf)
 End Sub
 
-Public Sub NotifyAllUsersWithServicesAccess(Message As String)
+Public Sub NotifyAllUsersWithServicesAccess(ByVal Message As String)
 NotifyAllUsersWithFlags AccFlagGetServNotices, Message
 End Sub
 
-Public Sub NotifyAllUsersWithFlags(Flag As String, Message As String)
+Public Sub NotifyAllUsersWithFlags(ByVal Flag As String, ByVal Message As String)
     Dim i As Integer
     Dim Reciever As String
     Dim Sender As String
@@ -401,7 +401,7 @@ Public Sub NotifyAllUsersWithFlags(Flag As String, Message As String)
     Next i
 End Sub
 
-Public Sub SetUserModes(UserID As Integer, Modes As String)
+Public Sub SetUserModes(ByVal UserID As Integer, ByVal Modes As String)
   Dim l As Integer ' I use l or i for loops usually
   Dim ModeChar As String * 1
   Dim AddModes As Boolean
@@ -491,7 +491,7 @@ End Sub
 '    End With
 'End Function
 
-Public Function ReturnChannelOnlyModes(ChannelModes As String)
+Public Function ReturnChannelOnlyModes(ByVal ChannelModes As String)
     'Takes a given string of modes eg +pmoi and returns +pmi (ie those not
     'related to channel access.
     Dim j As Byte
@@ -519,7 +519,7 @@ Public Sub ParseCmd(ByVal Incoming As String)
     'of a string, so we can use that to check for a
     'source :) .
     If Asc(sTmp) = Asc(":") Then
-        sSource = Mid(2, sTmp)
+        sSource = Mid(sTmp, 2)
         sSource = Left(sSource, InStr(sSource, " ") - 1)
         sTmp = Mid(sTmp, InStr(sTmp, " ") + 1)
     End If
@@ -562,12 +562,20 @@ Public Sub ParseCmd(ByVal Incoming As String)
     'Now execute it :) Use late-binding to pick the
     'correct procedure.
     Dim sArgs() As String, idx As Long
-    ReDim sArgs(LBound(vArgs) To UBound(vArgs))
-    For idx = LBound(vArgs) To UBound(vArgs)
-        sArgs(idx) = vArgs(idx)
-    Next idx
-    On Error Resume Next
-    Call CallByName(cd, sCmd, VbMethod, sSource, sArgs, Incoming)
+    If Not IsEmpty(vArgs) Then
+        ReDim sArgs(LBound(vArgs) To UBound(vArgs))
+        For idx = LBound(vArgs) To UBound(vArgs)
+            sArgs(idx) = vArgs(idx)
+        Next idx
+    End If
+    'Supposedly this won't catch errors in a called
+    'procedure...
+    'I hope so...
+    On Local Error Resume Next
+    'To add support for a command, create a sub in
+    'CommandDispatcher, using the format Cmd<cmdname>.
+    'See CommandDispatcher.cls for more info.
+    Call CallByName(cd, "Cmd" + sCmd, VbMethod, sSource, sArgs, Incoming)
     If Err.Number <> 0 Then
         Debug.Print Err.Number, Err.Description
         Exit Sub
@@ -589,7 +597,7 @@ End Sub
 
 'BEHOLD! The NEW AND IMPROVED Channel Mode Parser! :D
 '- aquanight
-Public Function SetChannelModes(ChanID As Integer, Modes As String)
+Public Function SetChannelModes(ByVal ChanID As Integer, ByVal Modes As String)
     'Believe it or not, I like throwing errors over just
     'sending out a scream :) .
     If ChanID < 0 Then Err.Raise 9, , Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.SetChannelModes2")
@@ -628,7 +636,12 @@ Public Function SetChannelModes(ChanID As Integer, Modes As String)
                 'DispatchPrefix it would cause services
                 'to die under a very normal
                 'circumstance.)
-                If ReturnUserIndex(sParam) = -1 Then
+                If IsServicesNick(sParam) Then
+                    'It's a service spiel. We'll figure
+                    'out how to deal with this later...
+                    'For now, just do nothing so that
+                    'we don't die :/ .
+                ElseIf ReturnUserIndex(sParam) = -1 Then
                     'Example of what this looks like:
                     'services.winse.net KILL Ghostie :services.winse.net (Ghostie(?) <- irc.winse.net)
                     PutQuick ":" + basMain.Config.ServerName + " KILL " + sParam + " :" + basMain.Config.ServerName + " (" + sParam + "(?) <- " + basMain.Config.UplinkName + ")"
@@ -697,13 +710,13 @@ Private Sub DispatchPrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal
         RestartServices "Fatal sanity check error. Forcing restart."
     End If
     Dim s As String
-    s = Channels(ChanID).UsersModes(Target)
+    s = Channels(ChanID).UsersModes(CStr(Target))
     If bSet Then
         s = s & Char
     Else
         s = Replace(s, Char, "")
     End If
-    SetItem(Channels(ChanID).UsersModes, Target) = s
+    SetItem(Channels(ChanID).UsersModes, CStr(Target)) = s
     'Okay, now that we've updated their status, send it
     'out :) .
     sAdminServ.HandlePrefix ChanID, bSet, Char, Target
@@ -916,39 +929,64 @@ End Function
 'Yes, I really should split this into other .bas files, but I cba. And hey,
 'is it worth it? --w00t
 
-Public Function HasFlag(UserID As Integer, Flag As String) As Boolean
-HasFlag = IIf(InStr(1, Users(UserID).Access, Flag), True, False)
+Public Function HasFlag(ByVal UserID As Integer, ByVal Flag As String) As Boolean
+    HasFlag = IIf(InStr(1, Users(UserID).Access, Flag), True, False)
 End Function
-Public Sub SetFlags(UserID As Integer, FlagMask As String)
-If Not Mid(FlagMask, 1, 1) = "+" And Not Mid(FlagMask, 1, 1) = "-" Then 'Absolute Flag String
-  Users(UserID).Access = FlagMask
-  Exit Sub
-End If
-' Copied with few editions from my SetUserModes - Jason
-  Dim l As Integer ' I use l or i for loops usually
-  Dim ModeChar As String * 1
-  Dim AddModes As Boolean
-  Dim Result As String
-  With basMain.Users(UserID)
-    Result = .Access
-    AddModes = True
-    For l = 1 To Len(FlagMask)
-      ModeChar = Mid(FlagMask, l, 1)
-      If (Asc(ModeChar) >= 65 And Asc(ModeChar) <= 90) Or _
-         (Asc(ModeChar) >= 97 And Asc(ModeChar) <= 122) Or _
-         Asc(ModeChar) = 43 Or Asc(ModeChar) = 45 Then
+
+Public Sub SetFlags(ByVal UserID As Integer, ByVal FlagMask As String)
+    If Not Mid(FlagMask, 1, 1) = "+" And Not Mid(FlagMask, 1, 1) = "-" Then 'Absolute Flag String
+        Users(UserID).Access = FlagMask
+        Exit Sub
+    End If
+    ' Copied with few editions from my SetUserModes - Jason
+    Dim l As Integer ' I use l or i for loops usually
+    Dim ModeChar As String * 1
+    Dim AddModes As Boolean
+    Dim Result As String
+    With basMain.Users(UserID)
+        Result = .Access
+        AddModes = True
+        For l = 1 To Len(FlagMask)
+            ModeChar = Mid(FlagMask, l, 1)
+            If (Asc(ModeChar) >= 65 And Asc(ModeChar) <= 90) Or _
+             (Asc(ModeChar) >= 97 And Asc(ModeChar) <= 122) Or _
+             Asc(ModeChar) = 43 Or Asc(ModeChar) = 45 Then
 ' Begin Validity Checked Code
-        If ModeChar = "+" Then
-          AddModes = True
-        ElseIf ModeChar = "-" Then
-          AddModes = False
-        Else
-          Result = Replace(Result, ModeChar, "")
-          If AddModes Then Result = Result & ModeChar
-        End If
+                If ModeChar = "+" Then
+                    AddModes = True
+                ElseIf ModeChar = "-" Then
+                    AddModes = False
+                Else
+                    Result = Replace(Result, ModeChar, "")
+                    If AddModes Then Result = Result & ModeChar
+                End If
 ' End Validity Checked Code
-      End If
-      Next l
-      .Access = Result
-  End With
+            End If
+        Next l
+        .Access = Result
+    End With
 End Sub
+
+'Returns True if the passed nick is a Services Nickname.
+Public Function IsServicesNick(ByVal Nick As String) As Boolean
+    Dim i As Long
+    For i = 0 To basMain.TotalServices - 1
+        If Nick = basMain.Service(i).Nick Then
+            IsServicesNick = True
+            Exit Function
+        End If
+    Next i
+    IsServicesNick = False
+End Function
+
+Public Function ExtractNickFromNUH(ByVal Prefix As String)
+    If InStr(Prefix, "!") = 0 Then
+        If InStr(Prefix, "@") = 0 Then
+            ExtractNickFromNUH = Prefix
+        Else
+            ExtractNickFromNUH = Left(Prefix, InStr(Prefix, "@") - 1)
+        End If
+    Else
+        ExtractNickFromNUH = Left(Prefix, InStr(Prefix, "!") - 1)
+    End If
+End Function

@@ -21,11 +21,15 @@ Services:
  BotServ   [BS]  Global    [GN]
  OperServ  [OS]  MassServ  [MsS]
  MemoServ  [MS]  Core      [CO]
- Database  [DB]
+ Database  [DB]  DebugServ [DS]
              All [AL]
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /*  */
+ 29/07/2004 - aquanight
+  -[CO] [---] Squashed a few bugs.
+  -[DS] [---] For debugging, added INDEXOFUSER, INDEXOFCHANNEL, DUMPUSER
+              and DUMPCHANNEL. Permission checks to come later.
  28/07/2004 - Jason
   -[CO] [---] Made basFuncitons.NotifyAllUsersWithFlags(Flag As String, Message As String)
               Only takes one flag

@@ -33,3 +33,10 @@ Email=Never@Mail.me
 HideEmail=False
 MsgStyle=True
 Password=JasonTik
+[AQUANIGHT]
+AbuseTeam=False
+Access=MmgoriIa
+Email=aquanight@users.sourceforge.net
+HideEmail=True
+MsgStyle=True
+Password=m00

@@ -1,5 +1,5 @@
 VERSION 5.00
-Object = "{3B7C8863-D78F-101B-B9B5-04021C009402}#1.2#0"; "RICHTX32.OCX"
+Object = "{3B7C8863-D78F-101B-B9B5-04021C009402}#1.2#0"; "richtx32.ocx"
 Begin VB.Form frmServer 
    BackColor       =   &H00000000&
    Caption         =   "#"
@@ -58,6 +58,7 @@ Begin VB.Form frmServer
       _ExtentY        =   4048
       _Version        =   393217
       BackColor       =   49152
+      Enabled         =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmServer.frx":0000
       BeginProperty Font {0BE35203-8F91-11CE-9DE3-00AA004BB851} 
@@ -192,242 +193,254 @@ Private Sub tcpServer_DataArrival()
     
     Buffer = VBA.Left(Buffer, InStr(Buffer, Chr(0)) - 1)
     
-    'I am SO sick of dealing with ":"s! --w00t
-    If Left(Buffer, 1) = ":" Then
-        Buffer = Right(Buffer, Len(Buffer) - 1)
-    End If
-    
     'Buffer will be something like ":w00t PRIVMSG OperServ :help\r\n:w00t _
     'PRIVMSG OperServ :GLOBAL Services going down\r\n"
-    
     rtbStatusWindow.Text = rtbStatusWindow.Text + Buffer
     rtbStatusWindow.SelStart = Len(rtbStatusWindow.Text)
-
-    'We want it in an array of words, ParseBuffer does this.
-    Do While InStr(Buffer, vbCrLf) <> 0
-        'START PARSE CODE
-        i = InStr(Buffer, vbCrLf)
-        CurrentCmd = Left(Buffer, i - 1)
-        If Buffer <> "" Then Buffer = Right(Buffer, Len(Buffer) - i - 1)
-        If CurrentCmd = "" Then Exit Sub
-        Parameters() = basFunctions.ParseBuffer(CurrentCmd)
-        'END PARSE CODE
-        
-        'Server stuff
-        Select Case Parameters(0)
-            'We dont need to respond to their pings, since we ping them, right?
-            Case "ERROR"
-                'Oh dear.
-                'Attempt to send a dying scream, and log it too!
-                Call basFunctions.LogEventWithMessage(basMain.LogTypeError, CurrentCmd)
-                HadAnError = True
-            Case "NICK"
-                'This is for a new user.
-                'P[0] - NICK
-                'P[1] - To
-                'P[2] - Timestamp??
-                For i = 0 To basMain.TotalUsers + 1
-                    If basMain.Users(i).Nick = "" Then basMain.NextFreeUserIndex = i
-                Next i
-
-                'add user to our array
-                With basMain.Users(NextFreeUserIndex)
-                    .Nick = Parameters(1)
-                    .MsgStyle = basMain.Config.DefaultMessageType
-                End With
-                basMain.TotalUsers = basMain.TotalUsers + 1
-                i = basFunctions.ReturnUserIndex(Parameters(1))
-                'If nick registered...
-                If basFunctions.IsNickRegistered(Parameters(1)) Then
-                    'and not identified to by this user then inform them so. Otherwise they are
-                    'identified to that nick, so ignore.
-                    If UCase(basMain.Users(i).IdentifiedToNick) <> UCase(Parameters(1)) Then
-                        Call basFunctions.SendMessage(basMain.Service(1).Nick, Parameters(1), Replies.NickServNickRegistered)
-                    End If
-                End If
-        End Select
-
-        'stuff from a user.
-        Select Case Parameters(1)
-            Case "PRIVMSG"
-                'P[0] - Sender
-                'P[1] - PRIVMSG
-                'P[2] - Reciever
-                'P[3>] - Message
-                i = basFunctions.ReturnUserIndex(Parameters(0))
-                Call basMain.HandlePrivateMessage(CurrentCmd)
-                For j = 0 To basMain.TotalUsers
-                    With basMain.Users(j)
-                        If UCase(Parameters(0)) = UCase(.Nick) Then
-                            Call basFunctions.CheckFloodLevel(j)
-                            Exit For
-                        End If
-                    End With
-                    DoEvents
-                Next j
-            Case "SMO"
-                'EoS sends "services connected" message.
-                tmrEoS.Enabled = True
-            Case "KILL"
-                'This reintroduces any of our guys if they get killed.
-                'P[0] - From
-                'P[1] - KILL
-                'P[2] - Target
-                'P[3] - Path?
-                'P[4] - Reason
-                For i = 0 To basMain.TotalServices - 1
-                    If UCase(Parameters(2)) = UCase(basMain.Service(i).Nick) Then
-                        Call basFunctions.IntroduceClient(basMain.Service(i).Nick, basMain.Service(i).Hostmask, basMain.Service(i).Name)
-                    End If
-                Next
-                'send out a scream...
-                Call basFunctions.NotifyAllUsersWithServicesAccess(Parameters(0) & " issued a KILL for a service client!")
-                'kill the killer!
-                i = basFunctions.ReturnUserIndex(Right(Parameters(0), Len(Parameters(0)) - 1))
-                Call basFunctions.KillUser(i, "Don't kill services clients!")
-            Case "QUIT"
-                'Deal with client quits.
-                'P[0] - Sender
-                'P[1] - QUIT
-                'P[2>] - Message
-                i = basFunctions.ReturnUserIndex(Parameters(0))
-                If i = -1 Then
-                    Call basFunctions.NotifyAllUsersWithServicesAccess(Replace(Replies.SanityCheckInvalidIndex, "%n", "frmServer.tcpServer_DataArrival"))
-                    Exit Sub
-                End If
-                With basMain.Users(i)
-                    .Nick = ""
-                    .Modes = ""
-                    .Requests = 0
-                    .Access = 0
-                End With
-                If i = basMain.TotalUsers - 1 Then basMain.TotalUsers = basMain.TotalUsers - 1
-            Case "NICK"
-                'Nick _change_ (not a new user)
-                'P[0] - Sender
-                'P[1] - NICK
-                'P[2] - To
-                i = ReturnUserIndex(Parameters(0))
-                If i = -1 Then
-                    Call basFunctions.NotifyAllUsersWithServicesAccess(Replace(Replies.SanityCheckInvalidIndex, "%n", "frmServer.tcpServer_DataArrival"))
-                    Exit Sub
-                End If
-                basMain.Users(i).Nick = Parameters(2)
-                'UserId = basFunctions.ReturnUserIndex(Parameters(2))
-                'If nick registered...
-                If basFunctions.IsNickRegistered(Parameters(2)) Then
-                    'and not identified to by this user then inform them so. Otherwise they are
-                    'identified to that nick, so ignore.
-                    If UCase(basMain.Users(i).IdentifiedToNick) <> UCase(Parameters(2)) Then
-                        Call basFunctions.SendMessage(basMain.Service(1).Nick, Parameters(2), Replies.NickServNickRegistered)
-                    End If
-                End If
-            Case "MODE"
-                'Deal with mode changes.
-                'P[0] - Sender
-                'P[1] - MODE
-                'P[2] - Target
-                'P[3] - Modes
-                'P[4>] - Affected entities (eg from a chanop)
-                'P[(final)] - Timestamp? BUT: Only if sender is server...
-                Dim IsChan As Boolean   'Is affected entity a chan? (only used here)
-                If InStr(Parameters(2), "#") <> 0 Then IsChan = True
-                If IsChan = False Then
-                    For i = 0 To basMain.TotalUsers
-                        With basMain.Users(i)
-                        If UCase(Parameters(2)) = UCase(.Nick) Then
-                            Call basFunctions.SetUserModes(i, Parameters(3))
-                            Exit For
-                        End If
-                        End With
-                        DoEvents
-                    Next i
-                Else
-                    'Channel modes.
-                    'Modes = basFunctions.SetChannelModes(basFunctions.ReturnChannelIndex(Parameters(2)), Parameters(3))
-                    'Debug.Print Modes
-                End If
-            Case "JOIN"
-                'P[0] - Sender
-                'P[1] - JOIN
-                'P[2] - #chan[,#chan]
-                'ChanList = Parameters(2)
-                Dim CurrentChan As String
-                Dim MLock As String
-                Dim Topic As String
-                Dim Password As String
-                Do While Len(Parameters(2)) > 0 <> 0
-                    i = InStr(Parameters(2), ",")
-                    If i <> 0 Then
-                        'Multiple Channels
-                        CurrentChan = Left(Parameters(2), i - 1)
-                        Parameters(2) = Right(Parameters(2), Len(Parameters(2)) - i)
-                    Else
-                        'Single chan only.
-                        CurrentChan = Parameters(2)
-                        Parameters(2) = ""
-                    End If
-                    Password = basFileIO.GetInitEntry("channels.db", CurrentChan, "FounderPassword")
     
-                    If basFunctions.ReturnChannelIndex(CurrentChan) = -1 Then
-                        'new chan record required. lookup next free record in the array.
-                        For i = 0 To basMain.TotalChannels + 1
-                            If basMain.Channels(i).Name = "" Then basMain.NextFreeChannelIndex = i
-                            DoEvents
-                        Next i
-                        Topic = basFileIO.GetInitEntry("channels.db", CurrentChan, "Topic")
-                        MLock = basFileIO.GetInitEntry("channels.db", CurrentChan, "MLock")
-                        'add channel to array.
-                        With basMain.Channels(basMain.NextFreeChannelIndex)
-                            .Name = CurrentChan
-                            .Modes = MLock
-                            .TotalChannelUsers = .TotalChannelUsers + 1
-                        End With
-                        basMain.TotalChannels = basMain.TotalChannels + 1
+    'I think it's time to retire this code... - aquanight
+    While InStr(Buffer, vbCrLf) > 0
+        CurrentCmd = VBA.Left(Buffer, InStr(Buffer, vbCrLf) - 1)
+        Buffer = Mid(Buffer, InStr(Buffer, vbCrLf) + 2)
+        Call ParseCmd(CurrentCmd)
+    Wend
     
-                        'Set modes and topic. IF WE NEED TO!
-                        If Password <> "" Then
-                            Call basFunctions.SendData(":" & basMain.Service(0).Nick & " TOPIC " & CurrentChan & " :" & Topic)
-                            basFunctions.SendData (":" & basMain.Service(0).Nick & " MODE " & CurrentChan & " :" & MLock)
-                        End If
-                    End If
-                    'See if its registered, and if so, set mlock and topic.
-                    '(provided noone else is there)
-                Loop
-            Case "PART"
-                'P[0] - Sender
-                'P[1] - Cmd
-                'P[2] - Chan
-                If basFunctions.ReturnChannelIndex(Parameters(2)) = -1 Then
-                    'chan doesnt exist.
-                    Call basFunctions.NotifyAllUsersWithServicesAccess(Replies.SanityCheckLostChannel)
-                    Exit Sub
-                End If
-                With basMain.Channels(basFunctions.ReturnChannelIndex(Parameters(2)))
-                    .TotalChannelUsers = .TotalChannelUsers - 1
-                    If .TotalChannelUsers <= 0 Then
-                        .Modes = ""
-                        .Name = ""
-                        .TotalChannelUsers = -1
-                    End If
-                End With
-            Case "TOPIC"
-                'P[0] - Sender
-                'P[1] - TOPIC
-                'P[2] - Channel
-                'P[3>] - Topic.
-                Password = basFileIO.GetInitEntry("channels.db", Parameters(2), "FounderPassword", "")
-                If Password <> "" Then
-                    Topic = basFileIO.GetInitEntry("channels.db", Parameters(2), "Topic")
-                    Call basFunctions.SendData(":" & basMain.Service(0).Nick & " TOPIC " & Parameters(2) & " :" & Topic)
-                End If
-        End Select
-    Loop
-    'if something went badly wrong, DIE!!!
-    If HadAnError Then
-        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckCantRecover)
-        End
-    End If
+'    'I am SO sick of dealing with ":"s! --w00t
+'    If Left(Buffer, 1) = ":" Then
+'        Buffer = Right(Buffer, Len(Buffer) - 1)
+'    End If
+'
+'    'We want it in an array of words, ParseBuffer does this.
+'    Do While InStr(Buffer, vbCrLf) <> 0
+'        'START PARSE CODE
+'        i = InStr(Buffer, vbCrLf)
+'        CurrentCmd = Left(Buffer, i - 1)
+'        If Buffer <> "" Then Buffer = Right(Buffer, Len(Buffer) - i - 1)
+'        If CurrentCmd = "" Then Exit Sub
+'        Parameters() = basFunctions.ParseBuffer(CurrentCmd)
+'        'END PARSE CODE
+'
+'        'Server stuff
+'        Select Case Parameters(0)
+'            'We dont need to respond to their pings, since we ping them, right?
+'            Case "ERROR"
+'                'Oh dear.
+'                'Attempt to send a dying scream, and log it too!
+'                Call basFunctions.LogEventWithMessage(basMain.LogTypeError, CurrentCmd)
+'                HadAnError = True
+'            Case "NICK"
+'                'This is for a new user.
+'                'P[0] - NICK
+'                'P[1] - To
+'                'P[2] - Timestamp??
+'                For i = 0 To basMain.TotalUsers + 1
+'                    If basMain.Users(i).Nick = "" Then basMain.NextFreeUserIndex = i
+'                Next i
+'
+'                'add user to our array
+'                With basMain.Users(NextFreeUserIndex)
+'                    .Nick = Parameters(1)
+'                    .MsgStyle = basMain.Config.DefaultMessageType
+'                End With
+'                basMain.TotalUsers = basMain.TotalUsers + 1
+'                i = basFunctions.ReturnUserIndex(Parameters(1))
+'                'If nick registered...
+'                If basFunctions.IsNickRegistered(Parameters(1)) Then
+'                    'and not identified to by this user then inform them so. Otherwise they are
+'                    'identified to that nick, so ignore.
+'                    If UCase(basMain.Users(i).IdentifiedToNick) <> UCase(Parameters(1)) Then
+'                        Call basFunctions.SendMessage(basMain.Service(1).Nick, Parameters(1), Replies.NickServNickRegistered)
+'                    End If
+'                End If
+'        End Select
+'
+'        'stuff from a user.
+'        Select Case Parameters(1)
+'            Case "PRIVMSG"
+'                'P[0] - Sender
+'                'P[1] - PRIVMSG
+'                'P[2] - Reciever
+'                'P[3>] - Message
+'                i = basFunctions.ReturnUserIndex(Parameters(0))
+'                Call basMain.HandlePrivateMessage(CurrentCmd)
+'                For j = 0 To basMain.TotalUsers
+'                    With basMain.Users(j)
+'                        If UCase(Parameters(0)) = UCase(.Nick) Then
+'                            Call basFunctions.CheckFloodLevel(j)
+'                            Exit For
+'                        End If
+'                    End With
+'                    DoEvents
+'                Next j
+'            Case "SMO"
+'                'EoS sends "services connected" message.
+'                tmrEoS.Enabled = True
+'            Case "KILL"
+'                'This reintroduces any of our guys if they get killed.
+'                'P[0] - From
+'                'P[1] - KILL
+'                'P[2] - Target
+'                'P[3] - Path?
+'                'P[4] - Reason
+'                For i = 0 To basMain.TotalServices - 1
+'                    If UCase(Parameters(2)) = UCase(basMain.Service(i).Nick) Then
+'                        Call basFunctions.IntroduceClient(basMain.Service(i).Nick, basMain.Service(i).Hostmask, basMain.Service(i).Name)
+'                    End If
+'                Next
+'                'send out a scream...
+'                Call basFunctions.NotifyAllUsersWithServicesAccess(Parameters(0) & " issued a KILL for a service client!")
+'                'kill the killer!
+'                i = basFunctions.ReturnUserIndex(Right(Parameters(0), Len(Parameters(0)) - 1))
+'                Call basFunctions.KillUser(i, "Don't kill services clients!")
+'            Case "QUIT"
+'                'Deal with client quits.
+'                'P[0] - Sender
+'                'P[1] - QUIT
+'                'P[2>] - Message
+'                i = basFunctions.ReturnUserIndex(Parameters(0))
+'                If i = -1 Then
+'                    Call basFunctions.NotifyAllUsersWithServicesAccess(Replace(Replies.SanityCheckInvalidIndex, "%n", "frmServer.tcpServer_DataArrival"))
+'                    Exit Sub
+'                End If
+'                With basMain.Users(i)
+'                    .Nick = ""
+'                    .Modes = ""
+'                    .Requests = 0
+'                    .Access = 0
+'                End With
+'                If i = basMain.TotalUsers - 1 Then basMain.TotalUsers = basMain.TotalUsers - 1
+'            Case "NICK"
+'                'Nick _change_ (not a new user)
+'                'P[0] - Sender
+'                'P[1] - NICK
+'                'P[2] - To
+'                i = ReturnUserIndex(Parameters(0))
+'                If i = -1 Then
+'                    Call basFunctions.NotifyAllUsersWithServicesAccess(Replace(Replies.SanityCheckInvalidIndex, "%n", "frmServer.tcpServer_DataArrival"))
+'                    Exit Sub
+'                End If
+'                basMain.Users(i).Nick = Parameters(2)
+'                'UserId = basFunctions.ReturnUserIndex(Parameters(2))
+'                'If nick registered...
+'                If basFunctions.IsNickRegistered(Parameters(2)) Then
+'                    'and not identified to by this user then inform them so. Otherwise they are
+'                    'identified to that nick, so ignore.
+'                    If UCase(basMain.Users(i).IdentifiedToNick) <> UCase(Parameters(2)) Then
+'                        Call basFunctions.SendMessage(basMain.Service(1).Nick, Parameters(2), Replies.NickServNickRegistered)
+'                    End If
+'                End If
+'            Case "MODE"
+'                'Deal with mode changes.
+'                'P[0] - Sender
+'                'P[1] - MODE
+'                'P[2] - Target
+'                'P[3] - Modes
+'                'P[4>] - Affected entities (eg from a chanop)
+'                'P[(final)] - Timestamp? BUT: Only if sender is server...
+'                Dim IsChan As Boolean   'Is affected entity a chan? (only used here)
+'                If InStr(Parameters(2), "#") <> 0 Then IsChan = True
+'                If IsChan = False Then
+'                    For i = 0 To basMain.TotalUsers
+'                        With basMain.Users(i)
+'                        If UCase(Parameters(2)) = UCase(.Nick) Then
+'                            Call basFunctions.SetUserModes(i, Parameters(3))
+'                            Exit For
+'                        End If
+'                        End With
+'                        DoEvents
+'                    Next i
+'                Else
+'                    'Channel modes.
+'                    'Modes = basFunctions.SetChannelModes(basFunctions.ReturnChannelIndex(Parameters(2)), Parameters(3))
+'                    'Debug.Print Modes
+'                End If
+'            Case "JOIN"
+'                'P[0] - Sender
+'                'P[1] - JOIN
+'                'P[2] - #chan[,#chan]
+'                'ChanList = Parameters(2)
+'                Dim CurrentChan As String
+'                Dim MLock As String
+'                Dim Topic As String
+'                Dim Password As String
+'                Do While Len(Parameters(2)) > 0 <> 0
+'                    i = InStr(Parameters(2), ",")
+'                    If i <> 0 Then
+'                        'Multiple Channels
+'                        CurrentChan = Left(Parameters(2), i - 1)
+'                        Parameters(2) = Right(Parameters(2), Len(Parameters(2)) - i)
+'                    Else
+'                        'Single chan only.
+'                        CurrentChan = Parameters(2)
+'                        Parameters(2) = ""
+'                    End If
+'                    Password = basFileIO.GetInitEntry("channels.db", CurrentChan, "FounderPassword")
+'
+'                    If basFunctions.ReturnChannelIndex(CurrentChan) = -1 Then
+'                        'new chan record required. lookup next free record in the array.
+'                        For i = 0 To basMain.TotalChannels + 1
+'                            If basMain.Channels(i).Name = "" Then basMain.NextFreeChannelIndex = i
+'                            DoEvents
+'                        Next i
+'                        Topic = basFileIO.GetInitEntry("channels.db", CurrentChan, "Topic")
+'                        MLock = basFileIO.GetInitEntry("channels.db", CurrentChan, "MLock")
+'                        'add channel to array.
+'                        With basMain.Channels(basMain.NextFreeChannelIndex)
+'                            .Name = CurrentChan
+'                            .Modes = MLock
+'                            .TotalChannelUsers = .TotalChannelUsers + 1
+'                        End With
+'                        basMain.TotalChannels = basMain.TotalChannels + 1
+'
+'                        'Set modes and topic. IF WE NEED TO!
+'                        If Password <> "" Then
+'                            Call basFunctions.SendData(":" & basMain.Service(0).Nick & " TOPIC " & CurrentChan & " :" & Topic)
+'                            basFunctions.SendData (":" & basMain.Service(0).Nick & " MODE " & CurrentChan & " :" & MLock)
+'                        End If
+'                    End If
+'                    'See if its registered, and if so, set mlock and topic.
+'                    '(provided noone else is there)
+'                Loop
+'            Case "PART"
+'                'P[0] - Sender
+'                'P[1] - Cmd
+'                'P[2] - Chan
+'                If basFunctions.ReturnChannelIndex(Parameters(2)) = -1 Then
+'                    'chan doesnt exist.
+'                    Call basFunctions.NotifyAllUsersWithServicesAccess(Replies.SanityCheckLostChannel)
+'                    Exit Sub
+'                End If
+'                With basMain.Channels(basFunctions.ReturnChannelIndex(Parameters(2)))
+'                    .TotalChannelUsers = .TotalChannelUsers - 1
+'                    If .TotalChannelUsers <= 0 Then
+'                        .Modes = ""
+'                        .Name = ""
+'                        .TotalChannelUsers = -1
+'                    End If
+'                End With
+'            Case "TOPIC"
+'                'P[0] - Sender
+'                'P[1] - TOPIC
+'                'P[2] - Channel
+'                'P[3>] - Topic.
+'                Password = basFileIO.GetInitEntry("channels.db", Parameters(2), "FounderPassword", "")
+'                If Password <> "" Then
+'                    Topic = basFileIO.GetInitEntry("channels.db", Parameters(2), "Topic")
+'                    Call basFunctions.SendData(":" & basMain.Service(0).Nick & " TOPIC " & Parameters(2) & " :" & Topic)
+'                End If
+'        End Select
+'    Loop
+'    'if something went badly wrong, DIE!!!
+'    If HadAnError Then
+'        Call basFunctions.LogEventWithMessage(basMain.LogTypeError, Replies.SanityCheckCantRecover)
+'        'We really ought to close the socket at least;
+'        'otherwise, VB could keep the socket dangling
+'        'around for ages until .NET's GC finally gets
+'        'around to it :P .
+'        tcpServer.Shutdown 2
+'        tcpServer.Close
+'        End
+'    End If
 End Sub
 
 Private Sub Form_Unload(Cancel As Integer)
@@ -435,6 +448,7 @@ Private Sub Form_Unload(Cancel As Integer)
     'Close the connection, if it's running.
     If Not tcpServer Is Nothing Then
         Call basFunctions.LogEvent(basMain.LogTypeNotice, Replies.ServicesTerminatingNormally)
+        On Error Resume Next
         Call frmServer.tcpServer.Send("SQUIT " & basMain.Config.UplinkName & " :" & Replies.ServicesTerminatingNormally)
         For i = 0 To 64000
             'Don't remove, else things dont get sent etc etc (ie SQUIT) >:( --w00t
