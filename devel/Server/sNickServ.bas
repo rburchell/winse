@@ -190,7 +190,8 @@ Public Function Identify(Sender As Integer, NickToIdentify As String, Password A
     If Password = PasswordonFile Then
         With basMain.Users(Sender)
             .AbuseTeam = basFileIO.GetInitEntry("users.db", .Nick, "AbuseTeam")
-            .Access = basFileIO.GetInitEntry("users.db", .Nick, "Access")
+            .Access = IIf(IsDeny(Sender), 0, basFileIO.GetInitEntry("users.db", .Nick, "Access"))
+            ' ^ IIf added to remove services access if the user has been agent DENYed
             .EMail = basFileIO.GetInitEntry("users.db", .Nick, "Email")
             .HideEMail = basFileIO.GetInitEntry("users.db", .Nick, "HideEmail")
             .MsgStyle = basFileIO.GetInitEntry("users.db", .Nick, "MsgStyle")

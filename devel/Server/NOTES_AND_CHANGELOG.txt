@@ -39,6 +39,9 @@ Services:
              All [AL]
 [-----------------------------------]
 
+23/07/2004 - Jason
+ -[AG] [---] Added a DENY feature, Hostmask based deny keeps services access 0
+             durring NS IDENTIFY and immediately reverses any OPERs
 23/07/2004 - aquanight
  -[--] [---] So many updates on one day! :)
  -[CS] [---] Added some new subs to handle usermode changes coming in from the IRCd.

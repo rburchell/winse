@@ -17,6 +17,7 @@ Attribute VB_Name = "sAgent"
 ' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Option Explicit
 Public Const ModVersion = "0.0.2.4"
+Private DenyMasks As Collection
 
 Public Sub AgentHandler(Cmd As String, Sender As Integer)
     'You need not be opered, or have services access to use Agent. All you
@@ -148,6 +149,24 @@ Public Sub AgentHandler(Cmd As String, Sender As Integer)
             'P[1] - Target
             Call sAgent.DeOper(Sender, Parameters(1))
             'Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, " Not yet functional.")
+        Case "DENY"
+            'P[0] - Cmd
+            'P[1] - BaseCommand
+            'P[2] - Parameters (If needed)
+            If Elements < 1 Then
+              Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, Replies.InsufficientParameters)
+              Exit Sub
+            Else
+              If Elements < 2 And UCase(Parameters(1)) <> "HELP" And UCase(Parameters(1)) <> "LIST" And UCase(Parameters(1)) <> "WIPE" Then
+                Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, Replies.InsufficientParameters)
+                Exit Sub
+              End If
+            End If
+            If Elements < 2 Then
+              Call sAgent.Deny(Sender, Parameters(1))
+            Else
+              Call sAgent.Deny(Sender, Parameters(1), Parameters(2))
+            End If
         Case "VERSION"
             Call sAgent.Version(Sender)
         Case Else
@@ -175,6 +194,7 @@ Private Sub Help(Sender As Integer)
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  UNIDENTIFY - Removes services access from a client.")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  DEOPER     - Removes +o from a client.")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  *ZLINE      - Add a global Z:LINE to the network")
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  DENY      - Deny a hostmask IRCop and Services power: See DENY HELP")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, " ")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  Notice: For more Information type /msg Agent HELP command")
     Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "  Notice: All commands sent to Agent are logged!")
@@ -265,6 +285,35 @@ Private Sub FPart(Sender As Integer, Nick As String, Channel As String)
     Call basFunctions.SendData("SVSPART " & Nick & " " & Channel)
 End Sub
 
+Private Sub Deny(Sender As Integer, sCommand As String, Optional sParameter As String)
+Dim SenderNick As String
+SenderNick = basFunctions.ReturnUserName(Sender)
+
+Select Case UCase(sCommand)
+  Case "HELP"
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY LIST: List Deny Masks")
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY ADD Nick!User@Host: Add a mask to the DENY list")
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY DEL #: Remove Item # from the DENY list")
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "DENY WIPE: Clear the DENY list")
+  Case "LIST"
+    Dim l As Integer
+    For l = 1 To DenyMasks.Count
+      Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, l & " " & DenyMasks(l))
+    Next l
+  Case "ADD"
+    DenyMasks.Add sParameter
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, sParameter & " was added to the DENY list")
+  Case "DEL"
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, DenyMasks(sParameter) & " was removed from the DENY list")
+    DenyMasks.Remove sParameter
+  Case "WIPE"
+    Call basFunctions.SendMessage(basMain.Service(7).Nick, SenderNick, "The DENY list was cleared")
+    Dim l As Integer
+    For l = 1 To DenyMasks.Count
+      DenyMasks.Remove 1
+    Next l
+End Sub
+
 'Callin subs for channel mode changes
 Public Sub HandlePrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
 
@@ -291,6 +340,30 @@ Public Sub HandleCommand(ByVal Sender As String, ByVal Cmd As String, ByRef Args
 End Sub
 
 Public Sub HandleUserMode(ByVal UserID As Integer, ByVal bSet As Boolean, ByVal Char As String)
-
+' DENY
+If bSet And InStr("oCAaN", Char) Then
+  If IsDeny(UserID) Then
+    If basMain.Config.ServerType = "UNREAL" Then ' Support SVSO? Its a better way of removing operflags
+      If Char = "o" Then Call basFunctions.SendData("SVSO " & Nick & " -")
+      ' ^ If verifys that only one SVSO is sent
+    Else ' SVSO Unsupported, Use SVS2MODE
+      Call basFunctions.SendData(":" & basMain.Service(7).Nick & " SVS2MODE " & Nick & " -o")
+      Users(UserID).Modes = Replace(Users(UserID).Modes, ModeChar, "")
+    End If
+  End If
+End If
+' END DENY
 End Sub
 
+Public Function IsDeny(UserID As Integer) As Boolean
+Dim UserHost As String, Denied As Boolean, l As Integer ' Change it to byte?
+UserHost = Users(UserID).Nick & "!" & Users(UserID).UserName & "@" & Users(UserID).HostName
+Denied = False
+For l = 1 To DenyMasks.Count
+  If UserHost Like CStr(Replace(Replace(DenyMasks(l), "[", "[[]"), "#", "[#]")) Then
+    Denied = True
+    Exit For
+  End If
+Next l
+IsDeny = Denied
+End Function
