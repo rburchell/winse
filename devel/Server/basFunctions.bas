@@ -267,8 +267,9 @@ Public Sub KillUser(UserId As Integer, ByVal Message As String, Optional Killer 
     Else
         'Services dont know them :| Shouldnt happen!!!!!! --w00t
             'In that case, let's throw an error. -aquanight
-        Error 5
+        'Error 5
         'And say something went pear-shaped. --w00t
+            'Sending a notice certainly is better :) .
         Call basFunctions.NotifyAllUsersWithServicesAccess(Replace(Replies.SanityCheckInvalidIndex, "%n", "basFunctions.KillUser"))
     End If
 End Sub
@@ -436,7 +437,7 @@ Skip:
     End With
 End Sub
 
-Public Function SetChannelModes(ChanID, Modes As String)
+Public Function SetChannelModes(ChanID As Integer, Modes As String)
     Dim Modes2 As String
     Dim j As Byte 'better not > 255 :|
     Dim ModeChar As String * 1
@@ -498,6 +499,95 @@ Public Function ReturnChannelOnlyModes(ChannelModes As String)
         End If
     Next
 End Function
+
+Public Sub ParseCmd(ByVal Incoming As String)
+
+End Sub
+
+Public Function SetChannelModes2(ChanID As Integer, Modes As String)
+    Dim iChar As Integer, iParam As Integer
+    Dim sChar As String, sParam As String
+    Dim sMode As Variant, sValid As Variant
+    Dim bSet As Boolean
+    bSet = True
+    sMode = Split(Modes, " ")
+    sValid = Split(basMain.ChannelModes2, ",")
+    iParam = 1
+    For iChar = 1 To Len(sMode(0))
+        sChar = Mid(sMode(0), iChar, 1)
+        If sChar = "+" Then
+            bSet = True
+        ElseIf sChar = "-" Then
+            bSet = False
+        ElseIf InStr(basMain.ChanModesForAccess, sChar) > 0 Then
+            If iParam <= UBound(sMode) Then
+                sParam = sMode(iParam)
+                iParam = iParam + 1
+                DispatchPrefix ChanID, bSet, sChar, ReturnUserIndex(sParam)
+            Else
+                'EEEEEEEEEK!
+                NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+            End If
+        ElseIf InStr(sValid(0), sChar) > 0 Then
+            If iParam <= UBound(sMode) Then
+                sParam = sMode(iParam)
+                iParam = iParam + 1
+                DispatchModeTypeA ChanID, bSet, sChar, sParam
+            Else
+                'EEEEEEEEEK!
+                NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+            End If
+        ElseIf InStr(sValid(1), sChar) > 0 Then
+            If iParam <= UBound(sMode) Then
+                sParam = sMode(iParam)
+                iParam = iParam + 1
+                DispatchModeTypeB ChanID, bSet, sChar, sParam
+            ElseIf bSet = False Then
+                DispatchModeTypeB ChanID, False, sChar, ""
+            Else
+                'EEEEEEEEEK!
+                NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+            End If
+        ElseIf InStr(sValid(2), sChar) > 0 Then
+            If bSet Then
+                If iParam <= UBound(sMode) Then
+                    sParam = sMode(iParam)
+                    iParam = iParam + 1
+                    DispatchModeTypeC ChanID, bSet, sChar, sParam
+                Else
+                    'EEEEEEEEEK!
+                    NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckParamlessModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+                End If
+            Else
+                DispatchModeTypeC ChanID, bSet, sChar
+            End If
+        ElseIf InStr(sValid(3), sChar) > 0 Then
+            DispatchModeTypeD ChanID, bSet, sChar
+        Else
+            'EEEEEEEEEK!
+            NotifyAllUsersWithServicesAccess Replace(Replies.SanityCheckUnknownModeChange, "%c", IIf(bSet, "+", "-") & sChar)
+        End If
+End Function
+
+Private Sub DispatchPrefix(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Target As Integer)
+
+End Sub
+
+Private Sub DispatchModeTypeA(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+
+End Sub
+
+Private Sub DispatchModeTypeB(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, ByVal Entry As String)
+
+End Sub
+
+Private Sub DispatchModeTypeC(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String, Optional ByVal Entry As String)
+
+End Sub
+
+Private Sub DispatchModeTypeD(ByVal ChanID As Integer, ByVal bSet As Boolean, ByVal Char As String)
+
+End Sub
 
 'PHEW! :> -aquanight
 'Yes, I really should split this into other .bas files, but I cba. And hey,

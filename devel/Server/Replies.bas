@@ -50,6 +50,10 @@ Public Const SanityCheckCantConnectToIRCd = "Winse was unable to establish a con
 Public Const SanityCheckCantRecover = "Winse encountered an error from which it was unable to recover. Terminating."
  'Replace() %n with sub\function name eg KillUser
 Public Const SanityCheckInvalidIndex = "SANITY CHECK! Invalid index passed to %n"
+'Replace %c with the mode change (eg -k or +o)
+Public Const SanityCheckParamlessModeChange = "SANITY CHECK! Channel mode change %c requires a parameter but none was given! Are the channel modes (set in basMain) not set to match your IRCd?"
+'Same here (eg +x or -U)
+Public Const SanityCheckUnknownModeChange = "SANITY CHECK! Channel mode change %c is unknown to us! Are the channel modes (set in basMain) not set to match your IRCd?"
 
 'KILL Reasons
 Public Const KillReasonKilledService = "Do *NOT* /kill services!"

@@ -72,7 +72,7 @@ Public Const UserModes = "iowghraAsORTVSxNCWqBzvdHtGp"
     'They are, I think. Can't remember why though. --w00t
 'When it gets done, there will NEED to be 3 commas here
 'and the +, -, and space won't be needed. - aquanight
-'Public Const ChannelModes = "be,fkL,l,psmntirRcOAQKVGCuzNSMT"
+Public Const ChannelModes2 = "be,fkL,l,psmntirRcOAQKVGCuzNSMT"
 Public Const ChannelModes = "psmntirRcOAQKVGCuzNSMTbekfLl"
 'and those that give permissions :P --w00t
     'We need to remember that in Unreal, +qa are treated as
@@ -106,6 +106,7 @@ Public Type UserStructure
     MsgStyle As Boolean         'True=notice false=privmsg
     AbuseTeam As Boolean        'Abuse Team members can use services commands that otherwise, only the services master can use.
     IdentifiedToNick As String  'Holds nick that user has identified to. Blank if not identified.
+    Channels As Collection      'Channels this user is on. (Use Channel ID as the value and key :) ).
 End Type
 
 Private Type ChannelAccess
@@ -121,6 +122,7 @@ Public Type ChannelStructure
         'Cause nothing to do with them had been implemented yet, and why does Topic
         'stuff need to be _tracked_ by services? Surely they can check if topicchange
         'is valid on the fly...--w00t
+    'Topic Retention :) - aquanight
     Topic As String
     TopicSetBy As String
     TopicSetOn As String 'Not sure if this is really needed... --w00t
@@ -138,11 +140,11 @@ Public Type ChannelStructure
     TotalChannelUsers As Integer
     'Users() tracks the userid of users on a channel. -Dont need to track here,
     'rather in User structure.
-'    Users() As Integer
+    Users As Collection 'Users on this channel. (Use UserID as the value and key :) ).
     'That kind of limit is impractical, and for storing
     'only 1-5 characters max, allocating 10 is a waste
     'of space :P . -aquanight
-    UsersModes() As String 'Hopefully, each user on chan wont have >10 modes ;)
+    UsersModes As Collection
     'Now for the extended modes that require parameters (+flL etc)
     'We dont need to store them just now. --w00t
         'Oh what the heck, define them anyway :) -aquanight
