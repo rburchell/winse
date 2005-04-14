@@ -9,22 +9,22 @@ Public Class NickServ
 		sc.Host = c.Conf.ServerName
 		sc.RealName = "Nickname Registration Services"
 		sc.Usermode = c.protocol.ServiceUMode()
-		sc.mainproc = AddressOf Me.DebugServMain
+		sc.mainproc = AddressOf Me.NickServMain
 		sc.CmdHash.Add("HELP", AddressOf CmdHelp)
 	End Sub
-	Public Overrides Function ModLoad(ByVal params() As System.Collections.Specialized.StringCollection) As Boolean
+	Public Overrides Function ModLoad(ByVal params() As String) As Boolean
 		c.Clients.Add(sc)
+		AddHandler c.Events.ClientConnect, AddressOf Me.OnClientConnect
+		Return True
 	End Function
 	Public Overrides Sub ModUnload()
 		c.Clients.Remove(sc)
+		RemoveHandler c.Events.ClientConnect, AddressOf Me.OnClientConnect
 	End Sub
-	Public Sub DebugServMain(ByVal Source As WinSECore.IRCNode, ByVal Message As String)
+	Public Sub NickServMain(ByVal Source As WinSECore.IRCNode, ByVal Message As String)
 		If Not TypeOf Source Is WinSECore.User Then Return
 		c.API.ExecCommand(sc.CmdHash, DirectCast(Source, WinSECore.User), Message)
 	End Sub
-	Public Overrides Function GetHelpDirectory() As System.IO.DirectoryInfo
-
-	End Function
 
 	'Callbacks go below here.
 	Private Function SendMsg_PRIVMSG(ByVal Source As WinSECore.IRCNode, ByVal Dest As WinSECore.User, ByVal Message As String) As Boolean
@@ -40,6 +40,11 @@ Public Class NickServ
 		c.protocol.SendMessage(c.Services, Dest, String.Format(":*** {0}: {1}", Source.Name, Message), True)
 	End Function
 	Private Function CmdHelp(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
-		c.API.SendHelp(Source, "NickServ", Args)
+		c.API.SendHelp(sc.node, Source, "NickServ", Args)
 	End Function
+
+	'Event handlers.
+	Private Sub OnClientConnect(ByVal cptr As WinSECore.Server, ByVal sptr As WinSECore.User)
+		sptr.SendMessage = AddressOf Me.SendMsg_NOTICE
+	End Sub
 End Class

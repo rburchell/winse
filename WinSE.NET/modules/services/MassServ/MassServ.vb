@@ -12,8 +12,9 @@ Public Class MassServ
 		sc.mainproc = AddressOf Me.DebugServMain
 		sc.CmdHash.Add("HELP", AddressOf CmdHelp)
 	End Sub
-	Public Overrides Function ModLoad(ByVal params() As System.Collections.Specialized.StringCollection) As Boolean
+	Public Overrides Function ModLoad(ByVal params() As String) As Boolean
 		c.Clients.Add(sc)
+		Return True
 	End Function
 	Public Overrides Sub ModUnload()
 		c.Clients.Remove(sc)
@@ -23,10 +24,6 @@ Public Class MassServ
 		c.API.ExecCommand(sc.CmdHash, DirectCast(Source, WinSECore.User), Message)
 	End Sub
 	Private Function CmdHelp(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
-		c.API.SendHelp(Source, "MassServ", Args)
-	End Function
-
-	Public Overrides Function GetHelpDirectory() As System.IO.DirectoryInfo
-
+		c.API.SendHelp(sc.node, Source, "MassServ", Args)
 	End Function
 End Class

@@ -42,6 +42,7 @@ Public Class Value
 	'/// Refers to the key that contains this value. It is set when the Value is created, but can be changed for whatever reason.
 	'/// </summary>
 	Public parent As Key
+	Public file As String, line As Integer
 	'/// <summary>
 	'/// Creates a new instance of the value with the given name and parent Key.
 	'/// </summary>
@@ -82,9 +83,20 @@ Public Class Values
 	Public Sub CopyTo(ByVal array As Array, ByVal index As Integer) Implements ICollection.CopyTo
 		l.CopyTo(array, index)
 	End Sub
-	Public ReadOnly Property Count() As Integer Implements ICollection.Count
+	Public Overloads ReadOnly Property Count() As Integer Implements ICollection.Count
 		Get
 			Return l.Count
+		End Get
+	End Property
+	Public Overloads ReadOnly Property Count(ByVal name As String) As Integer
+		Get
+			Dim tmp As Integer = 0
+			For Each v As Value In l
+				If v.name = name Then
+					tmp += 1
+				End If
+			Next
+			Return tmp
 		End Get
 	End Property
 	Public ReadOnly Property IsSynchronized() As Boolean Implements ICollection.IsSynchronized
@@ -215,6 +227,7 @@ Public Class Key
 	'/// Field referring to this key's Parent key, or null (<b>Nothing</b> in Visual Basic) if this is the root key of a configuration.
 	'/// </summary>
 	Public parent As Key
+	Public file As String, line As Integer
 	'/// <summary>
 	'/// Creates a new root key instance of the Key class. Root keys can have a name (which can be empty/null/<b>Nothing</b>), but does not have a parent key.
 	'/// </summary>
@@ -428,6 +441,7 @@ End Class
 '/// Represents a configuration loading/saving error.
 '/// </summary>
 <Serializable()> Public Class ConfigException : Inherits Exception
+	Public file As String, line As Integer
 	Public Sub New()
 		MyBase.New()
 	End Sub
@@ -437,9 +451,30 @@ End Class
 	Public Sub New(ByVal message As String, ByVal innerException As Exception)
 		MyBase.new(message, innerException)
 	End Sub
+	Public Sub New(ByVal message As String, ByVal file As String, ByVal line As Integer)
+		MyBase.new(message)
+		Me.file = file
+		Me.line = line
+	End Sub
+	Public Sub New(ByVal message As String, ByVal innerException As Exception, ByVal file As String, ByVal line As Integer)
+		MyBase.new(message, innerException)
+		Me.file = file
+		Me.line = line
+	End Sub
 	Protected Sub New(ByVal info As System.Runtime.Serialization.SerializationInfo, ByVal context As System.Runtime.Serialization.StreamingContext)
 		MyBase.New(info, context)
 	End Sub
+	Public Overrides Function ToString() As String
+		If Not file Is Nothing Then
+			If line >= 1 Then
+				Return file & "(" & line.ToString() & "): " & MyBase.ToString()
+			Else
+				Return file & ": " & MyBase.ToString()
+			End If
+		Else
+			Return MyBase.ToString()
+		End If
+	End Function
 End Class
 
 
@@ -459,14 +494,16 @@ Public Class INIParser
 		'// Exterminate any comments.
 		Dim sWork As String = strIn
 		'// Strip out any \r since those will throw us a bone. :p
-		sWork = sWork.Replace("\r", "")
+		sWork = sWork.Replace(vbCrLf, vbLf)
+		sWork = sWork.Replace(vbCr, vbLf)
 		'// We can collapse line comments w/o worrying about screwing up the
 		'// block ones so we'll do that first.
+		sWork = rxShellComment.Replace(sWork, "")
 		sWork = rxCXXComment.Replace(sWork, "")
 		sWork = rxINIComment.Replace(sWork, "")
 		'// Now turn escaped comment characters into normal ones.
-		sWork = sWork.Replace("\\#", "#")
-		sWork = sWork.Replace("\\;", ";")
+		sWork = sWork.Replace("\#", "#")
+		sWork = sWork.Replace("\;", ";")
 		Return sWork
 	End Function
 	'/// <summary>
@@ -482,13 +519,17 @@ Public Class INIParser
 	'/// <exception cref="System.IO.DirectoryNotFoundException">The caller specified a path that doesn't exist.</exception>
 	'/// <exception cref="System.IO.EndOfStreamException">The parser unexpectedly reached the end of the file.</exception>
 	'/// <exception cref="ConfigFile.ConfigException">The parser encountered an error parsing the configuration (such as incorrect config-file syntax).</exception>
-	Public Function Load(ByVal File As StreamReader) As WinSECore.Key
+	Public Function Load(ByVal File As String) As WinSECore.Key
+		Dim fd As New StreamReader(File)
 		Dim sFile As String = Nothing
 		Dim kRoot As New Key(Nothing)
 		Dim kCur As Key = Nothing
-		sFile = File.ReadToEnd()
+		Dim s() As String, idx As Integer, sLine As String
+		sFile = fd.ReadToEnd()
 		sFile = Preprocess(sFile)
-		For Each sLine As String In sFile.Split(Chr(13))
+		s = Split(sFile, vbLf)
+		For idx = 0 To s.Length - 1
+			sLine = s(idx)
 			'// What is it?
 			Dim m As Match = Nothing
 			If sLine = "" Then
@@ -499,7 +540,10 @@ Public Class INIParser
 					'// Key... 
 					'// Only tag is keyname... fun fun fun
 					kCur = New Key(m.Groups("keyname").Value, kRoot)
-					kRoot.SubKeys.Add(kCur)
+					With kRoot.SubKeys(kRoot.SubKeys.Add(kCur))
+						.file = File
+						.line = idx + 1
+					End With
 				Else
 					m = rxValue.Match(sLine)
 					If m.Success Then
@@ -510,7 +554,10 @@ Public Class INIParser
 						If kCur Is Nothing Then
 							Throw New ConfigException("Value outside of key.")
 						End If
-						kCur.Values.Add(New Value(nKey, nValue, kCur))
+						With kCur.Values(kCur.Values.Add(New Value(nKey, nValue, kCur)))
+							.file = File
+							.line = idx + 1
+						End With
 					Else
 						'// Something else...
 						Throw New ConfigException("Syntax error: " + sLine)

@@ -12,6 +12,13 @@ Tags:
 [**] = ALL
 
 -- WinSE .NET 0.1 --
+13/04/2005 - aquanight
+-[PR] [Add] Unreal - Basically finished now.
+-[CO] [Add] WinSE is now capable of linking to an UnrealIRCd server! YAY!
+-[DS] [Add] Commands DUMPCLIENT and DIE.
+-[CO] [Fix] Massively changed Help.
+-[Co] [Add] CONFIGURATION FILE. Tada... Module configs are still TODO, but hopefully soon, they will be TODONE :P .
+
 02/04/2005 - aquanight
 Yes it's been a while but here's the next update :) .
 -[PR] [Add] Unreal - Bunch of commands implemented. We might be able to actually connect now, if not for the missing parts.

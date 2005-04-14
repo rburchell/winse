@@ -1,0 +1,102 @@
+# Sample Configuration File for WinSE IRC Services.
+# Comments can start with either a # or a ; and must be on their own line.
+# The rest follows a rather typical INI file.
+
+# So without further ado ...
+
+# Connect Section [REQUIRED]
+# Sets the connection settings for WinSE. Here you determine what server winse will try to connect to.
+[Connect]
+# ConnectTarget specifies the name of the server. This can be either a numeric IP or a DNS hostname.
+# If a DNS hostname, the hostname is only resolved to an IP on rehash, so putting a roundrobin DNS would
+# only make services pick a new server if rehashed. You can specify a port by seperating it from the
+# hostname with a :. In the future you may be able to put more than one hostname:port combination.
+ConnectTarget=localhost:6667
+# UplinkName is the name of the server we will be linking to, as specified in the ircd's configuration
+# file (me block, M:Line, whatever). This means it will not always be the same as the ConnectTarget address.
+UplinkName=irc.winse.net
+# Our name, the name of the server WinSE will appear as. This is the name as expected in the ircd's link
+# configuration (link/connect block, C/N:Lines, etc).
+ServerName=services.winse.net
+# Our info line, which will appear when someone /whois's any service client.
+ServerDesc=WinSE IRC Services for IRC Networks
+# If the uplink server needs a numeric, specify it in decimal format here.
+ServerNumeric=200
+# What password should we send to the uplink?
+SendPass=SERVICES
+# If present, specifies the password we shold expect from the uplink. If you specify
+# a password here, the remote server must send that password or we will unlink, which
+# only slightly improves security. If you disable this option (comment it out), we
+# don't care what password the uplink sends. If you leave this uncommented, but blank,
+# SendPass's value will b eused here (handy for some ircds).
+RecvPass=SERVICES
+# The name of the network.
+NetworkName=WinSE
+
+# Core Section [REQUIRED]
+# Core Configuration
+[Core]
+# MasterNick is a SINGLE NICK that gets Master privileges when identifying to NickServ. These masters
+# can then add other masters or comasters. Once you become a master by this setting, master access
+# is saved in the database, so this only needs to be set for one session. Most people will probably
+# leave it set just in case though :) . This option is required, but commented out to make sure you
+# properly set it before use.
+#MasterNick=aquanight
+
+# Files Section [REQUIRED]
+# Some extra files are needed by WinSE; this section tells it where they are.
+[Files]
+# Where is WinSE installed? This is needed for %WINSEROOT% expansion.
+WinSERoot=C:\Documents and Settings\Thomas\My Documents\Visual Studio Projects\WinSE
+# The location of the MOTD File. This isn't completely required, but it is a good idea to have.
+# It is not a fatal error for this file to not exist, but users requesting an /MOTD will just get
+# an "MOTD File is missing" error.
+MOTDFile=%WINSEROOT%/winse.motd
+# This is where all extensions are installed. Modules should be installed into
+# <thisfolder>/<category>/<modulename>.dll, while scripts are just installed to <thisfolder>/<scriptname>.[vb|cs|cpp].
+# %WINSEROOT% may be used to represent the path where WinSE is installed.
+# / will be converted to \ as necessary.
+ExtensionRoot=%WINSEROOT%/modules
+# This is where extra configuration files for modules can be found.
+# Extra configuration files for modules are typically put in <thisfolder>/<category>/<modulename>.ini
+# Extra configuration files for scripts will usually be part of the script source code itself, or a file such as
+# <thisfolder>/<scriptname>.[conf|ini]
+# / will be converted to \ as necessary.
+ExtConfigRoot=%WINSEROOT%/modules
+# This specifies where help topics will be located. Multiple HelpDir directives may be used. Topics will be searched in these
+# from top to bottom. Wildcards are permitted and will be globbed.
+# Unlike ExtensionRoot and ExtConfigRoot, you don't need to specifically include the WINSEROOT here.
+HelpDir=modules/services/*/Help
+
+# Database Section [REQUIRED]
+# Specifies the settings for WinSE to load a database.
+[Database]
+# ConnectString specifies the String WinSE will use to connect to a database.
+# As usual, %WINSEROOT% is replaced with WinSE's base installation directory.
+ConnectString=Provider=Microsoft.Jet.OLEDB.4.0;Data Source=%WINSEROOT%\databases\winse.mdb;User Id=admin;Password=
+# This is an example Connect String for connecting to a MySQL database.
+#ConnectString=Provider=MySQLProv;Data Source=winse;User Id=root;Password=rootpass
+
+# Extensions Section [REQUIRED]
+# Specifies what modules and scripts to load when starting.
+[Extensions]
+# The LoadModule line loads a module. Give the full path to module, including the filename and extension.
+# You can give additional command-line parameters to the module. These will be passed to the 
+# module when it is activated. If you remove a LoadModule line and rehash, the module will be deactivated. The module will 
+# still be loaded in memory but will not have any affect on services. Currently, a full restart of services must be done to
+# unload a module.
+# Format of this value:
+# category/name,path/to/module/image.dll,possible command-line parameters
+# The path may be just *, if so, it will be loaded from category/name/name.dll
+# You must load exactly one Protocol Module. A protocol module allows WinSE to communicate with the remote server.
+LoadModule=protocol/unreal,protocol/unreal/bin/unreal.dll,protover=2306 tokens=yes svs2mode=yes prefixaq=yes
+# You may load one or more service client modules, though WinSE wouldn't do much without one, so load some services.
+LoadModule=services/NickServ,services/NickServ/bin/NickServ.dll
+LoadModule=services/ChanServ,services/ChanServ/bin/ChanServ.dll
+LoadModule=services/MemoServ,services/MemoServ/bin/MemoServ.dll
+LoadModule=services/OperServ,services/OperServ/bin/OperServ.dll
+LoadModule=services/BotServ,services/BotServ/bin/BotServ.dll
+LoadModule=services/MassServ,services/MassServ/bin/MassServ.dll
+LoadModule=services/DebugServ,services/DebugServ/bin/DebugServ.dll
+LoadModule=services/Agent,services/Agent/bin/Agent.dll
+LoadModule=services/AdminServ,services/AdminServ/bin/AdminServ.dll

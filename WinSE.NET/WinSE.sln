@@ -104,6 +104,7 @@ Global
 	GlobalSection(SolutionItems) = postSolution
 		ChangeLog.txt = ChangeLog.txt
 		CodingStandards.txt = CodingStandards.txt
+		winse.conf.example = winse.conf.example
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

@@ -89,8 +89,10 @@ End Class
 'The class implemented by all IRCd protocol support classes.
 Public MustInherit Class IRCd
 	Protected ReadOnly c As Core
+	Public Synched As Boolean
 	Protected Sub New(ByVal c As Core)
 		Me.c = c
+		Synched = False
 	End Sub
 	Public Overridable Function ServiceUMode() As String
 		Return "o"
@@ -111,7 +113,8 @@ Public MustInherit Class IRCd
 	Public MustOverride Overloads Sub SendMessage(ByVal Source As IRCNode, ByVal Target As Channel, ByVal Prefix As Char, ByVal Message As String, ByVal Notice As Boolean)
 	Public MustOverride Sub SendToIRCops(ByVal Source As IRCNode, ByVal Message As String)
 	Public MustOverride Sub SendToAll(ByVal Source As IRCNode, ByVal Message As String)
-	Public MustOverride Sub SendNumeric(ByVal Source As IRCNode, ByVal Target As User, ByVal Numeric As Integer, ByVal Format As String, ByVal ParamArray Parameters() As Object)
+	Public MustOverride Overloads Sub SendToUMode(ByVal Source As IRCNode, ByVal Usermode As Char, ByVal Message As String)
+	Public MustOverride Sub SendNumeric(ByVal Source As IRCNode, ByVal Target As IRCNode, ByVal Numeric As Integer, ByVal Format As String, ByVal ParamArray Parameters() As Object)
 	Public MustOverride Sub SetChMode(ByVal Source As IRCNode, ByVal Channel As String, ByVal Mode As String)
 	Public Overridable Sub DoNetBurst(ByVal Source As IRCNode, ByVal Channel As String, ByVal ts As Integer, ByVal Modes As String, ByVal ModeParams() As String, Optional ByVal Users()() As String = Nothing, Optional ByVal Bans() As String = Nothing, Optional ByVal Excepts() As String = Nothing, Optional ByVal Invites() As String = Nothing)
 	End Sub
@@ -160,6 +163,7 @@ Public MustInherit Class IRCd
 	Public Overridable Sub SetIdentify(ByVal Source As IRCNode, ByVal Target As String, ByVal Name As String)
 	End Sub
 	Public MustOverride Sub SQuitServer(ByVal Source As IRCNode, ByVal Server As String, ByVal Reason As String)
+	Public MustOverride Sub SendError(ByVal Text As String)
 	Public MustOverride Sub KillUser(ByVal Source As IRCNode, ByVal Target As String, ByVal Reason As String, Optional ByVal SuperKill As Boolean = False)
 	Public Overridable Sub SetOper(ByVal Source As IRCNode, ByVal Target As String, ByVal Flags As String)
 	End Sub
@@ -205,9 +209,10 @@ Public MustInherit Class IRCd
 	End Sub
 	Public MustOverride Sub SetChanHold(ByVal Source As IRCNode, ByVal Channel As String, ByVal [Set] As Boolean)
 	Public MustOverride Function IsValidNumeric(ByVal Numeric As Integer, ByVal ServerNumeric As Boolean) As Boolean
-	Public MustOverride Sub IntroduceClient(ByVal Nick As String, ByVal Username As String, ByVal Hostname As String, ByVal Realname As String, ByVal Usermodes As String, ByVal Numeric As String, ByVal Server As String, ByVal ts As Integer)
-	Public MustOverride Sub IntroduceServer(ByVal Server As String, ByVal Hops As Integer, ByVal Numeric As String, ByVal Description As String, ByVal ts As Integer)
+	Public MustOverride Sub IntroduceClient(ByVal Nick As String, ByVal Username As String, ByVal Hostname As String, ByVal Realname As String, ByVal Usermodes As String, ByVal Numeric As Integer, ByVal Server As String, ByVal ts As Integer)
+	Public MustOverride Sub IntroduceServer(ByVal Server As String, ByVal Hops As Integer, ByVal Numeric As Integer, ByVal Description As String, ByVal ts As Integer)
 	Public MustOverride Sub LoginToServer()
+	Public MustOverride Sub EndSynch()
 	Public MustOverride ReadOnly Property ChanModes() As String
 	Public MustOverride ReadOnly Property UserModes() As String
 	'This procedure can be invoked from ParseCmd() after ParseCmd has parsed the prefix, command, and arguments as appropriate.
@@ -240,32 +245,29 @@ Public MustInherit Class IRCd
 						Exit For
 					End If
 				End If
+			Next
+			If Not mi Is Nothing Then
 				If mi.ReturnType Is Nothing Then
 					c.Events.FireLogMessage("Protocol", "WARNING", String.Format("Handler {0}.{1} is bound to command {2} but doesn't have the correct signature!", t.ToString, mi.Name, cmd))
-					m = Nothing
-				End If
-				If mi.GetParameters.Length <> 4 Then
+					mi = Nothing
+				ElseIf mi.GetParameters.Length <> 4 Then
 					c.Events.FireLogMessage("Protocol", "WARNING", String.Format("Handler {0}.{1} is bound to command {2} but doesn't have the correct signature!", t.ToString, mi.Name, cmd))
-					m = Nothing
-				End If
-				If Not (mi.GetParameters()(0).IsIn AndAlso mi.GetParameters()(0).ParameterType.Equals(GetType(IRCNode))) Then
+					mi = Nothing
+				ElseIf Not mi.GetParameters()(0).ParameterType.Equals(GetType(IRCNode)) Then
 					c.Events.FireLogMessage("Protocol", "WARNING", String.Format("Handler {0}.{1} is bound to command {2} but doesn't have the correct signature!", t.ToString, mi.Name, cmd))
-					m = Nothing
-				End If
-				If Not (mi.GetParameters()(1).IsIn AndAlso mi.GetParameters()(1).ParameterType.Equals(GetType(String))) Then
+					mi = Nothing
+				ElseIf Not mi.GetParameters()(1).ParameterType.Equals(GetType(String)) Then
 					c.Events.FireLogMessage("Protocol", "WARNING", String.Format("Handler {0}.{1} is bound to command {2} but doesn't have the correct signature!", t.ToString, mi.Name, cmd))
-					m = Nothing
-				End If
-				If Not (mi.GetParameters()(2).IsIn AndAlso mi.GetParameters()(2).ParameterType.Equals(GetType(String()))) Then
+					mi = Nothing
+				ElseIf Not mi.GetParameters()(2).ParameterType.Equals(GetType(String())) Then
 					c.Events.FireLogMessage("Protocol", "WARNING", String.Format("Handler {0}.{1} is bound to command {2} but doesn't have the correct signature!", t.ToString, mi.Name, cmd))
-					m = Nothing
-				End If
-				If Not (mi.GetParameters()(3).IsIn AndAlso mi.GetParameters()(3).ParameterType.Equals(GetType(String))) Then
+					mi = Nothing
+				ElseIf Not mi.GetParameters()(3).ParameterType.Equals(GetType(String)) Then
 					c.Events.FireLogMessage("Protocol", "WARNING", String.Format("Handler {0}.{1} is bound to command {2} but doesn't have the correct signature!", t.ToString, mi.Name, cmd))
-					m = Nothing
+					mi = Nothing
 				End If
-			Next
-			If Not m Is Nothing Then Exit For
+			End If
+			If Not mi Is Nothing Then Exit For
 		Next
 		If mi Is Nothing Then
 			c.Events.FireLogMessage("Protocol", "ERROR", "Cannot find handler for command " + cmd)

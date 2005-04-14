@@ -116,6 +116,9 @@ Module WinSE
 				Throw New Exception("Core Initialization Failed", ex)
 			End Try
 			Dim nRet As Integer
+			AddHandler c.Events.LogMessage, AddressOf LogHandler
+			Console.Out.WriteLine("Opening Log file...")
+			logfile = New IO.StreamWriter(AppPath() + "\winse.log", True)
 			Try
 				nRet = c.Init(Args)
 				If nRet <> 0 Then
@@ -127,9 +130,6 @@ Module WinSE
 				Console.Error.WriteLine("Core.Initialization: FATAL: Exception {0} occured during initialization! {1}", ex.GetType().ToString(), ex.Message)
 				Throw New Exception("Core Initialization Failed", ex)
 			End Try
-			AddHandler c.Events.LogMessage, AddressOf LogHandler
-			Console.Out.WriteLine("Opening Log file...")
-			logfile = New IO.StreamWriter(AppPath() + "\winse.log", True)
 #If Win32 Then
 			If Not nofork Then
 				Console.Out.WriteLine("Forking...")

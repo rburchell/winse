@@ -23,6 +23,10 @@ Imports System.Collections
 Imports System.Collections.Specialized
 Public NotInheritable Class API
 	Private ReadOnly c As Core
+	Public Const FORMAT_BOLD As Char = Chr(2)
+	Public Const FORMAT_COLOR As Char = Chr(3)
+	Public Const FORMAT_UNDERLINE As Char = Chr(31)
+	Public Const FORMAT_RESET As Char = Chr(15)
 	Friend Sub New(ByVal c As Core)
 		Me.c = c
 	End Sub
@@ -33,8 +37,15 @@ Public NotInheritable Class API
 	'- MissingMethodException : The command named in the exception description was not found in the hashtable.
 	'- TargetInvocationException : A command method threw an exception, which is contained in the innerException.
 	Public Sub ExecCommand(ByVal hash As CommandHash, ByVal sender As User, ByVal Command As String)
-		Dim cmd As String = Split(Command, " ", 2)(0)
-		Dim args() As String = Split(Split(Command, " ", 2)(1), " ")
+		Dim cmd As String
+		Dim args() As String
+		If InStr(Command, " ") > 0 Then
+			cmd = Split(Command, " ", 2)(0)
+			args = Split(Split(Command, " ", 2)(1), " ")
+		Else
+			cmd = Command
+			args = New String(-1) {}
+		End If
 		If hash Is Nothing Then Throw New ArgumentNullException("hash")
 		If sender Is Nothing Then Throw New ArgumentNullException("sender")
 		If Not hash.Contains(cmd) Then
@@ -60,6 +71,7 @@ Public NotInheritable Class API
 				'Easier to handle things with just LF as opposed to CRLF.
 				buffer = Replace(buffer, vbCrLf, vbLf)
 				buffer = Replace(buffer, vbCr, vbLf)
+				buffer = Replace(buffer, Chr(0), "")
 			ElseIf c.sck.Available = 0 AndAlso InStr(buffer, vbLf) <= 0 Then
 				Throw New System.Net.Sockets.SocketException(10101)
 			End If
@@ -78,12 +90,14 @@ Public NotInheritable Class API
 		If timeout.Equals(TimeSpan.Zero) Then
 			Do While str Is Nothing
 				str = GetServ()
+				System.Threading.Thread.CurrentThread.Sleep(100)
 			Loop
 			Return str
 		Else
 			Dim dteEnd As Date = Now.Add(timeout)
-			Do While str Is Nothing
+			Do While str Is Nothing AndAlso Now < dteEnd
 				str = GetServ()
+				System.Threading.Thread.CurrentThread.Sleep(100)
 			Loop
 			Return str
 		End If
@@ -96,7 +110,7 @@ Public NotInheritable Class API
 		PutServ(String.Format(format, args))
 	End Sub
 	Public Sub ExitServer(ByVal Reason As String, Optional ByVal Name As String = Nothing)
-		PutServ("ERROR :Closing link {0}[{1}] ({2})", IIf(Name Is Nothing, c.Conf.UplinkName, Name), DirectCast(c.sck.RemoteEndPoint, System.Net.IPEndPoint).Address, Reason)
+		c.protocol.SendError(String.Format("ERROR :Closing link {0}[{1}] ({2})", IIf(Name Is Nothing, c.Conf.UplinkName, Name), DirectCast(c.sck.RemoteEndPoint, System.Net.IPEndPoint).Address, Reason))
 		c.sck.Shutdown(Net.Sockets.SocketShutdown.Send)
 	End Sub
 	Public Shared Function FMod(ByVal dividend As Double, ByVal divisor As Double) As Double
@@ -175,6 +189,14 @@ Public NotInheritable Class API
 			Return Left(Prefix, InStr(Prefix, "!") - 1)
 		End If
 	End Function
+	Public Shared Function IsMatch(ByVal Text As String, ByVal Mask As String, Optional ByVal SplatNoEmpty As Boolean = False) As Boolean
+		'A lesser version of the Like operator needed for IRC.
+		Dim sMask As String
+		sMask = Replace(Mask, "[", "[]]")
+		sMask = Replace(sMask, "#", "[#]")
+		If SplatNoEmpty Then sMask = Replace(sMask, "*", "?*")
+		Return Text Like sMask
+	End Function
 	Public Shared Function Duration(ByVal dur As String) As Integer
 		'Takes a string like this: 1d2h3m4s and returns the number of seconds.
 		'The exact format could be described with a regular expression:
@@ -222,7 +244,7 @@ Public NotInheritable Class API
 	Public Function FindNode(ByVal name As String) As IRCNode
 		Dim n As IRCNode
 		n = FindNode(name, c.Services)
-		If n Is Nothing Then n = FindNode(name, c.IRCMap)
+		If n Is Nothing AndAlso Not c.IRCMap Is Nothing Then n = FindNode(name, c.IRCMap)
 		Return n
 	End Function
 	Public Shared Function FindNode(ByVal needle As String, ByVal haystack As Server) As IRCNode
@@ -247,8 +269,85 @@ Public NotInheritable Class API
 	Public Overloads Function IsService(ByVal cptr As IRCNode) As Boolean
 		Return c.Services.HasClient(cptr, True)
 	End Function
-	Public Sub SendHelp(ByVal SendTo As User, ByVal Base As String, ByVal Args() As String)
-
+	Private Function GlobDirectory(ByVal root As System.IO.DirectoryInfo, ByVal path As String) As StringCollection
+		Dim sc As New StringCollection
+		Dim current As String, rest As String
+		path = Replace(path, "/", "\")
+		While Left(path, 1) = "\"
+			path = Mid(path, 2)
+		End While
+		If InStr(path, "\") > 0 Then
+			current = Split(path, "\", 2)(0)
+			rest = Split(path, "\", 2)(1)
+		Else
+			current = path
+			rest = Nothing
+		End If
+		For Each di As System.IO.DirectoryInfo In root.GetDirectories()
+			If di.Name Like current Then
+				If rest Is Nothing Then
+					sc.Add(di.FullName)
+				Else
+					Dim a() As String, sc2 As StringCollection
+					sc2 = GlobDirectory(di, rest)
+					a = New String(sc2.Count) {}
+					sc2.CopyTo(a, 0)
+					sc.AddRange(a)
+				End If
+			End If
+		Next
+		Return sc
+	End Function
+	Public Sub SendHelp(ByVal Source As IRCNode, ByVal SendTo As User, ByVal Base As String, ByVal Args() As String)
+		'How this works:
+		'The main file is {Base}\index (NO EXTENSION)
+		'Help topics with subtopics are as folders, with an optional file named 'index' (NO EXTENSION) which is displayed by default
+		'Topics with no subtopics are named <topic>.txt .
+		Dim dirs As New StringCollection, a() As String, sc As StringCollection
+		For Each s As String In c.Conf.HelpDirs
+			sc = GlobDirectory(New System.IO.DirectoryInfo(c.Conf.WinSERoot), s)
+			a = New String(sc.Count) {}
+			sc.CopyTo(a, 0)
+			dirs.AddRange(a)
+		Next
+		Dim fd As System.IO.StreamReader, sFile As String
+		Dim scLines As New StringCollection, sTmp As String
+		For Each s As String In dirs
+			sFile = s & "\" & Base & DirectCast(IIf(Args.Length > 0, "\" & Join(Args, "\"), ""), String)
+			Try
+				If System.IO.Directory.Exists(sFile) Then
+					If Not System.IO.File.Exists(sFile & "\index") Then
+						scLines.Add("The following topics were found for your query:")
+						For Each f As System.IO.FileInfo In New System.IO.DirectoryInfo(sFile).GetFiles()
+							scLines.Add(Join(Args, " ") & " " & f.Name)
+						Next
+						scLines.Add("Type " & FORMAT_BOLD & "/msg " & Source.Name & " HELP " & FORMAT_UNDERLINE & "topic" & FORMAT_UNDERLINE & FORMAT_BOLD & " for more information.")
+					Else
+						fd = New System.IO.StreamReader(sFile & "\index")
+						sTmp = fd.ReadToEnd
+						fd.Close()
+						sTmp = Replace(sTmp, vbCrLf, vbLf)
+						sTmp = Replace(sTmp, vbCr, vbLf)
+						scLines.AddRange(Split(sTmp, vbLf))
+					End If
+				ElseIf System.IO.File.Exists(sFile & ".txt") Then
+					fd = New System.IO.StreamReader(sFile & ".txt")
+					sTmp = fd.ReadToEnd
+					fd.Close()
+					sTmp = Replace(sTmp, vbCrLf, vbLf)
+					sTmp = Replace(sTmp, vbCr, vbLf)
+					scLines.AddRange(Split(sTmp, vbLf))
+				Else
+				End If
+			Catch ex As Exception
+			End Try
+		Next
+		If scLines.Count = 0 Then
+			scLines.Add("Sorry, no help available for " & DirectCast(IIf(Args.Length <= 0, "this service.", FORMAT_BOLD & Join(Args, " ") & FORMAT_BOLD & ". Type " & FORMAT_BOLD & "/msg " & Source.Name & " HELP" & FORMAT_BOLD & " for help."), String))
+		End If
+		For Each sLine As String In scLines
+			SendTo.SendMessage(Source, SendTo, sLine)
+		Next
 	End Sub
 	'I converted these from unreal's src/support.c.
 	Private Const Base64 As String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -395,6 +494,35 @@ DropThrough:
 			End If
 		End If
 		Return target
+	End Function
+	Public Function GetMOTD() As String()
+		Dim fd As System.IO.Stream
+		Dim s As String, b() As Byte		  'Stream reads a byte array :-/ .
+		If c.Conf.MOTDFile Is Nothing Then
+			Try
+				fd = System.IO.File.Open(c.Conf.MOTDFile, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.None)
+				If fd.Length <= Integer.MaxValue Then
+					b = New Byte(CInt(fd.Length)) {}
+					fd.Read(b, 0, CInt(fd.Length))
+				Else
+					c.Events.FireLogMessage("WinSE.MOTD", "WARNING", String.Format("MOTD too long ({0} bytes), truncating to {1} bytes.", fd.Length, Integer.MaxValue))
+					b = New Byte(Integer.MaxValue) {}
+					fd.Read(b, 0, Integer.MaxValue)
+				End If
+				s = System.Text.Encoding.ASCII.GetString(b)
+				fd.Close()
+				fd = Nothing
+				s = Replace(s, vbCrLf, vbLf)
+				s = Replace(s, vbCr, vbLf)
+				'Now do %VARIABLE% substitution.
+				s = Replace(s, "%COREVERSION%", c.GetType().Assembly.GetName().Version.ToString())
+				'Possibly do Environment variable crap?
+				c.Conf.MOTD = Split(s, vbLf)
+			Catch ex As System.Exception
+				c.Events.FireLogMessage("WinSE.MOTD", "WARNING", String.Format("Read error on {0}: {1}", c.Conf.MOTDFile, ex.Message))
+			End Try
+		End If
+		Return DirectCast(c.Conf.MOTD.Clone(), String())
 	End Function
 End Class
 

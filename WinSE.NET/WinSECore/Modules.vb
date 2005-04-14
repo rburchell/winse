@@ -358,6 +358,7 @@ End Class
 Public NotInheritable Class ServiceClient
 	Public Nick As String, Ident As String, Host As String, RealName As String
 	Public Usermode As String
+	Public node As User
 	Public ReadOnly CmdHash As New CommandHash
 	Public mainproc As ServiceMain
 End Class
@@ -367,15 +368,21 @@ Public MustInherit Class [Module]
 	'an instance of the Core class which controls everything. Through the core the module can add service clients, and add commands to
 	'existing clients.
 	Protected c As Core
+	'Internal variable not visible to modules, to keep track of if a module is active or not.
+	Friend Active As Boolean
+	'Name this module is loaded as.
+	Public Name As String
 	'This is called at module load time, during conf loading. Must not add API things here. This is for one-time initialization.
 	Protected Sub New(ByVal c As Core)
 		Me.c = c
 	End Sub
 	'This is called when a module is enabled. Modules can have arguments, which make things more fun :) .
 	'To abort loading, return False or throw an exception.
-	Public MustOverride Function ModLoad(ByVal params() As Collections.Specialized.StringCollection) As Boolean
+	Public MustOverride Function ModLoad(ByVal params() As String) As Boolean
 	'This is called when the module goes inactive. It should remove it's API things here.
 	Public MustOverride Sub ModUnload()
-	'This asks the module for a help directory.
-	Public MustOverride Function GetHelpDirectory() As IO.DirectoryInfo
+	'Configuration rehashed. If a module doesn't need configuration it can just leave this un-overriden.
+	Public Overridable Function Rehash(ByVal kRoot As WinSECore.Key) As Boolean
+		Return True
+	End Function
 End Class

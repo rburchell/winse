@@ -95,7 +95,10 @@
                     SubType = "Code"
                     BuildAction = "Compile"
                 />
-                <Folder RelPath = "Help\DebugServ\" />
+                <File
+                    RelPath = "Help\DebugServ\index"
+                    BuildAction = "Content"
+                />
             </Include>
         </Files>
     </VisualBasic>

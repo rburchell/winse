@@ -104,7 +104,7 @@ VB.NET has changed the syntax for returning a value from a Function or Property 
 The new syntax is simply Return <value>. Therefore:
 Incorrect:
 Public Function Square(ByVal x As Double) As Double
-	Square = x * *
+	Square = x * x
 End Function
 Correct:
 Public Function Square(ByVal x As Double) As Double
@@ -186,6 +186,24 @@ Commenting:
    'FIXME: This contraption could fall apart if the thingie isn't properly turned in step with the blarpomatic.
    'ASSIGNEDaquanight: This should be done in about a week...
    
+-- Configuration Files
+Both the Core and modules will be able to access configuration files. I intend to use INI Files for the Core as well as all Modules, but
+modules needing to use more complex configuration structures than those available to INI files can choose to implement their own
+configuration parser. When a module reads from the INI configuration, it should record all configuration data into a temporary variable,
+then commit the changes only if the configuration data passes all tests. A failed configuration pass should result in no changes to the
+configuration. When logging error messages, configuration section names should be expressed as [Section] and key names as [Section],Key.
+Section names that are permitted to occur more than once should be expressed as [Section][index]. Keys in a section that are expected
+to occur more than once should be expressed as [Section],Key[index]. Keys expressed more than once in a section expressed more than once
+should be expressed as [Section][section-index],Key[key-index]. An index of 0 indicates the first occurence of the section or key; the
+file is read top to bottom (so the first section listed will be [0], etc). If a section or key is not expected to occur more than once,
+an error should be generated if it does occur more than once, or the contents of the additional sections could be merged with the first.
+Only use index notation as described when there is an actual side effect to expressing a section or key more than once (for example,
+the [Extension],LoadModule[] key). When expressing such a section or key in general (eg, not referencing a specific section or key), the
+index brackets are expressed with no actual index, for example, an error message might look like: [Extensions],LoadModule[] missing.
+
+Currently it is not possible to determine the actual file and line number at which a configuration item is located. This will be fixed
+soon.
+
 -- WinSE API Structure
 The WinSE API is currently divided into a few significant chunks:
 - The Core where everything will be controlled. Think of the Core as the CPU of services; I intend for the Core to be the central focus
@@ -217,7 +235,7 @@ core is a DLL so that modules can reference the core and early-bind to it's func
 application provides the following and nothing more:
 - The spark to start the core. Since DLLs can't be executed by themselves, the EXE serves as the loader for the WinSE Core.
 - Responsible for logging messages to the Console, if so enabled.
-  
+
 This Document:
 Must not be modified without agreement from all coders.
 This document applies to the WinSE Core, Daemon, and all official modules. 

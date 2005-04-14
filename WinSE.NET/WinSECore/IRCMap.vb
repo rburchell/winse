@@ -184,7 +184,7 @@ Public NotInheritable Class User
 	Public SendMessage As SendMsgProc
 	Public ReadOnly Channels As New Channels
 	Protected Overloads Overrides Sub Dispose(ByVal disposing As Boolean)
-		Dim chptr As Channel = Channels(0)
+		Dim chptr As Channel
 		While Channels.Count > 0
 			chptr = Channels(0)
 			chptr.UserList.Remove(chptr.UserList(Me))
@@ -289,19 +289,63 @@ Public NotInheritable Class Server
 		End If
 		Return False
 	End Function
+	Public Function GetUsers() As Nodes
+		Dim n As New Nodes
+		For Each cptr As IRCNode In SubNodes
+			If TypeOf cptr Is WinSECore.User Then
+				n.Add(cptr)
+			ElseIf TypeOf cptr Is WinSECore.Server Then
+				DirectCast(cptr, WinSECore.Server).GetUsers(n)
+			Else
+				'Ugh.
+			End If
+		Next
+		Return n
+	End Function
+	Private Sub GetUsers(ByVal n As Nodes)
+		For Each cptr As IRCNode In SubNodes
+			If TypeOf cptr Is WinSECore.User Then
+				n.Add(cptr)
+			ElseIf TypeOf cptr Is WinSECore.Server Then
+				DirectCast(cptr, WinSECore.Server).GetUsers(n)
+			Else
+				'Ugh.
+			End If
+		Next
+	End Sub
+	Public Function GetServers() As Nodes
+		Dim n As New Nodes
+		For Each cptr As IRCNode In SubNodes
+			If TypeOf cptr Is WinSECore.Server Then
+				n.Add(cptr)
+				DirectCast(cptr, WinSECore.Server).GetServers(n)
+			End If
+		Next
+		Return n
+	End Function
+	Private Sub GetServers(ByVal n As Nodes)
+		For Each cptr As IRCNode In SubNodes
+			If TypeOf cptr Is WinSECore.Server Then
+				n.Add(cptr)
+				DirectCast(cptr, WinSECore.Server).GetServers(n)
+			End If
+		Next
+	End Sub
 	Protected Overloads Overrides Sub Dispose(ByVal disposing As Boolean)
+		Dim n As IRCNode
 		If Not Parent Is Nothing AndAlso Parent.SubNodes.Contains(Me) Then
 			Parent.SubNodes.Remove(Me)
 			Parent = Nothing
 		End If
-		For Each n As IRCNode In SubNodes
+		While SubNodes.Count > 0
+			n = SubNodes(0)
 			If TypeOf n Is Server Then
 				c.Events.FireServerQuit(DirectCast(n, Server), "Lost in the netsplit")
 			Else
 				c.Events.FireClientQuit(DirectCast(n, User), "Lost in the netsplit")
 			End If
 			n.Dispose()
-		Next
+		End While
 	End Sub
 	Public Sub New(ByVal c As Core)
 		MyBase.New(c)
@@ -408,7 +452,7 @@ End Class
 
 Public NotInheritable Class ChannelMember
 	Public Who As User
-	Public Status As String
+	Public Status As String = ""
 	Public Sub New(ByVal who As User)
 		Me.Who = who
 	End Sub
@@ -542,7 +586,7 @@ Public NotInheritable Class Channel
 	Public TS As Integer
 	Public Topic As String, TopicWho As String, TopicTS As Integer
 	Public ReadOnly Custom As New Hashtable
-	Public ParamlessModes As String
+	Public ParamlessModes As String = ""
 	Protected ReadOnly c As WinSECore.Core
 	Public ReadOnly ParamedModes As New StringDictionary	'Key = modechar, value = modevalue
 	Public ReadOnly ListModes As New ListModeTable	'Key = = modechar, value = StringCollection
@@ -558,7 +602,7 @@ Public NotInheritable Class Channel
 	'recently joined and subsequently kicked.
 	Public Sub SetModes(ByVal Source As IRCNode, ByVal ModeChange As String, Optional ByVal FromSJOIN As Boolean = False)
 		Dim bSet As Boolean
-		Dim ch As Char, acptr As ChannelMember
+		Dim ch As Char, acptr As ChannelMember, sTmp As String
 		Dim mode() As String = Split(ModeChange, " ")
 		Dim validmodes() As String = Split(c.protocol.ChanModes, ",")
 		For iParam As Integer = 0 To UBound(mode)
@@ -568,8 +612,9 @@ Public NotInheritable Class Channel
 				'Since this should only ever be the last parameter, we can probably break here.
 				Return
 			End If
-			For idx As Integer = 0 To mode(iParam).Length - 1
-				ch = mode(iParam).Chars(idx)
+			sTmp = mode(iParam)
+			For idx As Integer = 0 To sTmp.Length - 1
+				ch = sTmp.Chars(idx)
 				If ch = "+"c Then
 					bSet = True
 				ElseIf ch = "-"c Then
@@ -724,7 +769,7 @@ Public NotInheritable Class Channels
 	End Function
 	Public Overloads Function IndexOf(ByVal name As String) As Integer
 		For idx As Integer = 0 To a.Count - 1
-			If DirectCast(a(idx), IRCNode).Name = name Then Return idx
+			If DirectCast(a(idx), Channel).Name = name Then Return idx
 		Next
 		Return -1
 	End Function
@@ -775,5 +820,134 @@ Public NotInheritable Class Channels
 	End Sub
 	Public Sub RemoveAt(ByVal index As Integer) Implements System.Collections.IList.RemoveAt
 		a.RemoveAt(index)
+	End Sub
+End Class
+
+Public NotInheritable Class IRCBan
+	Public Mask As String
+	Public ExpireTS As Long
+	Public Reason As String
+End Class
+
+Public NotInheritable Class Bans
+	Implements IList, ICollection, IEnumerable
+	ReadOnly a As ArrayList
+	Public Sub New()
+		a = New ArrayList
+	End Sub
+	Public Sub CopyTo(ByVal array As System.Array, ByVal index As Integer) Implements System.Collections.ICollection.CopyTo
+		a.CopyTo(array, index)
+	End Sub
+	Public ReadOnly Property Count() As Integer Implements System.Collections.ICollection.Count
+		Get
+			Return a.Count
+		End Get
+	End Property
+	Public ReadOnly Property IsSynchronized() As Boolean Implements System.Collections.ICollection.IsSynchronized
+		Get
+			Return False
+		End Get
+	End Property
+	Public ReadOnly Property SyncRoot() As Object Implements System.Collections.ICollection.SyncRoot
+		Get
+			Return Me
+		End Get
+	End Property
+	Public Function GetEnumerator() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
+		Return a.GetEnumerator
+	End Function
+	Private Function Add2(ByVal value As Object) As Integer Implements System.Collections.IList.Add
+		Return Add(DirectCast(value, IRCBan))
+	End Function
+	Public Function Add(ByVal value As IRCBan) As Integer
+		Return a.Add(value)
+	End Function
+	Public Sub Clear() Implements System.Collections.IList.Clear
+		a.Clear()
+	End Sub
+	Private Function Contains2(ByVal value As Object) As Boolean Implements System.Collections.IList.Contains
+		Return Contains(DirectCast(value, IRCBan))
+	End Function
+	Public Overloads Function Contains(ByVal value As IRCBan) As Boolean
+		Return a.Contains(value)
+	End Function
+	Public Overloads Function Contains(ByVal mask As String) As Boolean
+		Return IndexOf(mask) >= 0
+	End Function
+	Private Function IndexOf2(ByVal value As Object) As Integer Implements System.Collections.IList.IndexOf
+		Return IndexOf(DirectCast(value, IRCBan))
+	End Function
+	Public Overloads Function IndexOf(ByVal value As IRCBan) As Integer
+		Return a.IndexOf(value)
+	End Function
+	Public Overloads Function IndexOf(ByVal mask As String) As Integer
+		For idx As Integer = 0 To a.Count - 1
+			If DirectCast(a(idx), IRCBan).Mask = mask Then Return idx
+		Next
+		Return -1
+	End Function
+	Private Sub Insert2(ByVal index As Integer, ByVal value As Object) Implements System.Collections.IList.Insert
+		Insert(index, DirectCast(value, IRCBan))
+	End Sub
+	Public Sub Insert(ByVal index As Integer, ByVal value As IRCBan)
+		a.Insert(index, value)
+	End Sub
+	Public ReadOnly Property IsFixedSize() As Boolean Implements System.Collections.IList.IsFixedSize
+		Get
+			Return False
+		End Get
+	End Property
+	Public ReadOnly Property IsReadOnly() As Boolean Implements System.Collections.IList.IsReadOnly
+		Get
+			Return False
+		End Get
+	End Property
+	Private Property Item2(ByVal index As Integer) As Object Implements System.Collections.IList.Item
+		Get
+			Return Item(index)
+		End Get
+		Set(ByVal Value As Object)
+			Item(index) = DirectCast(Value, IRCBan)
+		End Set
+	End Property
+	Default Public Overloads Property Item(ByVal index As Integer) As IRCBan
+		Get
+			Return DirectCast(a(index), IRCBan)
+		End Get
+		Set(ByVal Value As IRCBan)
+			a(index) = Value
+		End Set
+	End Property
+	Default Public Overloads ReadOnly Property Item(ByVal mask As String) As IRCBan
+		Get
+			Dim idx As Integer = IndexOf(mask)
+			If idx < 0 Then Throw New IndexOutOfRangeException("Object not found")
+			Return Item(idx)
+		End Get
+	End Property
+	Private Sub Remove2(ByVal value As Object) Implements System.Collections.IList.Remove
+		Remove(DirectCast(value, IRCBan))
+	End Sub
+	Public Sub Remove(ByVal value As IRCBan)
+		a.Remove(value)
+	End Sub
+	Public Sub RemoveAt(ByVal index As Integer) Implements System.Collections.IList.RemoveAt
+		a.RemoveAt(index)
+	End Sub
+	Public Function FindBan(ByVal check As String) As IRCBan
+		For Each b As IRCBan In Me
+			If API.IsMatch(check, b.Mask) Then Return b
+		Next
+		Return Nothing
+	End Function
+	Public Sub RemoveExpiredBans(ByVal ts As Integer)
+		Dim idx As Integer = 0
+		While idx <= Count()
+			If Me(idx).ExpireTS <= ts Then
+				RemoveAt(idx)
+			Else
+				idx += 1
+			End If
+		End While
 	End Sub
 End Class
