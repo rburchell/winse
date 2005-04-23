@@ -68,15 +68,6 @@ ExtConfigRoot=%WINSEROOT%/modules
 # Unlike ExtensionRoot and ExtConfigRoot, you don't need to specifically include the WINSEROOT here.
 HelpDir=modules/services/*/Help
 
-# Database Section [REQUIRED]
-# Specifies the settings for WinSE to load a database.
-[Database]
-# ConnectString specifies the String WinSE will use to connect to a database.
-# As usual, %WINSEROOT% is replaced with WinSE's base installation directory.
-ConnectString=Provider=Microsoft.Jet.OLEDB.4.0;Data Source=%WINSEROOT%\databases\winse.mdb;User Id=admin;Password=
-# This is an example Connect String for connecting to a MySQL database.
-#ConnectString=Provider=MySQLProv;Data Source=winse;User Id=root;Password=rootpass
-
 # Extensions Section [REQUIRED]
 # Specifies what modules and scripts to load when starting.
 [Extensions]
@@ -90,6 +81,8 @@ ConnectString=Provider=Microsoft.Jet.OLEDB.4.0;Data Source=%WINSEROOT%\databases
 # The path may be just *, if so, it will be loaded from category/name/name.dll
 # You must load exactly one Protocol Module. A protocol module allows WinSE to communicate with the remote server.
 LoadModule=protocol/unreal,protocol/unreal/bin/unreal.dll,protover=2306 tokens=yes svs2mode=yes prefixaq=yes
+# You must also load exactly one Database Module. A database module provides persistant storage of registration data.
+LoadModule=database/INIDB,database/INIDB/bin/INIDB.dll,dataroot=database
 # You may load one or more service client modules, though WinSE wouldn't do much without one, so load some services.
 LoadModule=services/NickServ,services/NickServ/bin/NickServ.dll
 LoadModule=services/ChanServ,services/ChanServ/bin/ChanServ.dll

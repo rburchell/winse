@@ -1,19 +1,27 @@
-' Winse - WINdows SErvices. IRC services for Windows.
-' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
-'
-' This program is free software; you can redistribute it and/or modify
-' it under the terms of the GNU General Public License as published by
-' the Free Software Foundation; either version 2 of the License, or
-' (at your option) any later version.
-'
-' This program is distributed in the hope that it will be useful,
-' but WITHOUT ANY WARRANTY; without even the implied warranty of
-' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-' GNU General Public License for more details.
-'
-' You should have received a copy of the GNU General Public License
-' along with this program; if not, write to the Free Software
-' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+'Copyright (c) 2005 The WinSE Team 
+'All rights reserved. 
+' 
+'Redistribution and use in source and binary forms, with or without 
+'modification, are permitted provided that the following conditions 
+'are met: 
+'1. Redistributions of source code must retain the above copyright 
+'   notice, this list of conditions and the following disclaimer. 
+'2. Redistributions in binary form must reproduce the above copyright 
+'   notice, this list of conditions and the following disclaimer in the 
+'   documentation and/or other materials provided with the distribution. 
+'3. The name of the author may not be used to endorse or promote products 
+'   derived from this software without specific prior written permission.
+
+'THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR 
+'IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+'OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+'IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
+'INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
+'NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+'DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
+'THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+'(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+'THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 Option Explicit On 
 Option Strict On
 Option Compare Binary
@@ -28,9 +36,13 @@ Public NotInheritable Class Core
 	Friend ReadOnly mModules As New Hashtable
 	Public ReadOnly Property Modules() As WinSECore.Module()
 		Get
-			Dim m() As [Module]
-			m = New WinSECore.Module(mModules.Count) {}
-			mModules.CopyTo(m, 0)
+			Dim m() As WinSECore.Module, idx As Integer = 0
+			m = New WinSECore.Module(mModules.Count - 1) {}
+			For Each [mod] As WinSECore.Module In mModules.Values
+				m(idx) = [mod]
+				idx += 1
+			Next
+			'mModules.CopyTo(m, 0)
 			Return m
 		End Get
 	End Property
@@ -46,6 +58,10 @@ Public NotInheritable Class Core
 	Public IRCMap As Server
 	'The IRCd Protocol Class.
 	Public protocol As IRCd
+	'The Database driver.
+	Public dbdriver As WinSECore.DataDriver
+	'The DATABASE.
+	Public db As WinSECore.Database
 	'CHANNELS!
 	Public ReadOnly Channels As New Channels
 	'Active user@host bans on the network. (AKILLS/GLINES/etc)
@@ -90,6 +106,22 @@ Public NotInheritable Class Core
 			Events.FireLogMessage("Core.Initialization", "FATAL", "No protocol selected - bailing!")
 			Return 1
 		End If
+		If dbdriver Is Nothing Then
+			Events.FireLogMessage("Core.Initialization", "FATAL", "No database module loaded - bailing!")
+			Return 1
+		End If
+		Events.FireLogMessage("Core.Initialization", "NOTICE", "Loading database")
+		Try
+			db = dbdriver.LoadDatabase()
+		Catch ex As Exception
+			Events.FireLogMessage("Core.Initialization", "FATAL", "Data loading failed! " & ex.Message)
+			Return 1
+		End Try
+		For Each m As WinSECore.Module In Modules()
+			If Not m.LoadDatabase() Then
+				Events.FireLogMessage("Core.Initialization", "WARNING", "Database for module " & m.Name & " failed to load.")
+			End If
+		Next
 		If Conf.ServerNumeric <> -1 AndAlso Not protocol.IsValidNumeric(Conf.ServerNumeric, True) Then
 			Events.FireLogMessage("Core.Initialization", "FATAL", String.Format("[Connect],ServerNumeric not valid for protocol."))
 		End If
@@ -239,17 +271,6 @@ Public NotInheritable Class Core
 			Else
 				Throw New ConfigException("[Files] missing.")
 			End If
-			If k.SubKeys.Contains("Database") Then
-				With k.SubKeys("Database", 0)
-					If .Values.Contains("ConnectString") Then
-						cnf.DBConnString = CStr(.Values("ConnectString", 0).value)
-					Else
-						Throw New ConfigException("[Database],ConnectString missing.", .file, 0)
-					End If
-				End With
-			Else
-				Throw New ConfigException("[Database] missing.")
-			End If
 			If k.SubKeys.Contains("Extensions") Then
 				With k.SubKeys("Extensions", 0)
 					If .Values.Contains("LoadModule") Then
@@ -316,6 +337,7 @@ Public NotInheritable Class Core
 				End With
 			Else
 				'It's not loaded. Load time.
+				Events.FireLogMessage("Core.Configuration", "TRACE", "First time load of module " & sName & " from " & sImage)
 				With System.Reflection.Assembly.LoadFile(sImage)
 					Dim bFound As Boolean = False
 					For Each t As Type In .GetTypes()
@@ -435,6 +457,7 @@ Public NotInheritable Class Core
 			If sck Is Nothing Then
 				'Connect to server.
 				Try
+					protocol.Synched = False
 					sck = New System.Net.Sockets.Socket(Net.Sockets.AddressFamily.InterNetwork, Net.Sockets.SocketType.Stream, Net.Sockets.ProtocolType.Tcp)
 					sck.Blocking = True
 					sck.Connect(Conf.UplinkAddress)
@@ -510,12 +533,26 @@ Public NotInheritable Class Core
 					sck.Close()
 					sck = Nothing
 				Catch ex As System.Reflection.TargetInvocationException
-					Events.FireLogMessage("Core", "ERROR", String.Format("Command parser threw {0}: {1}", ex.InnerException.GetType().ToString(), ex.InnerException.Message))
+					Dim ex2 As Exception = ex
+					While TypeOf ex2 Is System.Reflection.TargetInvocationException
+						ex2 = ex2.InnerException
+					End While
+					Events.FireLogMessage("Core", "ERROR", String.Format("Command parser threw {0}: {1}", ex2.GetType().ToString(), ex2.Message))
 				Catch ex As Exception
 					Events.FireLogMessage("Core", "ERROR", String.Format("Command parser threw {0}: {1}", ex.GetType().ToString(), ex.Message))
 				End Try
 			End If
 		End While
+		For Each m As WinSECore.Module In Modules()
+			If Not m.SaveDatabase() Then
+				Events.FireLogMessage("Core", "WARNING", "Database for " & m.Name & " failed to save.")
+			End If
+		Next
+		Try
+			dbdriver.SaveDatabase(db)
+		Catch ex As Exception
+			Events.FireLogMessage("Core", "ERROR", "OH THE HUMANITY! Failed to save databases! " & ex.Message)
+		End Try
 		API.ExitServer("Shutting down.", IRCMap.Name)
 		sck.Shutdown(Net.Sockets.SocketShutdown.Both)
 		sck.Close()
@@ -583,7 +620,6 @@ Public Structure Configuration
 	Public WinSERoot As String	'Where we are.
 	Public ExtRoot As String	'Base location of modules.
 	Public ExtConfRoot As String	'Base location of module configs.
-	Public DBConnString As String	'Database connection string.
 	Public LoadModules As StringCollection	'Each LoadModule line.
 	Public HelpDirs As StringCollection
 End Structure

@@ -1,19 +1,27 @@
-' Winse - WINdows SErvices. IRC services for Windows.
-' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
-'
-' This program is free software; you can redistribute it and/or modify
-' it under the terms of the GNU General Public License as published by
-' the Free Software Foundation; either version 2 of the License, or
-' (at your option) any later version.
-'
-' This program is distributed in the hope that it will be useful,
-' but WITHOUT ANY WARRANTY; without even the implied warranty of
-' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-' GNU General Public License for more details.
-'
-' You should have received a copy of the GNU General Public License
-' along with this program; if not, write to the Free Software
-' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+'Copyright (c) 2005 The WinSE Team 
+'All rights reserved. 
+' 
+'Redistribution and use in source and binary forms, with or without 
+'modification, are permitted provided that the following conditions 
+'are met: 
+'1. Redistributions of source code must retain the above copyright 
+'   notice, this list of conditions and the following disclaimer. 
+'2. Redistributions in binary form must reproduce the above copyright 
+'   notice, this list of conditions and the following disclaimer in the 
+'   documentation and/or other materials provided with the distribution. 
+'3. The name of the author may not be used to endorse or promote products 
+'   derived from this software without specific prior written permission.
+
+'THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR 
+'IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+'OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+'IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
+'INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
+'NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+'DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
+'THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+'(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+'THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 Option Explicit On 
 Option Strict On
 Option Compare Binary
@@ -49,7 +57,7 @@ Public Class Value
 	'/// <param name="Name">The name of the new key.</param>
 	'/// <param name="parent">The Key that contains this Value. It cannot be null (<b>Nothing</b> in Visual Basic).</param>
 	'/// <exception cref="System.ArgumentNullException">parent is null (<b>Nothing</b> in Visual Basic).</exception>
-	Public Sub New(ByVal Name As String, ByVal parent As key)
+	Public Sub New(ByVal Name As String, ByVal parent As Key)
 		Me.name = Name
 		Me.value = Nothing
 		Me.parent = parent
@@ -61,7 +69,7 @@ Public Class Value
 	'/// <param name="Value">The initial value of the key. It can be any value of any type, including null (<b>Nothing</b> in Visual Basic).</param>
 	'/// <param name="parent">The Key that contains this Value. It cannot be null (<b>Nothing</b> in Visual Basic).</param>
 	'/// <exception cref="System.ArgumentNullException">parent is null (<b>Nothing</b> in Visual Basic).</exception>
-	Public Sub New(ByVal Name As String, ByVal Value As Object, ByVal parent As key)
+	Public Sub New(ByVal Name As String, ByVal Value As Object, ByVal parent As Key)
 		Me.name = Name
 		Me.value = Value
 		Me.parent = parent
@@ -293,8 +301,8 @@ Public Class Key
 	'/// <remarks>The regular expression should generally be single-line and, depending on the parser, have IgnoreCase on. Whitespace should not be ignored. Any match of the regular expression against a key name will cause it to be returned. To ensure matching against the entire Key name instead of parts of it, use the ^ and $ assertions in the regular expression.</remarks>
 	'/// <param name="rx">A Regular Expression object to match against.</param>
 	'/// <returns></returns>
-	Public Function GetAllKeys(ByVal rx As System.Text.RegularExpressions.Regex) As keys
-		Dim kRet As keys = New Keys
+	Public Function GetAllKeys(ByVal rx As System.Text.RegularExpressions.Regex) As Keys
+		Dim kRet As Keys = New Keys
 		For i As Integer = 0 To SubKeys.Count - 1
 			If (rx.IsMatch(SubKeys(i).name)) Then kRet.Add(SubKeys(i))
 		Next
@@ -567,5 +575,43 @@ Public Class INIParser
 		Next
 		Return kRoot
 	End Function
+	'/// <summary>
+	'/// Save a configuration to an already opened stream.
+	'/// </summary>
+	'/// <remarks>The stream given will not be closed.</remarks>
+	'/// <param name="File">Stream to which file should be written.</param>
+	'/// <param name="SaveWhat">Structured Configuration to save.</param>
+	'/// <exception cref="System.Security.SecurityException">The method does not have the privileges required.</exception>
+	'/// <exception cref="System.IO.FileNotFoundException">The file couldn't be found.</exception>
+	'/// <exception cref="System.IO.IOException">An I/O Exception occured during file access.</exception>
+	'/// <exception cref="System.IO.PathTooLongException">The caller passed a path too long to be loaded.</exception>
+	'/// <exception cref="System.IO.DirectoryNotFoundException">The caller specified a path that doesn't exist.</exception>
+	'/// <exception cref="System.IO.EndOfStreamException">The parser unexpectedly reached the end of the file.</exception>
+	'/// <exception cref="ConfigFile.ConfigException">The parser encountered an error parsing the configuration (such as unsupported configuration feature).</exception>
+	Public Sub Save(ByVal File As String, ByVal SaveWhat As Key)
+		Dim sTmp As String = "", fd As StreamWriter
+		fd = New StreamWriter(File)
+		For Each k As Key In SaveWhat.SubKeys
+			If k.SubKeys.Count > 0 Then Throw New ConfigException("Cannot use nested keys.")
+			sTmp += String.Format("[{0}]", k.name)
+			sTmp += vbCrLf
+			For Each v As Value In k.Values
+				Dim sVal As String = Nothing
+				If TypeOf v.value Is String Then
+					sVal = v.value.ToString()
+				ElseIf TypeOf v.value Is Short OrElse TypeOf v.value Is Integer OrElse TypeOf v.value Is Long OrElse TypeOf v.value Is Single OrElse TypeOf v.value Is Double OrElse TypeOf v.value Is System.SByte OrElse TypeOf v.value Is UInt16 OrElse TypeOf v.value Is UInt32 OrElse TypeOf v.value Is UInt64 OrElse TypeOf v.value Is Date OrElse TypeOf v.value Is Decimal Then
+					sVal = v.value.ToString()
+				ElseIf TypeOf v.value Is Boolean Then
+					sVal = IIf(CBool(v.value), 1, 0).ToString()
+				Else
+					Throw New ConfigException(String.Format("Unsupported type '{0}'. Can only save Strings, Integers, Doubles, or Serializable classes.", v.GetType().ToString()))
+				End If
+				sTmp += String.Format("{0}={1}{2}", v.name, sVal, vbCrLf)
+			Next
+			sTmp += vbCrLf
+		Next
+		fd.Write(sTmp)
+		fd.Close()
+	End Sub
 End Class
 

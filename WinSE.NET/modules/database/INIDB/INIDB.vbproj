@@ -3,13 +3,13 @@
         ProjectType = "Local"
         ProductVersion = "7.10.3077"
         SchemaVersion = "2.0"
-        ProjectGuid = "{25F72AF9-F390-4CF1-AD59-00525D07A7BD}"
+        ProjectGuid = "{556A17A9-9E04-4483-B014-B407B013278A}"
     >
         <Build>
             <Settings
                 ApplicationIcon = ""
                 AssemblyKeyContainerName = ""
-                AssemblyName = "WinSECore"
+                AssemblyName = "INIDB"
                 AssemblyOriginatorKeyFile = ""
                 AssemblyOriginatorKeyMode = "None"
                 DefaultClientScript = "JScript"
@@ -20,14 +20,14 @@
                 OptionCompare = "Binary"
                 OptionExplicit = "On"
                 OptionStrict = "On"
-                RootNamespace = "WinSECore"
+                RootNamespace = "INIDB"
                 StartupObject = ""
             >
                 <Config
                     Name = "Debug"
                     BaseAddress = "285212672"
                     ConfigurationOverrideFile = ""
-                    DefineConstants = "Win32=True"
+                    DefineConstants = ""
                     DefineDebug = "true"
                     DefineTrace = "true"
                     DebugSymbols = "true"
@@ -69,6 +69,11 @@
                     Name = "System.XML"
                     AssemblyName = "System.Xml"
                 />
+                <Reference
+                    Name = "WinSECore"
+                    Project = "{25F72AF9-F390-4CF1-AD59-00525D07A7BD}"
+                    Package = "{F184B08F-C81C-45F6-A57F-5ABD9991F28F}"
+                />
             </References>
             <Imports>
                 <Import Namespace = "Microsoft.VisualBasic" />
@@ -81,42 +86,12 @@
         <Files>
             <Include>
                 <File
-                    RelPath = "API.vb"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
                     RelPath = "AssemblyInfo.vb"
                     SubType = "Code"
                     BuildAction = "Compile"
                 />
                 <File
-                    RelPath = "Conf.vb"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "Core.vb"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "Database.vb"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "IRCd.vb"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "IRCMap.vb"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "Modules.vb"
+                    RelPath = "INIDB.vb"
                     SubType = "Code"
                     BuildAction = "Compile"
                 />

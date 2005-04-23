@@ -1,3 +1,35 @@
+'Copyright (c) 2005 The WinSE Team 
+'All rights reserved. 
+' 
+'Redistribution and use in source and binary forms, with or without 
+'modification, are permitted provided that the following conditions 
+'are met: 
+'1. Redistributions of source code must retain the above copyright 
+'   notice, this list of conditions and the following disclaimer. 
+'2. Redistributions in binary form must reproduce the above copyright 
+'   notice, this list of conditions and the following disclaimer in the 
+'   documentation and/or other materials provided with the distribution. 
+'3. The name of the author may not be used to endorse or promote products 
+'   derived from this software without specific prior written permission.
+
+'THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR 
+'IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+'OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+'IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
+'INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
+'NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+'DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
+'THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+'(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+'THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+Option Explicit On 
+Option Strict On
+Option Compare Binary
+Imports Microsoft.VisualBasic
+Imports System
+Imports System.Collections
+Imports System.Collections.Specialized
+
 Public Class DebugServ
 	Inherits WinSECore.Module
 	Dim sc As WinSECore.ServiceClient
@@ -12,6 +44,7 @@ Public Class DebugServ
 		sc.mainproc = AddressOf Me.DebugServMain
 		sc.CmdHash.Add("HELP", AddressOf CmdHelp)
 		sc.CmdHash.Add("DUMPCLIENT", AddressOf CmdDumpClient)
+		sc.CmdHash.Add("DUMPCHANNEL", AddressOf CmdDumpChannel)
 		sc.CmdHash.Add("DIE", AddressOf CmdDie)
 	End Sub
 	Public Overrides Function ModLoad(ByVal params() As String) As Boolean
@@ -25,8 +58,13 @@ Public Class DebugServ
 		If Not TypeOf Source Is WinSECore.User Then Return
 		If Not c.protocol.IsIRCop(DirectCast(Source, WinSECore.User)) Then
 			DirectCast(Source, WinSECore.User).SendMessage(sc.node, DirectCast(Source, WinSECore.User), "Access denied")
+			Return
 		End If
-		c.API.ExecCommand(sc.CmdHash, DirectCast(Source, WinSECore.User), Message)
+		Try
+			c.API.ExecCommand(sc.CmdHash, DirectCast(Source, WinSECore.User), Message)
+		Catch ex As MissingMethodException
+			DirectCast(Source, WinSECore.User).SendMessage(sc.node, DirectCast(Source, WinSECore.User), "Unknown command. Type " & WinSECore.API.FORMAT_BOLD & "/msg DebugServ HELP" & WinSECore.API.FORMAT_BOLD & " for help.")
+		End Try
 	End Sub
 	Private Function CmdHelp(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
 		c.API.SendHelp(sc.node, Source, "DebugServ", Args)
@@ -36,10 +74,10 @@ Public Class DebugServ
 	End Function
 	Private Function CmdDumpClient(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
 		If Args.Length < 1 Then
-			Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "DUMPUSER " & WinSECore.API.FORMAT_UNDERLINE & "nick" & WinSECore.API.FORMAT_UNDERLINE & WinSECore.API.FORMAT_BOLD)
+			Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "DUMPCLIENT " & WinSECore.API.FORMAT_UNDERLINE & "nick" & WinSECore.API.FORMAT_UNDERLINE & WinSECore.API.FORMAT_BOLD)
 			Return False
 		End If
-		Dim n As WinSECore.IRCNode, a() As String
+		Dim n As WinSECore.IRCNode
 		n = c.API.FindNode(Args(0))
 		If n Is Nothing Then
 			Source.SendMessage(sc.node, Source, "Client " & WinSECore.API.FORMAT_BOLD & Args(0) & WinSECore.API.FORMAT_BOLD & " does not exist.")
@@ -59,10 +97,8 @@ Public Class DebugServ
 				Source.SendMessage(sc.node, Source, "Flood Level: " & .Since)
 				If .SWhois <> "" Then Source.SendMessage(sc.node, Source, "SWhoIs: " & .SWhois)
 				Source.SendMessage(sc.node, Source, DirectCast(IIf(.AwayMessage <> "", "Away: " & .AwayMessage, "Away? No"), String))
-				If .Identifies.Count > 0 Then
-					a = New String(.Identifies.Count) {}
-					.Identifies.CopyTo(a, 0)
-					Source.SendMessage(sc.node, Source, "Identified to nicks: " & Join(a, " "))
+				If .IdentifiedNick <> "" Then
+					Source.SendMessage(sc.node, Source, "Identified to nicks: " & .IdentifiedNick)
 				Else
 					Source.SendMessage(sc.node, Source, "Not identified.")
 				End If
@@ -90,7 +126,44 @@ Public Class DebugServ
 		End If
 	End Function
 	Private Function CmdDumpChannel(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
-
+		If Args.Length < 1 Then
+			Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "DUMPCHANNEL " & WinSECore.API.FORMAT_UNDERLINE & "channel" & WinSECore.API.FORMAT_UNDERLINE & WinSECore.API.FORMAT_BOLD)
+			Return False
+		End If
+		Dim chptr As WinSECore.Channel, idx As Integer
+		idx = c.Channels.IndexOf(Args(0))
+		If idx < 0 Then
+			Source.SendMessage(sc.node, Source, "Channel " & WinSECore.API.FORMAT_BOLD & Args(0) & WinSECore.API.FORMAT_BOLD & " is empty.")
+		Else
+			chptr = c.Channels(idx)
+			With chptr
+				Source.SendMessage(sc.node, Source, "Name: " & chptr.Name)
+				Source.SendMessage(sc.node, Source, "Topic: " & chptr.Topic)
+				Source.SendMessage(sc.node, Source, "Set by " & chptr.TopicWho & " on " & Format(New Date(1970, 1, 1).AddSeconds(chptr.TopicTS).ToLocalTime, "dddd, mmmm dd, yyyy HH:mm:ss zzz"))
+				Source.SendMessage(sc.node, Source, "Timestamp: " & chptr.TS)
+				Source.SendMessage(sc.node, Source, "Binary Modes: " & chptr.ParamlessModes)
+				For Each k As String In chptr.ParamedModes.Keys
+					Source.SendMessage(sc.node, Source, "Mode +" & k & ": " & chptr.ParamedModes(k))
+				Next
+				For Each k As Char In chptr.ListModes.Keys
+					Source.SendMessage(sc.node, Source, "List +" & k)
+					For Each sEntry As String In chptr.ListModes(k)
+						Source.SendMessage(sc.node, Source, "    " & sEntry)
+					Next
+					Source.SendMessage(sc.node, Source, "End list +" & k)
+				Next
+				Source.SendMessage(sc.node, Source, "Members:")
+				For Each m As WinSECore.ChannelMember In chptr.UserList
+					Source.SendMessage(sc.node, Source, "    " & m.Who.Name & " = +" & m.Status)
+				Next
+				Source.SendMessage(sc.node, Source, "End of members list")
+				Source.SendMessage(sc.node, Source, "Identified users:")
+				For Each n As WinSECore.IRCNode In chptr.Identifies
+					Source.SendMessage(sc.node, Source, "    " & n.Name)
+				Next
+				Source.SendMessage(sc.node, Source, "End of identified users list")
+				Source.SendMessage(sc.node, Source, "End dump for channel " & chptr.Name)
+			End With
+		End If
 	End Function
-
 End Class

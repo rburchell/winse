@@ -1,19 +1,27 @@
-' Winse - WINdows SErvices. IRC services for Windows.
-' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
-'
-' This program is free software; you can redistribute it and/or modify
-' it under the terms of the GNU General Public License as published by
-' the Free Software Foundation; either version 2 of the License, or
-' (at your option) any later version.
-'
-' This program is distributed in the hope that it will be useful,
-' but WITHOUT ANY WARRANTY; without even the implied warranty of
-' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-' GNU General Public License for more details.
-'
-' You should have received a copy of the GNU General Public License
-' along with this program; if not, write to the Free Software
-' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+'Copyright (c) 2005 The WinSE Team 
+'All rights reserved. 
+' 
+'Redistribution and use in source and binary forms, with or without 
+'modification, are permitted provided that the following conditions 
+'are met: 
+'1. Redistributions of source code must retain the above copyright 
+'   notice, this list of conditions and the following disclaimer. 
+'2. Redistributions in binary form must reproduce the above copyright 
+'   notice, this list of conditions and the following disclaimer in the 
+'   documentation and/or other materials provided with the distribution. 
+'3. The name of the author may not be used to endorse or promote products 
+'   derived from this software without specific prior written permission.
+
+'THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR 
+'IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+'OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+'IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
+'INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
+'NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+'DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
+'THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+'(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+'THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 Option Explicit On 
 Option Strict On
 Option Compare Binary
@@ -183,7 +191,10 @@ Public NotInheritable Class CommandHash
 		End If
 	End Function
 	Public Overloads Function Contains(ByVal key As String) As Boolean
-		Return a.ContainsKey(key)
+		For Each k As String In a.Keys
+			If LCase(key) = LCase(k) Then Return True
+		Next
+		Return False
 	End Function
 	Public Overloads Function Contains(ByVal cmdfunc As CommandFunc) As Boolean
 		For Each cmdlist As CommandList In a.Values
@@ -214,10 +225,19 @@ Public NotInheritable Class CommandHash
 	End Property
 	Default Public Property Item(ByVal key As String) As CommandList
 		Get
-			Return DirectCast(a(key), CommandList)
+			For Each k As String In a.Keys
+				If LCase(k) = LCase(key) Then Return DirectCast(a(k), CommandList)
+			Next
+			Throw New IndexOutOfRangeException("Command " & key & " is not defined.")
 		End Get
 		Set(ByVal Value As CommandList)
-			a(key) = Value
+			For Each k As String In a.Keys
+				If LCase(k) = LCase(key) Then
+					a(k) = Value
+					Return
+				End If
+			Next
+			Throw New IndexOutOfRangeException("Command " & key & " is not defined.")
 		End Set
 	End Property
 	Public ReadOnly Property Keys() As System.Collections.ICollection Implements System.Collections.IDictionary.Keys
@@ -235,7 +255,12 @@ Public NotInheritable Class CommandHash
 		End If
 	End Sub
 	Public Sub Remove(ByVal cmd As String)
-		a.Remove(cmd)
+		For Each k As String In a.Keys
+			If LCase(k) = LCase(cmd) Then
+				a.Remove(k)
+				Return
+			End If
+		Next
 	End Sub
 	Public Sub Remove(ByVal cmdfunc As CommandFunc)
 		For Each cmdlist As CommandList In a.Values
@@ -308,7 +333,7 @@ Public NotInheritable Class ServiceClients
 	End Function
 	Public Function IndexOf(ByVal nick As String) As Integer
 		For idx As Integer = 0 To a.Count - 1
-			If DirectCast(a(idx), ServiceClient).Nick = nick Then Return idx
+			If LCase(DirectCast(a(idx), ServiceClient).Nick) = LCase(nick) Then Return idx
 		Next
 		Return -1
 	End Function
@@ -369,7 +394,7 @@ Public MustInherit Class [Module]
 	'existing clients.
 	Protected c As Core
 	'Internal variable not visible to modules, to keep track of if a module is active or not.
-	Friend Active As Boolean
+	Protected Friend Active As Boolean
 	'Name this module is loaded as.
 	Public Name As String
 	'This is called at module load time, during conf loading. Must not add API things here. This is for one-time initialization.
@@ -383,6 +408,13 @@ Public MustInherit Class [Module]
 	Public MustOverride Sub ModUnload()
 	'Configuration rehashed. If a module doesn't need configuration it can just leave this un-overriden.
 	Public Overridable Function Rehash(ByVal kRoot As WinSECore.Key) As Boolean
+		Return True
+	End Function
+	'Load database.
+	Public Overridable Function LoadDatabase() As Boolean
+		Return True
+	End Function
+	Public Overridable Function SaveDatabase() As Boolean
 		Return True
 	End Function
 End Class

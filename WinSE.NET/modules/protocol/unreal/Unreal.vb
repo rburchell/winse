@@ -1,19 +1,27 @@
-' Winse - WINdows SErvices. IRC services for Windows.
-' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
-'
-' This program is free software; you can redistribute it and/or modify
-' it under the terms of the GNU General Public License as published by
-' the Free Software Foundation; either version 2 of the License, or
-' (at your option) any later version.
-'
-' This program is distributed in the hope that it will be useful,
-' but WITHOUT ANY WARRANTY; without even the implied warranty of
-' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-' GNU General Public License for more details.
-'
-' You should have received a copy of the GNU General Public License
-' along with this program; if not, write to the Free Software
-' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+'Copyright (c) 2005 The WinSE Team 
+'All rights reserved. 
+' 
+'Redistribution and use in source and binary forms, with or without 
+'modification, are permitted provided that the following conditions 
+'are met: 
+'1. Redistributions of source code must retain the above copyright 
+'   notice, this list of conditions and the following disclaimer. 
+'2. Redistributions in binary form must reproduce the above copyright 
+'   notice, this list of conditions and the following disclaimer in the 
+'   documentation and/or other materials provided with the distribution. 
+'3. The name of the author may not be used to endorse or promote products 
+'   derived from this software without specific prior written permission.
+
+'THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR 
+'IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+'OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+'IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
+'INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
+'NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+'DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
+'THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+'(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+'THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 Option Explicit On 
 Option Strict On
 Option Compare Binary
@@ -465,12 +473,16 @@ Public NotInheritable Class Unreal
 			source = Mid(atmp(0), 2)
 			temp = atmp(1)
 			If Not c.IRCMap Is Nothing Then
-				For Each srv As WinSECore.Server In c.IRCMap.GetServers()
-					If srv.Numeric = B64ToInt(source) Then
-						sptr = srv
-						Exit For
-					End If
-				Next
+				If c.IRCMap.Numeric = CInt(source) Then
+					sptr = c.IRCMap
+				Else
+					For Each srv As WinSECore.Server In c.IRCMap.GetServers()
+						If srv.Numeric = CInt(source) Then
+							sptr = srv
+							Exit For
+						End If
+					Next
+				End If
 				If sptr Is Nothing Then
 					If InStr(source, ".") > 0 Then
 						SQuitServer(c.Services, source, String.Format("{0}(?) (Unknown server)", source))
@@ -993,33 +1005,42 @@ Public NotInheritable Class Unreal
 					cptr = New WinSECore.User(c)
 					With DirectCast(cptr, WinSECore.User)
 						.AwayMessage = Nothing
-						.Identifies.Clear()
+						.IdentifiedNick = Nothing
 						.SWhois = Nothing
 						.Nick = args(0)
-						.TS = DirectCast(IIf(Left(args(2), 1) = "!", B64ToInt(Mid(args(2), 2)), Integer.Parse(args(2))), Integer)
+						If Left(args(2), 1) = "!" Then
+							.TS = B64ToInt(Mid(args(2), 2))
+						Else
+							.TS = CInt(args(2))
+						End If
 						.Username = args(3)
 						.Hostname = args(4)
 						.Server = DirectCast(sptr, WinSECore.Server)
-						.Numeric = Integer.Parse(args(6))
+						If Left(args(6), 1) = "!" Then
+							.TS = B64ToInt(Mid(args(6), 2))
+						Else
+							.TS = CInt(args(6))
+						End If
 						.Usermodes = args(7)
 						.VHost = DirectCast(IIf(args(8) <> "*", args(8), Nothing), String)
 						.VIdent = .Username
 						.RealName = args(9)
+						.SendMessage = AddressOf c.API.SendMsg_NOTICE
 					End With
 					DirectCast(sptr, WinSECore.Server).SubNodes.Add(cptr)
 					c.Events.FireClientConnect(DirectCast(sptr, WinSECore.Server), DirectCast(cptr, WinSECore.User))
 				ElseIf TypeOf cptr Is WinSECore.Server Then
-						c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Nick/Server Collision at {0}!", args(0)))
-						KillUser(c.Services, args(0), "Nick/Server collision")
-						c.Events.FireClientKilled(c.Services, DirectCast(cptr, WinSECore.User), "Nick/Server collision")
-						c.Events.FireClientQuit(DirectCast(cptr, WinSECore.User), "Killed: Nick/Server collision")
-						cptr.Dispose()
+					c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Nick/Server Collision at {0}!", args(0)))
+					KillUser(c.Services, args(0), "Nick/Server collision")
+					c.Events.FireClientKilled(c.Services, DirectCast(cptr, WinSECore.User), "Nick/Server collision")
+					c.Events.FireClientQuit(DirectCast(cptr, WinSECore.User), "Killed: Nick/Server collision")
+					cptr.Dispose()
 				Else
-						c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Nick Collision at {0}!", args(0)))
-						KillUser(c.Services, args(0), "Nick Collision")
-						c.Events.FireClientKilled(c.Services, DirectCast(cptr, WinSECore.User), "Nick Collision")
-						c.Events.FireClientQuit(DirectCast(cptr, WinSECore.User), "Killed: Nick Collision")
-						cptr.Dispose()
+					c.Events.FireLogMessage("Protocol.Unreal", "ERROR", String.Format("Nick Collision at {0}!", args(0)))
+					KillUser(c.Services, args(0), "Nick Collision")
+					c.Events.FireClientKilled(c.Services, DirectCast(cptr, WinSECore.User), "Nick Collision")
+					c.Events.FireClientQuit(DirectCast(cptr, WinSECore.User), "Killed: Nick Collision")
+					cptr.Dispose()
 				End If
 			ElseIf args.Length >= 11 Then
 				'Has NICKIP.
@@ -1058,14 +1079,22 @@ Public NotInheritable Class Unreal
 					cptr = New WinSECore.User(c)
 					With DirectCast(cptr, WinSECore.User)
 						.AwayMessage = Nothing
-						.Identifies.Clear()
+						.IdentifiedNick = Nothing
 						.SWhois = Nothing
 						.Nick = args(0)
-						.TS = DirectCast(IIf(Left(args(2), 1) = "!", B64ToInt(Mid(args(2), 2)), CInt(args(2))), Integer)
+						If Left(args(2), 1) = "!" Then
+							.TS = B64ToInt(Mid(args(2), 2))
+						Else
+							.TS = CInt(args(2))
+						End If
 						.Username = args(3)
 						.Hostname = args(4)
 						.Server = DirectCast(sptr, WinSECore.Server)
-						.Numeric = CInt(args(6))
+						If Left(args(6), 1) = "!" Then
+							.TS = B64ToInt(Mid(args(6), 2))
+						Else
+							.TS = CInt(args(6))
+						End If
 						.Usermodes = args(7)
 						.VHost = DirectCast(IIf(args(8) <> "*", args(8), Nothing), String)
 						.VIdent = .Username
@@ -1076,6 +1105,7 @@ Public NotInheritable Class Unreal
 							.IP = New System.Net.IPAddress(b)
 						End If
 						.RealName = args(10)
+						.SendMessage = AddressOf c.API.SendMsg_NOTICE
 					End With
 					DirectCast(sptr, WinSECore.Server).SubNodes.Add(cptr)
 					c.Events.FireClientConnect(DirectCast(sptr, WinSECore.Server), DirectCast(cptr, WinSECore.User))
@@ -1173,7 +1203,7 @@ Public NotInheritable Class Unreal
 					Case Else
 						Dim nick As String = s, modes As String = "", acptr As WinSECore.IRCNode
 						While InStr("*~@%+", Left(nick, 1)) > 0
-							modes += Mid("qaohv", InStr("*~@%+", Left(nick, 1)))
+							modes += Mid("qaohv", InStr("*~@%+", Left(nick, 1)), 1)
 							nick = Mid(nick, 2)
 						End While
 						acptr = c.API.FindNode(nick)
@@ -1277,23 +1307,25 @@ Public NotInheritable Class Unreal
 					modes = String.Join(" ", args, 1, args.Length - 1)
 				End If
 				'Now we have to obey TS here.
-				If ts > chptr.TS Then
-					'Blah.
-					c.Events.FireLogMessage("Protocol.Unreal", "TRACE", String.Format("Ignoring TS MODE {0} {1} (TS {2} > {3})", args(0), modes, ts, chptr.TS))
-					Return
-				ElseIf ts < chptr.TS Then
-					c.Events.FireLogMessage("Protocol.Unreal", "TRACE", String.Format("Replacing modes on {0} with TS MODE {1} (TS {2} < {3})", args(0), modes, ts, chptr.TS))
-					With chptr
-						.SetModes(Source, "-" & .ParamlessModes)
-						.SetModes(Source, "-" & Join(DirectCast(New ArrayList(.ParamedModes.Keys).ToArray(GetType(String)), String()), ""))
-						.SetModes(Source, "-" & New String("b"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("b"c)).ToArray(GetType(String)), String()), " "))
-						.SetModes(Source, "-" & New String("b"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("b"c)).ToArray(GetType(String)), String()), " "))
-						If ProtocolVersion >= 2306 Then .SetModes(Source, "-" & New String("e"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("I"c)).ToArray(GetType(String)), String()), " "))
-						For Each m As WinSECore.ChannelMember In .UserList
-							.SetModes(Source, "-" & m.Status & " " & RTrim(Replace(New String(Chr(0), m.Status.Length), Chr(0), m.Who.Name + " ")))
-						Next
-						.TS = ts
-					End With
+				If ts > 0 Then
+					If ts > chptr.TS Then
+						'Blah.
+						c.Events.FireLogMessage("Protocol.Unreal", "TRACE", String.Format("Ignoring TS MODE {0} {1} (TS {2} > {3})", args(0), modes, ts, chptr.TS))
+						Return
+					ElseIf ts < chptr.TS Then
+						c.Events.FireLogMessage("Protocol.Unreal", "TRACE", String.Format("Replacing modes on {0} with TS MODE {1} (TS {2} < {3})", args(0), modes, ts, chptr.TS))
+						With chptr
+							.SetModes(Source, "-" & .ParamlessModes)
+							.SetModes(Source, "-" & Join(DirectCast(New ArrayList(.ParamedModes.Keys).ToArray(GetType(String)), String()), ""))
+							.SetModes(Source, "-" & New String("b"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("b"c)).ToArray(GetType(String)), String()), " "))
+							.SetModes(Source, "-" & New String("b"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("b"c)).ToArray(GetType(String)), String()), " "))
+							If ProtocolVersion >= 2306 Then .SetModes(Source, "-" & New String("e"c, .ListModes.Count) & " " & Join(DirectCast(New ArrayList(.ListModes("I"c)).ToArray(GetType(String)), String()), " "))
+							For Each m As WinSECore.ChannelMember In .UserList
+								.SetModes(Source, "-" & m.Status & " " & RTrim(Replace(New String(Chr(0), m.Status.Length), Chr(0), m.Who.Name + " ")))
+							Next
+							.TS = ts
+						End With
+					End If
 				End If
 				chptr.SetModes(Source, modes)
 				'[1] = P10 defines for reading parameters counting from the end as well as the beginning. We read the TS from the end when it
@@ -1310,7 +1342,7 @@ Public NotInheritable Class Unreal
 				c.Events.FireLogMessage("Protocol.Unreal", "WARNING", String.Format("MODE for non-user {0}", args(0)))
 			Else
 				With DirectCast(acptr, WinSECore.User)
-					.SetUserModes(args(0), Source)
+					.SetUserModes(args(1), Source)
 				End With
 			End If
 		End If

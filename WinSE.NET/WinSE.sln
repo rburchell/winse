@@ -47,6 +47,10 @@ Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "DebugServ", "modules\servic
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "INIDB", "modules\database\INIDB\INIDB.vbproj", "{556A17A9-9E04-4483-B014-B407B013278A}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -100,6 +104,10 @@ Global
 		{DFEC1909-6C56-44A4-B79D-B46D58C5DFD4}.Debug.ActiveCfg = Debug|.NET
 		{DFEC1909-6C56-44A4-B79D-B46D58C5DFD4}.Debug.Build.0 = Debug|.NET
 		{DFEC1909-6C56-44A4-B79D-B46D58C5DFD4}.Release.ActiveCfg = Release|.NET
+		{556A17A9-9E04-4483-B014-B407B013278A}.Debug.ActiveCfg = Debug|.NET
+		{556A17A9-9E04-4483-B014-B407B013278A}.Debug.Build.0 = Debug|.NET
+		{556A17A9-9E04-4483-B014-B407B013278A}.Release.ActiveCfg = Release|.NET
+		{556A17A9-9E04-4483-B014-B407B013278A}.Release.Build.0 = Release|.NET
 	EndGlobalSection
 	GlobalSection(SolutionItems) = postSolution
 		ChangeLog.txt = ChangeLog.txt

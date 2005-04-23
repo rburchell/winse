@@ -22,39 +22,36 @@
 'THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
 '(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
 'THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
-Option Explicit On 
-Option Strict On
-Option Compare Binary
-Imports Microsoft.VisualBasic
+
 Imports System
-Imports System.Collections
-Imports System.Collections.Specialized
-Public Class Agent
-	Inherits WinSECore.Module
-	Dim sc As WinSECore.ServiceClient
-	Public Sub New(ByVal c As WinSECore.Core)
-		MyBase.New(c)
-		sc = New WinSECore.ServiceClient
-		sc.Nick = "Agent"
-		sc.Ident = "agent"
-		sc.Host = c.Conf.ServerName
-		sc.RealName = "Abuse Team Services"
-		sc.Usermode = c.protocol.InvisServiceUMode()
-		sc.mainproc = AddressOf Me.DebugServMain
-		sc.CmdHash.Add("HELP", AddressOf CmdHelp)
-	End Sub
-	Public Overrides Function ModLoad(ByVal params() As String) As Boolean
-		c.Clients.Add(sc)
-		Return True
-	End Function
-	Public Overrides Sub ModUnload()
-		c.Clients.Remove(sc)
-	End Sub
-	Public Sub DebugServMain(ByVal Source As WinSECore.IRCNode, ByVal Message As String)
-		If Not TypeOf Source Is WinSECore.User Then Return
-		c.API.ExecCommand(sc.CmdHash, DirectCast(Source, WinSECore.User), Message)
-	End Sub
-	Private Function CmdHelp(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
-		c.API.SendHelp(sc.node, Source, "Agent", Args)
-	End Function
-End Class
+Imports System.Reflection
+Imports System.Runtime.InteropServices
+
+' General Information about an assembly is controlled through the following 
+' set of attributes. Change these attribute values to modify the information
+' associated with an assembly.
+
+' Review the values of the assembly attributes
+
+<Assembly: AssemblyTitle("WinSE INI Database Driver")> 
+<Assembly: AssemblyDescription("INI File-based Database Driver for WinSE IRC Services")> 
+<Assembly: AssemblyCompany("WinSE")> 
+<Assembly: AssemblyProduct("WinSE IRC Services")> 
+<Assembly: AssemblyCopyright("Copyright (C) 2005 The Winse Team [http://www.sourceforge.net/projects/winse]")> 
+<Assembly: AssemblyTrademark("")> 
+<Assembly: CLSCompliant(True)> 
+
+'The following GUID is for the ID of the typelib if this project is exposed to COM
+<Assembly: Guid("DB09FDFA-4651-44BA-AF2C-D18DC22A8B5E")> 
+
+' Version information for an assembly consists of the following four values:
+'
+'      Major Version
+'      Minor Version 
+'      Build Number
+'      Revision
+'
+' You can specify all the values or you can default the Build and Revision Numbers 
+' by using the '*' as shown below:
+
+<Assembly: AssemblyVersion("0.1.0.0")> 

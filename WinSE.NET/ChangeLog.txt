@@ -10,14 +10,27 @@ Tags:
 [AS] = AdminServ
 [DS] = DebugServ
 [**] = ALL
+[DB] = Database Module (include name of module)
+[--] = Miscellaneous.
 
 -- WinSE .NET 0.1 --
+23/04/2003 - aquanight
+-[DS] [Fix] Fixed non-IRCops being able to issue commands anyway.
+-[CO] [Add] Added modular database driver system. WinSE database loading is basically modulized!
+-[DB] [Add] INIDB - Added INIDB - a database driver module for INI files.
+-[--] [Upd] Updated winse.conf.example : Database section removed as databases are handled by
+            modules.
+-[NS] [Add] REGISTER and IDENTIFY work now. That's about it though. Nick tracking, enforcement,
+            etc do not work yet - and won't until I add a timer system (threaded timers suck).
+-[CO] [Fix] Fixed a bug that might occur on /module services.* and DEFINATELY occured when data
+            loading was implemented.
+
 13/04/2005 - aquanight
 -[PR] [Add] Unreal - Basically finished now.
 -[CO] [Add] WinSE is now capable of linking to an UnrealIRCd server! YAY!
 -[DS] [Add] Commands DUMPCLIENT and DIE.
 -[CO] [Fix] Massively changed Help.
--[Co] [Add] CONFIGURATION FILE. Tada... Module configs are still TODO, but hopefully soon, they will be TODONE :P .
+-[CO] [Add] CONFIGURATION FILE. Tada... Module configs are still TODO, but hopefully soon, they will be TODONE :P .
 
 02/04/2005 - aquanight
 Yes it's been a while but here's the next update :) .

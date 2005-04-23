@@ -24,21 +24,30 @@ All Source files must have the following components:
 Newly added source files need to have these sections added. Also remember to do CVS Add on the file before you commit!
 The following is a basic snippet of what the first few lines of any VB source file should look like:
 [code]
-' Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]
-'
-' This program is free software; you can redistribute it and/or modify
-' it under the terms of the GNU General Public License as published by
-' the Free Software Foundation; either version 2 of the License, or
-' (at your option) any later version.
-'
-' This program is distributed in the hope that it will be useful,
-' but WITHOUT ANY WARRANTY; without even the implied warranty of
-' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-' GNU General Public License for more details.
-'
-' You should have received a copy of the GNU General Public License
-' along with this program; if not, write to the Free Software
-' Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+'Copyright (c) 2005 The WinSE Team 
+'All rights reserved. 
+' 
+'Redistribution and use in source and binary forms, with or without 
+'modification, are permitted provided that the following conditions 
+'are met: 
+'1. Redistributions of source code must retain the above copyright 
+'   notice, this list of conditions and the following disclaimer. 
+'2. Redistributions in binary form must reproduce the above copyright 
+'   notice, this list of conditions and the following disclaimer in the 
+'   documentation and/or other materials provided with the distribution. 
+'3. The name of the author may not be used to endorse or promote products 
+'   derived from this software without specific prior written permission.
+ 
+'THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR 
+'IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+'OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+'IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
+'INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
+'NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+'DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
+'THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+'(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+'THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 Option Explicit On 
 Option Strict On
 Option Compare Binary
@@ -57,7 +66,7 @@ out as follows:
 <Assembly: AssemblyDescription("<describe your component briefly, essentially same as title, only a bit longer>")> 
 <Assembly: AssemblyCompany("WinSE")> 
 <Assembly: AssemblyProduct("WinSE IRC Services")> 
-<Assembly: AssemblyCopyright("Copyright (C) 2004 The Winse Team [http://www.sourceforge.net/projects/winse]")> 
+<Assembly: AssemblyCopyright("Copyright (C) 2005 The Winse Team [http://www.sourceforge.net/projects/winse]")> 
 <Assembly: AssemblyTrademark("")> 
 <Assembly: CLSCompliant(True)> 
 The Guid is automatically generated, but we'll never need it, leave it alone in case we ever do though.
@@ -98,6 +107,78 @@ A big change from VB6 to VB.NET is that the parentheses around a Sub call are NO
 arguments of a procedure call. The parentheses ARE optional when there are no arguments, but for readability sake, ALWAYS use parentheses
 even if there is nothing inside of them when invoking a Sub or Function. When reading a property do NOT use parentheses unless you need
 to pass arguments. Also, because parentheses are no longer optional for Subs, this makes the Call keyword obsolete. It is no longer needed.
+
+ByVal arguments:
+ByVal is now the default in VB.NET, but I've personally got into the habit of typing the ByVal by hand (from our VB6 period) :P .
+Strings and Arrays are considered "reference types" and are basically treated as object referneces. This also means arrays can be passed
+by value. Avoid using ByRef if it's not required.
+
+Option arguments:
+Optional arguments are now required to have a default value, eg Optional ByVal blarp As Integer = 0
+
+ParamArray arguments:
+ParamArrays can be strongly typed now (eg ParamArray blarp() As String), so please do :P .
+Also, whiel VB6 required ParamArray to be ByRef, VB.NET requires ParamArray to be ByVal.
+
+Overloading:
+VB.NET now supports overloading. Overloading is essentially declaring more than one procedure with the same name, but with different
+argument lists. When the compiler resolves a function call and encounters an overloaded function, it resolves the overload based on the
+argument list. When determining whether argument lists are different, only the data type (Integer, etc) of the arugments and the number
+of arguments are considered. In other words, an overload is only valid when either the number of arguments differ, the types of the arguments
+differ, or both. When resolving an overload, VB.NET considers all the functions with the same name, and uses an elimination process to
+remove unsuitable possibilities:
+- It first eliminates any overload with a different number of arguments than supplied.
+- It then eliminates any overload that would require an impossible conversion for an argument (eg, Socket -> Integer is impossible).
+- It then eliminates any overload that would require a narrowing conversion for an argument (Long -> Integer is a narrowing conversion).
+The final step involves considering the remaining overloads in pairs. For each pair, the types of the corresponding arguments are compared.
+If the types in one overload all widen (Integer -> Long is a widening conversion) to the types in the other, the latter is eliminated. In
+other words, the compiler prefers the overload with the least amount of widening. It continues this process until exactly one overload
+remains. Here comes the important part:
+If the compiler cannot reduce the overload to exactly one candidate with this method a COMPILE-TIME ERROR occurs. When this happens, you
+will need to resolve the overload manually by using conversion functions.
+Additional compiler rules on overloading:
+- When overloading Functions, you can overload with different return types, and you can even overload a Function with a Sub. The only
+  requirement is that the name is the same and the argument list is different (see above) - the rest of the declaration is not considered.
+- VB.NET does not care if you are overloading simple functions in a Module, shared methods of a class, or instance methods. You can overload
+  them all the same. You can even overload a Shared method with an instance method, and vice versa.
+- The visibility modifier (Public, Private, etc) is not considered when overloading, so you can create "internal" overloads and mix them
+  with front-end overloads.
+- You can overload a base class member with your own if you specify the Overloads keyword in your declaration. If you don't specify this
+  keyword, you will shadow the base class member instead. You must do this if the base class member is Overridable (or even MustOverride).
+  As an example, this overloads the ToString method without shadowing it:
+  Public Overloads Function ToString(ByVal format As String) As String
+- You cannot mix methods and properties when overloading. For exmaple, this overload is invalid.
+  Overloads Function Item(ByVal name As String) As Object
+  Overloads Property Item(ByVal index As Integer) As Object
+
+There are a few more rules I want to lay down when using overloads. In particular:
+- Use the Overloads keyword. This makes it clear that you are overloading the method. The only exception is when overloading
+  a class constructor - in which case the compiler does not permit the Overloads keyword.
+- Do not mix Optional with overloading. When overloading, if you want an overload to have an optional parameter, make a seperate overload
+  with that parameter missing. This is especially true when overloading over the Optional argument's data type.
+Incorrect:
+Overloads Sub Increment(ByRef n As Integer, Optional ByVal amount As Integer = 1)
+Overloads Sub Increment(ByRef n As Long, Optional ByVal amount As Long = 1)
+Correct:
+Overloads Sub Increment(ByRef n As Integer)
+Overloads Sub Increment(ByRef n As Integer, ByVal amount As Integer)
+Overloads Sub Increment(ByRef n As Long)
+Overloads Sub Increment(ByRef n As Long, ByVal amount As Long)
+- It is permissible to overload with ParamArray. When overloading with ParamArray, avoid creating ambiguous scenarios like this:
+Overloads Sub DoStuff(ByVal s As String, ParamArray stuff() As String)
+Overloads Sub DoStuff(ParamArray stuff() As String)
+  In this scenario, any call with 2 or more arguments is ambiguous. Acceptable modifications when ParamArray is involved include:
+  - Removing an argument prior to the ParamArray, but only if the type of the argument prior to the ParamArray narrows or cannot be converted
+    to the ParamArray type. Otherwise, an ambiguous scenario occurs. This is especially important to not do when the type of the argument
+    prior to the ParamArray is the SAME as the ParamArray type.
+  - Adding an argument prior to the ParamArray. (VB still requires ParamArray to be last.)
+  - Changing the type of any argument, including the ParamArray.
+  - Removing the ParamArray itself.
+  In particular, avoid these situations:
+  - Do not overload the ParamArray with a scalar argument replacing the ParamArray. Just check for array.Length = 1 if you must do this. This
+    will prevent clutter in the namespace.
+  - Do not overload the ParamArray with a normal array. One of the nice things VB.NET added is ParamArray no longer has to be used as a
+    ParamArray. When calling, it can be used as a normal array argument.
  
 Return Values:
 VB.NET has changed the syntax for returning a value from a Function or Property reader. The old syntax was function/property name = value.
@@ -111,6 +192,14 @@ Public Function Square(ByVal x As Double) As Double
 	Return x * x
 End Function
 The old syntax is still supported, but don't use it because it can result in ambiguities.
+Also, because we're Option Strict, you absolutely CAN NOT forget to add a return type *coughw00tcough* unless it's a Sub.
+
+Default properties:
+VB.NET has changed how default properties work. In VB6, a default property was marked with a member ID of 0 (named "(Default)" when you
+set it via Object Browser, etc). In VB.NET a default property is marked as such by using the Default keyword. More than one property
+can have the Default keyword - provided they are overloads (same name, different argument list). There is one restriction on default
+properties: they must take at least one argument. Also, while VB6 allowed marking a Function as a default property, in VB.NET, when they
+say default property, They Mean Property. The Default keyword is only valid in a Property declaration.
 
 -- Exception Handling
 If I see anyone in WinSE use the VB6 way of On Error <blah> I will personally hunt you down and strangle you to death. For the purpose of this
