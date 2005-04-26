@@ -391,6 +391,10 @@ Public NotInheritable Class NickServ
 		ElseIf rUsing Is rIdent Then
 			c.protocol.SetIdentify(sc.node, sptr.Name, sptr.IdentifiedNick)
 		End If
+		If sptr.Custom.ContainsKey("nicktimer") Then
+			c.API.KillTimer(DirectCast(sptr.Custom("nicktimer"), WinSECore.Timer))
+			sptr.Custom.Remove("nicktimer")
+		End If
 		If LCase(oldnick) <> LCase(nick) Then BeginEnforce(sptr)
 	End Sub
 	Private Sub BeginEnforce(ByVal who As WinSECore.User)

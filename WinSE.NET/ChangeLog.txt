@@ -14,6 +14,11 @@ Tags:
 [--] = Miscellaneous.
 
 -- WinSE .NET 0.1 --
+26/04/2005 (Update #2) - aquanight
+Whoops, jumped the gun a bit on the last update:
+-[NS] [Fix] Enforcement timers now properly deleted when the user changes nick. (Of course, it'll
+            start over if they pick another reg'd nick.)
+
 26/04/2005 - aquanight
 -[NS] [Add] Added nick enforcement, and handling of "registered" usermodes.
 -[DS] [Add] Added TIMEDMSG for testing of core timers.
