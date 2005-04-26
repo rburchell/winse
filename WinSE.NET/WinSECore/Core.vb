@@ -42,7 +42,6 @@ Public NotInheritable Class Core
 				m(idx) = [mod]
 				idx += 1
 			Next
-			'mModules.CopyTo(m, 0)
 			Return m
 		End Get
 	End Property
@@ -81,6 +80,8 @@ Public NotInheritable Class Core
 	Public Const FLAG_CoMaster As Char = "m"c
 	'SOCKET!
 	Public sck As System.Net.Sockets.Socket
+	'TIMERS!
+	Public ReadOnly t As New Timers
 	'The instance of our Event sink.
 	Public ReadOnly Events As New Events
 	'Where our configuration file should be.
@@ -186,8 +187,8 @@ Public NotInheritable Class Core
 					If .Values.Contains("ServerNumeric") Then
 						With .Values("ServerNumeric", 0)
 							Try
-								cnf.ServerNumeric = Integer.Parse(CStr(.value))
-							Catch ex As FormatException
+								cnf.ServerNumeric = CInt(.value)
+							Catch ex As InvalidCastException
 								Throw New ConfigException("[Connect],ServerNumeric invalid: must be a number", ex, .file, .line)
 							Catch ex As OverflowException
 								Throw New ConfigException("[Connect],ServerNumeric invalid: Out of supported range", ex, .file, .line)
@@ -231,6 +232,16 @@ Public NotInheritable Class Core
 						cnf.MasterNick = .Values("MasterNick", 0).value.ToString()
 					Else
 						Throw New ConfigException("[Core],MasterNick missing.", .file, 0)
+					End If
+					If .Values.Contains("ReadTimeout") Then
+						If Not IsNumeric(.Values("ReadTimeout", 0).value) Then
+							Throw New ConfigException("[Core],ReadTimeout invalid (must be a number).", .Values("ReadTimeout", 0).file, .Values("ReadTimeout", 0).line)
+						ElseIf CInt(.Values("ReadTimeout", 0).value) < 1 Then
+							Throw New ConfigException("[Core],ReadTimeout invalid (must be a positive integer).", .Values("ReadTimeout", 0).file, .Values("ReadTimeout", 0).line)
+						End If
+						cnf.ReadTimeout = CInt(.Values("ReadTimeout", 0).value)
+					Else
+						Throw New ConfigException("[Core],ReadTimeout missing.", .file, 0)
 					End If
 				End With
 			Else
@@ -385,7 +396,7 @@ Public NotInheritable Class Core
 	End Function
 	'The start of it all.
 	Public Function Main(ByVal Args() As String) As Integer
-		Randomize(Timer)
+		Randomize(Microsoft.VisualBasic.Timer)
 		Events.FireLogMessage("Core", "TRACE", "Entering Main()")
 		'The Main Loop.
 		'First time connection, we'll make sure the host is connectable before we begin.
@@ -402,6 +413,7 @@ Public NotInheritable Class Core
 		'Now send our login.
 		Dim buffer As String = ""
 		Services = New Server(Me)
+		IRCMap = Nothing
 		With Services
 			.Name = Conf.ServerName
 			.Numeric = Conf.ServerNumeric
@@ -462,6 +474,7 @@ Public NotInheritable Class Core
 					sck.Blocking = True
 					sck.Connect(Conf.UplinkAddress)
 					Services = New Server(Me)
+					IRCMap = Nothing
 					With Services
 						.Name = Conf.ServerName
 						.Numeric = Conf.ServerNumeric
@@ -520,10 +533,12 @@ Public NotInheritable Class Core
 			Else
 				'Parse commands normally.
 				Try
-					buffer = API.GetServ(New TimeSpan(0, 0, 3))
+					buffer = API.GetServ(New TimeSpan(0, 0, Conf.ReadTimeout))
 					If Not buffer Is Nothing Then
 						protocol.ParseCmd(buffer)
 					End If
+					t.RunTimers()
+					t.CleanTimers()
 				Catch ex As System.Net.Sockets.SocketException When ex.ErrorCode = 10101
 					Events.FireLogMessage("Core", "ERROR", "Uplink closed the connection.")
 					sck.Close()
@@ -615,6 +630,7 @@ Public Structure Configuration
 	Public RecvPass As Password
 	Public NetworkName As String
 	Public MasterNick As String	'The nick of the permanent master.
+	Public ReadTimeout As Integer
 	Public MOTDFile As String	'Location (FULL PATH) of the MOTD.
 	Public MOTD() As String	'Contents of the MOTD file - used to buffer the MOTD so that we don't read it all the time. Refreshed on REHASH.
 	Public WinSERoot As String	'Where we are.

@@ -69,6 +69,31 @@ Public NotInheritable Class API
 			Next
 		End If
 	End Sub
+	Public Function AddTimer(ByVal timeout As TimeSpan, ByVal cb As WinSECore.TimerCallback, ByVal repeat As Integer, ByVal ParamArray args() As Object) As WinSECore.Timer
+		Dim t As New WinSECore.Timer(timeout, repeat, cb, args)
+		c.t.Add(t)
+		Return t
+	End Function
+	Public Sub KillTimer(ByVal t As WinSECore.Timer)
+		If c.t.Contains(t) Then c.t.Remove(t)
+	End Sub
+	Public Sub CreateClient(ByVal nick As String, ByVal user As String, ByVal hostname As String, ByVal realname As String, ByVal modes As String)
+		Dim u As New WinSECore.User(c), numeric As Integer
+		u.Nick = nick
+		u.Username = user
+		u.Hostname = hostname
+		u.VIdent = Nothing
+		u.VHost = Nothing
+		u.RealName = realname
+		u.Usermodes = modes
+		u.Server = c.Services
+		c.Services.SubNodes.Add(u)
+		Do
+			numeric = CInt(Int(Rnd() * Integer.MaxValue))
+		Loop Until c.protocol.IsValidNumeric(numeric, False)
+		u.Numeric = numeric
+		c.protocol.IntroduceClient(u.Nick, u.Username, u.Hostname, u.RealName, u.Usermodes, u.Numeric, u.Server.Name, GetTS())
+	End Sub
 	Public Function GetServ() As String
 		Static buffer As String
 		Dim stmp As String, b() As Byte
@@ -119,7 +144,7 @@ Public NotInheritable Class API
 		PutServ(String.Format(format, args))
 	End Sub
 	Public Sub ExitServer(ByVal Reason As String, Optional ByVal Name As String = Nothing)
-		c.protocol.SendError(String.Format("ERROR :Closing link {0}[{1}] ({2})", IIf(Name Is Nothing, c.Conf.UplinkName, Name), DirectCast(c.sck.RemoteEndPoint, System.Net.IPEndPoint).Address, Reason))
+		c.protocol.SendError(String.Format("Closing link {0}[{1}] ({2})", IIf(Name Is Nothing, c.Conf.UplinkName, Name), DirectCast(c.sck.RemoteEndPoint, System.Net.IPEndPoint).Address, Reason))
 		c.sck.Shutdown(Net.Sockets.SocketShutdown.Send)
 	End Sub
 	Public Shared Function FMod(ByVal dividend As Double, ByVal divisor As Double) As Double
@@ -198,13 +223,35 @@ Public NotInheritable Class API
 			Return Left(Prefix, InStr(Prefix, "!") - 1)
 		End If
 	End Function
-	Public Shared Function IsMatch(ByVal Text As String, ByVal Mask As String, Optional ByVal SplatNoEmpty As Boolean = False) As Boolean
+	Public Overloads Shared Function IsMatch(ByVal Text As String, ByVal Mask As String) As Boolean
 		'A lesser version of the Like operator needed for IRC.
 		Dim sMask As String
 		sMask = Replace(Mask, "[", "[]]")
 		sMask = Replace(sMask, "#", "[#]")
-		If SplatNoEmpty Then sMask = Replace(sMask, "*", "?*")
 		Return Text Like sMask
+	End Function
+	Public Overloads Shared Function IsMatch(ByVal user As WinSECore.User, ByVal Mask As String) As Boolean
+		If IsMatch(String.Format("{0}!{1}@{2}", user.Nick, user.Username, user.Hostname), Mask) Then
+			Return True
+		End If
+		If Not user.IP Is Nothing AndAlso IsMatch(String.Format("{0}!{1}@{2}", user.Nick, user.Username, user.IP.ToString()), Mask) Then
+			Return True
+		End If
+		If user.VHost <> "" AndAlso user.VHost <> user.Hostname AndAlso IsMatch(String.Format("{0}!{1}@{2}", user.Nick, user.Username, user.VHost), Mask) Then
+			Return True
+		End If
+		If user.VIdent <> "" AndAlso user.VIdent <> user.Username Then
+			If IsMatch(String.Format("{0}!{1}@{2}", user.Nick, user.VIdent, user.Hostname), Mask) Then
+				Return True
+			End If
+			If Not user.IP Is Nothing AndAlso IsMatch(String.Format("{0}!{1}@{2}", user.Nick, user.VIdent, user.IP.ToString()), Mask) Then
+				Return True
+			End If
+			If user.VHost <> "" AndAlso user.VHost <> user.Hostname AndAlso IsMatch(String.Format("{0}!{1}@{2}", user.Nick, user.VIdent, user.VHost), Mask) Then
+				Return True
+			End If
+		End If
+		Return False
 	End Function
 	Public Shared Function Duration(ByVal dur As String) As Integer
 		'Takes a string like this: 1d2h3m4s and returns the number of seconds.
@@ -276,7 +323,13 @@ Public NotInheritable Class API
 		Return CInt(DateDiff(DateInterval.Second, New Date(1970, 1, 1, 0, 0, 0), d.ToUniversalTime))
 	End Function
 	Public Overloads Function IsService(ByVal cptr As IRCNode) As Boolean
-		Return c.Services.HasClient(cptr, True)
+		For Each sc As ServiceClient In c.Clients
+			If sc.node.Name = cptr.Name Then
+				Return True
+			End If
+		Next
+		Return False
+		'Return c.Services.HasClient(cptr, True)
 	End Function
 	Private Function GlobDirectory(ByVal root As System.IO.DirectoryInfo, ByVal path As String) As StringCollection
 		Dim sc As New StringCollection

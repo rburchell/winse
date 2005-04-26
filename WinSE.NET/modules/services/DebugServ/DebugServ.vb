@@ -46,6 +46,7 @@ Public Class DebugServ
 		sc.CmdHash.Add("DUMPCLIENT", AddressOf CmdDumpClient)
 		sc.CmdHash.Add("DUMPCHANNEL", AddressOf CmdDumpChannel)
 		sc.CmdHash.Add("DIE", AddressOf CmdDie)
+		sc.CmdHash.Add("TIMEDMSG", AddressOf CmdTimedMsg)
 	End Sub
 	Public Overrides Function ModLoad(ByVal params() As String) As Boolean
 		c.Clients.Add(sc)
@@ -63,7 +64,7 @@ Public Class DebugServ
 		Try
 			c.API.ExecCommand(sc.CmdHash, DirectCast(Source, WinSECore.User), Message)
 		Catch ex As MissingMethodException
-			DirectCast(Source, WinSECore.User).SendMessage(sc.node, DirectCast(Source, WinSECore.User), "Unknown command. Type " & WinSECore.API.FORMAT_BOLD & "/msg DebugServ HELP" & WinSECore.API.FORMAT_BOLD & " for help.")
+			DirectCast(Source, WinSECore.User).SendMessage(sc.node, DirectCast(Source, WinSECore.User), "Unknown command. Type " & WinSECore.API.FORMAT_BOLD & "/msg " & sc.node.Nick & " HELP" & WinSECore.API.FORMAT_BOLD & " for help.")
 		End Try
 	End Sub
 	Private Function CmdHelp(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
@@ -166,4 +167,43 @@ Public Class DebugServ
 			End With
 		End If
 	End Function
+	Private Function CmdTimedMsg(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
+		If Args.Length < 4 Then
+			Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "TIMEDMSG " & WinSECore.API.FORMAT_UNDERLINE & "[nick|#channel]" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "repeat" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "delay" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "message" & WinSECore.API.FORMAT_UNDERLINE & WinSECore.API.FORMAT_BOLD)
+			Return False
+		End If
+		Dim target As String = Args(0)
+		Dim repeat As Integer, interval As Integer, msg As String
+		If Not IsNumeric(Args(1)) Then
+			Source.SendMessage(sc.node, Source, "Invalid repeat count.")
+			Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "TIMEDMSG " & WinSECore.API.FORMAT_UNDERLINE & "[nick|#channel]" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "repeat" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "delay" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "message" & WinSECore.API.FORMAT_UNDERLINE & WinSECore.API.FORMAT_BOLD)
+			Return False
+		Else
+			repeat = Integer.Parse(Args(1))
+		End If
+		If Not IsNumeric(Args(2)) Then
+			Source.SendMessage(sc.node, Source, "Invalid delay.")
+			Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "TIMEDMSG " & WinSECore.API.FORMAT_UNDERLINE & "[nick|#channel]" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "repeat" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "delay" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "message" & WinSECore.API.FORMAT_UNDERLINE & WinSECore.API.FORMAT_BOLD)
+			Return False
+		Else
+			interval = Integer.Parse(Args(2))
+		End If
+		msg = String.Join(" ", Args, 3, Args.Length - 3)
+		c.API.AddTimer(New TimeSpan(0, 0, interval), AddressOf TimedMsgCB, repeat, target, msg)
+	End Function
+	Private Sub TimedMsgCB(ByVal t As WinSECore.Timer)
+		Dim target As String, msg As String
+		target = DirectCast(t.Params(0), String)
+		msg = DirectCast(t.Params(1), String)
+		Dim n As WinSECore.IRCNode, chptr As WinSECore.Channel
+		n = c.API.FindNode(target)
+		If n Is Nothing Then
+			If c.Channels.Contains(target) Then
+				chptr = c.Channels(target)
+				c.protocol.SendMessage(sc.node, chptr, msg, True)
+			End If
+		ElseIf TypeOf n Is WinSECore.User Then
+			c.protocol.SendMessage(sc.node, DirectCast(n, WinSECore.User), msg, True)
+		End If
+	End Sub
 End Class

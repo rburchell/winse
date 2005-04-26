@@ -107,6 +107,9 @@ Public MustInherit Class IRCd
 	Public Overridable Function InvisServiceUMode() As String
 		Return "io"
 	End Function
+	Public Overridable Function EnforcerUMode() As String
+		Return "i"
+	End Function
 	Public MustOverride ReadOnly Property SupportFlags() As IRCdSupportFlags
 	Public Overridable Sub ForceJoin(ByVal Source As IRCNode, ByVal Channel As String, ByVal User As String)
 	End Sub
@@ -171,6 +174,7 @@ Public MustInherit Class IRCd
 	End Sub
 	Public MustOverride Sub SQuitServer(ByVal Source As IRCNode, ByVal Server As String, ByVal Reason As String)
 	Public MustOverride Sub SendError(ByVal Text As String)
+	Public MustOverride Sub QuitUser(ByVal Who As User, ByVal Reason As String)
 	Public MustOverride Sub KillUser(ByVal Source As IRCNode, ByVal Target As String, ByVal Reason As String, Optional ByVal SuperKill As Boolean = False)
 	Public Overridable Sub SetOper(ByVal Source As IRCNode, ByVal Target As String, ByVal Flags As String)
 	End Sub

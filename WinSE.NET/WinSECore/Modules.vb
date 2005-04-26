@@ -418,3 +418,153 @@ Public MustInherit Class [Module]
 		Return True
 	End Function
 End Class
+Public Delegate Sub TimerCallback(ByVal t As Timer)
+Public NotInheritable Class Timers
+	Implements IList, ICollection, IEnumerable
+	ReadOnly a As ArrayList
+	Public Sub New()
+		a = New ArrayList
+	End Sub
+	Public Sub CopyTo(ByVal array As System.Array, ByVal index As Integer) Implements System.Collections.ICollection.CopyTo
+		a.CopyTo(array, index)
+	End Sub
+	Public ReadOnly Property Count() As Integer Implements System.Collections.ICollection.Count
+		Get
+			Return a.Count()
+		End Get
+	End Property
+	Public ReadOnly Property IsSynchronized() As Boolean Implements System.Collections.ICollection.IsSynchronized
+		Get
+			Return False
+		End Get
+	End Property
+	Public ReadOnly Property SyncRoot() As Object Implements System.Collections.ICollection.SyncRoot
+		Get
+			Return Me
+		End Get
+	End Property
+	Public Function GetEnumerator() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
+		Return a.GetEnumerator
+	End Function
+	Private Function Add2(ByVal value As Object) As Integer Implements System.Collections.IList.Add
+		Return Add(DirectCast(value, Timer))
+	End Function
+	Public Function Add(ByVal value As Timer) As Integer
+		Return a.Add(value)
+	End Function
+	Public Sub Clear() Implements System.Collections.IList.Clear
+		a.Clear()
+	End Sub
+	Private Function Contains2(ByVal value As Object) As Boolean Implements System.Collections.IList.Contains
+		Return Contains(DirectCast(value, Timer))
+	End Function
+	Public Function Contains(ByVal value As Timer) As Boolean
+		Return a.Contains(value)
+	End Function
+	Private Function IndexOf2(ByVal value As Object) As Integer Implements System.Collections.IList.IndexOf
+		Return IndexOf(DirectCast(a, Timer))
+	End Function
+	Public Function IndexOf(ByVal value As Timer) As Integer
+		Return a.IndexOf(value)
+	End Function
+	Private Sub Insert2(ByVal index As Integer, ByVal value As Object) Implements System.Collections.IList.Insert
+		Insert(index, DirectCast(value, Timer))
+	End Sub
+	Public Sub Insert(ByVal index As Integer, ByVal value As Timer)
+		a.Insert(index, value)
+	End Sub
+	Public ReadOnly Property IsFixedSize() As Boolean Implements System.Collections.IList.IsFixedSize
+		Get
+			Return False
+		End Get
+	End Property
+	Public ReadOnly Property IsReadOnly() As Boolean Implements System.Collections.IList.IsReadOnly
+		Get
+			Return False
+		End Get
+	End Property
+	Private Property Item2(ByVal index As Integer) As Object Implements System.Collections.IList.Item
+		Get
+			Return Item(index)
+		End Get
+		Set(ByVal Value As Object)
+			Item(index) = DirectCast(Value, Timer)
+		End Set
+	End Property
+	Default Public Property Item(ByVal index As Integer) As Timer
+		Get
+			Return DirectCast(a(index), Timer)
+		End Get
+		Set(ByVal Value As Timer)
+			a(index) = Value
+		End Set
+	End Property
+	Private Sub Remove2(ByVal value As Object) Implements System.Collections.IList.Remove
+		Remove(DirectCast(value, Timer))
+	End Sub
+	Public Sub Remove(ByVal value As Timer)
+		a.Remove(value)
+	End Sub
+	Public Sub RemoveAt(ByVal index As Integer) Implements System.Collections.IList.RemoveAt
+		a.RemoveAt(index)
+	End Sub
+	Public Sub RunTimers()
+		Dim idx As Integer = 0
+		While idx < Count()
+			Item(idx).CheckTimer()
+			idx += 1
+		End While
+	End Sub
+	Public Sub CleanTimers()
+		Dim idx As Integer = 0
+		While idx < Count()
+			If Item(idx).Repeat = 0 Then
+				RemoveAt(idx)
+			Else
+				idx += 1
+			End If
+		End While
+	End Sub
+End Class
+Public NotInheritable Class Timer
+	Public ReadOnly StartTime As Date
+	Public ReadOnly Interval As TimeSpan
+	Private mNextRun As Date, mRepeat As Integer
+	Public ReadOnly Callback As TimerCallback
+	Public ReadOnly Params As ArrayList
+	Public Sub New(ByVal interval As TimeSpan, ByVal repeatcount As Integer, ByVal cb As TimerCallback, ByVal ParamArray params() As Object)
+		If repeatcount < -1 Then Throw New ArgumentException("Invalid repeat count. (Must be positive integer, or -1 to repeat indefinately.)", "repeatcount")
+		If cb Is Nothing Then Throw New ArgumentNullException("cb", "Callback may not be null.")
+		Me.StartTime = Now
+		Me.Interval = interval
+		mNextRun = Now.Add(interval)
+		mRepeat = repeatcount
+		Callback = cb
+		Me.Params = New ArrayList(params)
+	End Sub
+	Public ReadOnly Property NextRun() As Date
+		Get
+			Return mNextRun
+		End Get
+	End Property
+	Public ReadOnly Property Repeat() As Integer
+		Get
+			Return mRepeat
+		End Get
+	End Property
+	Public Sub CheckTimer()
+		If mRepeat = 0 Then Return
+		If Now > mNextRun Then
+			Try
+				Callback(Me)
+			Catch ex As Exception
+			End Try
+			If mRepeat = -1 Then
+				mNextRun = mNextRun.Add(Interval)
+			ElseIf mRepeat > 0 Then
+				mRepeat -= 1
+				mNextRun = mNextRun.Add(Interval)
+			End If
+		End If
+	End Sub
+End Class

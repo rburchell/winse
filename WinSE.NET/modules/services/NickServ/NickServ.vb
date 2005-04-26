@@ -48,10 +48,14 @@ Public NotInheritable Class NickServ
 	End Sub
 	Public Overrides Function ModLoad(ByVal params() As String) As Boolean
 		c.Clients.Add(sc)
+		AddHandler c.Events.ClientConnect, AddressOf OnClientConnect
+		AddHandler c.Events.ClientNickChange, AddressOf OnClientNickChange
 		Return True
 	End Function
 	Public Overrides Sub ModUnload()
 		c.Clients.Remove(sc)
+		RemoveHandler c.Events.ClientConnect, AddressOf OnClientConnect
+		RemoveHandler c.Events.ClientNickChange, AddressOf OnClientNickChange
 	End Sub
 	Public Overrides Function LoadDatabase() As Boolean
 		With c.db
@@ -231,12 +235,13 @@ Public NotInheritable Class NickServ
 		Try
 			c.API.ExecCommand(sc.CmdHash, DirectCast(Source, WinSECore.User), Message)
 		Catch ex As MissingMethodException
-			DirectCast(Source, WinSECore.User).SendMessage(sc.node, DirectCast(Source, WinSECore.User), "Unknown command. Type " & WinSECore.API.FORMAT_BOLD & "/msg DebugServ HELP" & WinSECore.API.FORMAT_BOLD & " for help.")
+			DirectCast(Source, WinSECore.User).SendMessage(sc.node, DirectCast(Source, WinSECore.User), "Unknown command. Type " & WinSECore.API.FORMAT_BOLD & "/msg " & sc.node.Nick & " HELP" & WinSECore.API.FORMAT_BOLD & " for help.")
 		End Try
 	End Sub
 
 	'DB Access stuff.
 	Public Overloads Function FindRecord(ByVal nick As String, ByVal aliases As Boolean) As WinSECore.Record
+		If nick = "" Then Return Nothing
 		For Each r As WinSECore.Record In t
 			If r.Name = nick Then Return r
 			If aliases Then
@@ -245,6 +250,7 @@ Public NotInheritable Class NickServ
 				Next
 			End If
 		Next
+		Return Nothing
 	End Function
 	Public Overloads Function FindRecord(ByVal nick As WinSECore.User, ByVal aliases As Boolean) As WinSECore.Record
 		Return FindRecord(nick.Nick, aliases)
@@ -333,6 +339,8 @@ Public NotInheritable Class NickServ
 			r = FindRecord(Args(0), True)
 			If r Is Nothing Then
 				Source.SendMessage(sc.node, Source, "Nick " & WinSECore.API.FORMAT_BOLD & Args(0) & WinSECore.API.FORMAT_BOLD & " is not registered.")
+			ElseIf DirectCast(r("Password").Value, String) = "" Then
+				Source.SendMessage(sc.node, Source, "Nick " & WinSECore.API.FORMAT_BOLD & Args(0) & WinSECore.API.FORMAT_BOLD & " may not be used.")
 			ElseIf Args(1) <> DirectCast(r("Password").Value, String) Then
 				Source.SendMessage(sc.node, Source, "Password incorrect.")
 			Else
@@ -340,12 +348,20 @@ Public NotInheritable Class NickServ
 				Source.AbuseTeam = DirectCast(r("AbuseTeam").Value, Boolean)
 				Source.Flags = DirectCast(r("Flags").Value, String)
 				c.protocol.SetIdentify(sc.node, Source.Name, Source.IdentifiedNick)
+				If r Is FindRecord(Source.Nick, True) Then
+					If Source.Custom.ContainsKey("nicktimer") Then
+						c.API.KillTimer(DirectCast(Source.Custom("nicktimer"), WinSECore.Timer))
+						Source.Custom.Remove("nicktimer")
+					End If
+				End If
 				Source.SendMessage(sc.node, Source, "Password accepted for nick " & WinSECore.API.FORMAT_BOLD & Args(0) & WinSECore.API.FORMAT_BOLD)
-			End If
+				End If
 		Else
 			r = FindRecord(Source.Nick, True)
 			If r Is Nothing Then
 				Source.SendMessage(sc.node, Source, "Nick " & WinSECore.API.FORMAT_BOLD & Source.Nick & WinSECore.API.FORMAT_BOLD & " is not registered.")
+			ElseIf DirectCast(r("Password").Value, String) = "" Then
+				Source.SendMessage(sc.node, Source, "Nick " & WinSECore.API.FORMAT_BOLD & Source.Nick & WinSECore.API.FORMAT_BOLD & " may not be used.")
 			ElseIf Args(0) <> DirectCast(r("Password").Value, String) Then
 				Source.SendMessage(sc.node, Source, "Password incorrect.")
 			Else
@@ -353,14 +369,108 @@ Public NotInheritable Class NickServ
 				Source.AbuseTeam = DirectCast(r("AbuseTeam").Value, Boolean)
 				Source.Flags = DirectCast(r("Flags").Value, String)
 				c.protocol.SetIdentify(sc.node, Source.Name, Source.IdentifiedNick)
+				'If there's a kill timer pending, kill it.
+				If Source.Custom.ContainsKey("nicktimer") Then
+					c.API.KillTimer(DirectCast(Source.Custom("nicktimer"), WinSECore.Timer))
+					Source.Custom.Remove("nicktimer")
+				End If
 				Source.SendMessage(sc.node, Source, "Password accepted for nick " & WinSECore.API.FORMAT_BOLD & Source.Name & WinSECore.API.FORMAT_BOLD)
 			End If
 		End If
 	End Function
 	Private Sub OnClientConnect(ByVal cptr As WinSECore.Server, ByVal sptr As WinSECore.User)
-
+		c.protocol.SetIdentify(sc.node, sptr.Nick, "")
+		BeginEnforce(sptr)
 	End Sub
 	Private Sub OnClientNickChange(ByVal sptr As WinSECore.User, ByVal oldnick As String, ByVal nick As String)
-
+		Dim rUsing As WinSECore.Record, rIdent As WinSECore.Record
+		rUsing = FindRecord(sptr, True)
+		rIdent = FindRecord(sptr.IdentifiedNick, True)
+		If rUsing Is Nothing OrElse rIdent Is Nothing Then
+			c.protocol.SetIdentify(sc.node, sptr.Nick, "")
+		ElseIf rUsing Is rIdent Then
+			c.protocol.SetIdentify(sc.node, sptr.Name, sptr.IdentifiedNick)
+		End If
+		If LCase(oldnick) <> LCase(nick) Then BeginEnforce(sptr)
+	End Sub
+	Private Sub BeginEnforce(ByVal who As WinSECore.User)
+		Dim rUsing As WinSECore.Record, rIdent As WinSECore.Record
+		rUsing = FindRecord(who, True)
+		rIdent = FindRecord(who.IdentifiedNick, True)
+		If rUsing Is rIdent Then Return
+		If rUsing Is Nothing Then Return
+		Dim al() As String = Split(DirectCast(rUsing.GetField("AccessList"), String), " ")
+		If DirectCast(rUsing("Password").Value, String) = "" Then
+			who.SendMessage(sc.node, who, "Your nick is forbidden and may not be used.")
+			EndEnforce(who)
+			Return
+		Else
+			who.SendMessage(sc.node, who, "Your nick is registered and protected. If it is yours please type " & WinSECore.API.FORMAT_BOLD & "/msg " & sc.node.Name & " IDENTIFY " & WinSECore.API.FORMAT_UNDERLINE & "password" & WinSECore.API.FORMAT_UNDERLINE & WinSECore.API.FORMAT_BOLD & ". Otherwise, please choose a different nick.")
+			For Each sMask As String In al
+				If WinSECore.API.IsMatch(who, sMask) Then
+					Return
+				End If
+			Next
+			If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCENICK) <> 0 Then
+				who.SendMessage(sc.node, who, "Your nick will be changed in 60 seconds if you do not comply.")
+			Else
+				who.SendMessage(sc.node, who, "You will be disconnected from the network in 60 seconds if you do not comply.")
+			End If
+			'20 second timeout done 3 times, so we can do stuff at the 40sec and 20sec left marks...
+			who.Custom.Add("nicktimer", c.API.AddTimer(New TimeSpan(0, 0, 20), AddressOf EnforceTimer, 3, who))
+		End If
+	End Sub
+	Private Sub EnforceTimer(ByVal t As WinSECore.Timer)
+		'Since repeat count is decreased after our run.
+		Dim who As WinSECore.User = DirectCast(t.Params(0), WinSECore.User)
+		Select Case t.Repeat
+			Case 3			 '40 sec left
+				who.SendMessage(sc.node, who, "You now have 40 seconds to identify or change your nick. The nick you are using is owned by someone else.")
+			Case 2			 '20 sec left
+				If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCENICK) <> 0 Then
+					who.SendMessage(sc.node, who, "You now have 20 seconds to identify or change your nick. If you do not comply, I will change your nick for you. This is your final warning.")
+				Else
+					who.SendMessage(sc.node, who, "You now have 20 seconds to identify or change your nick. If you do not comply, you will be disconnected from the network. This is your final warning.")
+				End If
+			Case 1			 'DO IT.
+				who.SendMessage(sc.node, who, "This nick is registered and protected. You may not use it.")
+				EndEnforce(who)
+		End Select
+	End Sub
+	Private Sub EndEnforce(ByVal who As WinSECore.User)
+		If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCENICK) <> 0 Then
+			Dim oldnick As String = who.Nick, newnick As String = "Guest" & Int((999999 * Rnd()) + 1).ToString()
+			who.SendMessage(sc.node, who, "Your nick is being changed to " & newnick & ".")
+			c.protocol.ForceNick(sc.node, who.Nick, newnick)
+			If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_HOLD_NICK) <> 0 Then
+				c.protocol.SetNickHold(sc.node, oldnick, True)
+			ElseIf (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_TEMPBAN_NICKNAME) <> 0 Then
+				c.protocol.AddNicknameBan(sc.node, oldnick, "Nick held for registered user", New TimeSpan(0, 0, 60))
+			Else
+				c.API.CreateClient(who.Nick, "enforcer", c.Services.Name, "Enforcer", c.protocol.EnforcerUMode())
+				c.API.AddTimer(New TimeSpan(0, 0, 60), AddressOf RemoveEnforcer, 1, who.Nick)
+			End If
+		Else
+			Dim oldnick As String = who.Nick
+			who.SendMessage(sc.node, who, "You will now be disconnected from the network. Please reconnect with a different nick.")
+			c.protocol.KillUser(sc.node, who.Nick, "This is a registered and protected nick. Please use a different nickname.")
+			If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_HOLD_NICK) <> 0 Then
+				c.protocol.SetNickHold(sc.node, oldnick, True)
+			ElseIf (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_TEMPBAN_NICKNAME) <> 0 Then
+				c.protocol.AddNicknameBan(sc.node, oldnick, "Nick held for registered user", New TimeSpan(0, 0, 60))
+			Else
+				c.API.CreateClient(oldnick, "enforcer", c.Services.Name, "Enforcer", c.protocol.EnforcerUMode())
+				c.API.AddTimer(New TimeSpan(0, 0, 60), AddressOf RemoveEnforcer, 1, who.Nick)
+			End If
+		End If
+	End Sub
+	Private Sub RemoveEnforcer(ByVal t As WinSECore.Timer)
+		Dim n As String = DirectCast(t.Params(0), String)
+		Dim cptr As WinSECore.IRCNode = c.API.FindNode(n, c.Services)
+		If Not TypeOf cptr Is WinSECore.User Then Return
+		If Not cptr Is Nothing Then
+			c.protocol.QuitUser(DirectCast(cptr, WinSECore.User), "My work here is done...")
+			cptr.Dispose()
+		End If
 	End Sub
 End Class

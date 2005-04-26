@@ -42,6 +42,10 @@ NetworkName=WinSE
 # leave it set just in case though :) . This option is required, but commented out to make sure you
 # properly set it before use.
 #MasterNick=aquanight
+# How long WinSE should wait for data from uplink before going off to do something else (like run NickServ timers).
+# The lower this value is, the less accurate timeouts will be in idle times, however setting this too low can cause
+# CPU usage to skyrocket. 2 seconds should be good enough for most people.
+ReadTimeout=1
 
 # Files Section [REQUIRED]
 # Some extra files are needed by WinSE; this section tells it where they are.

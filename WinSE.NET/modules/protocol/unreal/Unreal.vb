@@ -272,6 +272,9 @@ Public NotInheritable Class Unreal
 	Public Overrides Sub SQuitServer(ByVal Source As WinSECore.IRCNode, ByVal Server As String, ByVal Reason As String)
 		c.API.PutServ("{0} {1} {2} :{3}", GetNSPrefix(Source), IIf(EnableTokens, TOK_SQUIT, "SQUIT"), Server, Reason)
 	End Sub
+	Public Overrides Sub QuitUser(ByVal Who As WinSECore.User, ByVal Reason As String)
+		c.API.PutServ(":{0} {1} :{2}", Who.Nick, IIf(EnableTokens, TOK_QUIT, "QUIT"), Reason)
+	End Sub
 	'Format of TKL:
 	'Adding:
 	'TKL + <type> <user> <host> <source> <expiry_ts> <set_ts> :<reason>
@@ -562,9 +565,9 @@ Public NotInheritable Class Unreal
 		If [Set] Then
 			Dim ts As Long = c.API.GetTS()
 			'HACK: We need to decide on the expiry time for this, since I doubt Unreal will accept an expiry of 0 for holds. 
-			c.API.PutServ("{0} + Q H {1} {2} {3} {4} :{5}", IIf(EnableTokens, TOK_TKL, "TKL"), Nick, Source, ts + 60, ts, "Held by services")
+			c.API.PutServ("{0} + Q H {1} {2} {3} {4} :{5}", IIf(EnableTokens, TOK_TKL, "TKL"), Nick, Source.Name, ts + 60, ts, "Held by services")
 		Else
-			c.API.PutServ("{0} - Q H {1} {2}", IIf(EnableTokens, TOK_TKL, "TKL"), Nick, Source)
+			c.API.PutServ("{0} - Q H {1} {2}", IIf(EnableTokens, TOK_TKL, "TKL"), Nick, Source.Name)
 		End If
 	End Sub
 	Public Overloads Overrides Sub SetNoopers(ByVal Source As WinSECore.IRCNode, ByVal Target As String, ByVal Reason As String)
@@ -607,6 +610,7 @@ Public NotInheritable Class Unreal
 			If ProtocolVersion >= 2306 Then
 				flg = flg Or WinSECore.IRCdSupportFlags.QUIRK_INVEX_ONLY_INVONLY Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_INVEX
 			End If
+			Return flg
 		End Get
 	End Property
 	Public Overrides ReadOnly Property ChanModes() As String
@@ -628,6 +632,9 @@ Public NotInheritable Class Unreal
 	End Function
 	Public Overrides Function InvisServiceUMode() As String
 		Return "ioSqp"
+	End Function
+	Public Overrides Function EnforcerUMode() As String
+		Return "idr"
 	End Function
 	Public Overrides Sub SetVHost(ByVal Source As WinSECore.IRCNode, ByVal Target As WinSECore.User, ByVal VHost As String)
 		If Source Is Target Then

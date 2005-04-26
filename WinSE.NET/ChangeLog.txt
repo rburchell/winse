@@ -14,7 +14,11 @@ Tags:
 [--] = Miscellaneous.
 
 -- WinSE .NET 0.1 --
-23/04/2003 - aquanight
+26/04/2005 - aquanight
+-[NS] [Add] Added nick enforcement, and handling of "registered" usermodes.
+-[DS] [Add] Added TIMEDMSG for testing of core timers.
+
+23/04/2005 - aquanight
 -[DS] [Fix] Fixed non-IRCops being able to issue commands anyway.
 -[CO] [Add] Added modular database driver system. WinSE database loading is basically modulized!
 -[DB] [Add] INIDB - Added INIDB - a database driver module for INI files.
