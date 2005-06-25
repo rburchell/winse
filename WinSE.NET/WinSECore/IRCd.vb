@@ -80,6 +80,7 @@ Imports System.Collections.Specialized
 	QUIRK_CHANHOLD_IRCOPSIMMUNE = &H8000000000	 'IRCops aren't affected by channel holds.
 	QUIRK_VIDENT_REPLACES_REALIDENT = &H10000000000	'VIdent replaces the real username.
 	QUIRK_IDENTIFY_NO_LOGOUT = &H20000000000	'Cannot mark a user as having logged out.
+	QUIRK_IDENTIFY_NICK_RESET = &H40000000000	'Identify status reset if user changes nickname.
 End Enum
 
 'This attribute can mark a command Sub that has an alias.
@@ -126,7 +127,7 @@ Public MustInherit Class IRCd
 	Public MustOverride Overloads Sub SendToUMode(ByVal Source As IRCNode, ByVal Usermode As Char, ByVal Message As String)
 	Public MustOverride Sub SendNumeric(ByVal Source As IRCNode, ByVal Target As IRCNode, ByVal Numeric As Integer, ByVal Format As String, ByVal ParamArray Parameters() As Object)
 	Public MustOverride Sub SetChMode(ByVal Source As IRCNode, ByVal Channel As String, ByVal Mode As String)
-	Public Overridable Sub DoNetBurst(ByVal Source As IRCNode, ByVal Channel As String, ByVal ts As Integer, ByVal Modes As String, ByVal ModeParams() As String, Optional ByVal Users()() As String = Nothing, Optional ByVal Bans() As String = Nothing, Optional ByVal Excepts() As String = Nothing, Optional ByVal Invites() As String = Nothing)
+	Public Overridable Sub DoChanBurst(ByVal Source As IRCNode, ByVal Channel As String, ByVal ts As Integer, ByVal Modes As String, ByVal ModeParams() As String, Optional ByVal Users()() As String = Nothing, Optional ByVal Bans() As String = Nothing, Optional ByVal Excepts() As String = Nothing, Optional ByVal Invites() As String = Nothing)
 	End Sub
 	Public Overridable Sub ClearList(ByVal Source As IRCNode, ByVal Channel As String, ByVal ModeCh As Char)
 	End Sub

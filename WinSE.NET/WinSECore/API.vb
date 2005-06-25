@@ -295,7 +295,7 @@ Public NotInheritable Class API
 		hours = (dur \ 3600) Mod 24
 		mins = (dur \ 60) Mod 60
 		secs = dur Mod 60
-		UnDuration = IIf(days > 0, CStr(days) & "d", "").ToString & IIf(hours > 0, CStr(hours) & "h", "").ToString & IIf(mins > 0, CStr(mins) & "m", "").ToString & IIf(secs > 0, CStr(secs) & "s", "").ToString
+		Return IIf(days > 0, CStr(days) & "d", "").ToString & IIf(hours > 0, CStr(hours) & "h", "").ToString & IIf(mins > 0, CStr(mins) & "m", "").ToString & IIf(secs > 0, CStr(secs) & "s", "").ToString
 	End Function
 	Public Function FindNode(ByVal name As String) As IRCNode
 		Dim n As IRCNode
@@ -556,6 +556,44 @@ DropThrough:
 			End If
 		End If
 		Return target
+	End Function
+	Public Shared Function IsValidHost(ByVal str As String, Optional ByVal strict As Boolean = False) As Boolean
+		'Simple check if a hostname is valid.
+		'Hostnames can contain one ore more segments seperated by dots.
+		'Each segment can contain letters, digits, dashes, and underscores, and colons.
+		'Maximum length is 255 characters.
+		'If the strict parameter is set to True, then colons are only permitted if used to create a valid IPv6 address, and the
+		'topmost segment must be completely alphabetical unless the host is a valid IPv4 address. In addition, Each segment must have
+		'at least one character and start and end with either a letter or digit.
+		'You might wonder, why would strict testing be optional. The answer is simple: strict testing SHOULD be used when the host is
+		'given from user input (such as in NickServ SET VHOST, or in the hostname to be used for services psuedoclients). Strict mode
+		'MUST NOT be used on hostnames from the IRCd (manual SETHOST, user hostnames, etc).
+		Dim segments() As String
+		'If it's a valid IPvAnything address, don't bother doing anything else.
+		Try
+			'We don't need the return value - just the exception from a failed parse.
+			System.Net.IPAddress.Parse(str)
+			Return True
+		Catch ex As Exception
+			'It's probably a hostname - so try to see if it's valid.
+		End Try
+		'At this point, it's not a valid IPv6 address (IPAddress.Parse handles IPv4 and IPv6). If we're doing strict parsing,
+		'reject any and all colons.
+		If strict AndAlso str.IndexOf(":"c) >= 0 Then Return False
+		'Reject anything but letters, digits, dashes, and underscores (and if not strict, colons - we don't need to recheck strict though).
+		'If something other than a seperator (valid character) is present, REJECT.
+		If String.Join("", str.Split("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.:".ToCharArray())).Length >= 1 Then Return False
+		If str.Length > 255 Then Return False
+		'At this point, the nonstrict checks (valid characters, and within length limit) pass.
+		If Not strict Then Return True
+		'Now split the segments and check if each one starts and ends with an alphanumeric.
+		segments = Split(str, ".")
+		For Each seg As String In segments
+			If seg.Length = 0 Then Return False
+			If (Not Char.IsLetterOrDigit(seg, 0)) OrElse (Not Char.IsLetterOrDigit(seg, seg.Length - 1)) Then Return False
+		Next
+		'Strict checks (no colons in non-ipv6 address, and each segment is ok) pass.
+		Return True
 	End Function
 	Public Function GetMOTD() As String()
 		Dim fd As System.IO.Stream

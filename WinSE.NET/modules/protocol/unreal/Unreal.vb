@@ -346,7 +346,7 @@ Public NotInheritable Class Unreal
 	Public Overrides Sub DelUserhostBan(ByVal Source As WinSECore.IRCNode, ByVal Mask As String)
 		c.API.PutServ("{0} - G {1} {2} {3}", IIf(EnableTokens, TOK_TKL, "TKL"), Split(Mask, "@", 2)(0), Split(Mask, "@", 2)(1), Source)
 	End Sub
-	Public Overrides Sub DoNetBurst(ByVal Source As WinSECore.IRCNode, ByVal Channel As String, ByVal ts As Integer, ByVal Modes As String, ByVal ModeParams() As String, Optional ByVal Users()() As String = Nothing, Optional ByVal Bans() As String = Nothing, Optional ByVal Excepts() As String = Nothing, Optional ByVal Invites() As String = Nothing)
+	Public Overrides Sub DoChanBurst(ByVal Source As WinSECore.IRCNode, ByVal Channel As String, ByVal ts As Integer, ByVal Modes As String, ByVal ModeParams() As String, Optional ByVal Users()() As String = Nothing, Optional ByVal Bans() As String = Nothing, Optional ByVal Excepts() As String = Nothing, Optional ByVal Invites() As String = Nothing)
 		'I JUST LOVE SJOIN >_<
 		'SJOIN Format:
 		':server.name SJOIN ts channel modes [modeparam] :[[[*][~][@][%][+]member]] [[[&ban]["exempt]['invite]]]
@@ -601,7 +601,7 @@ Public NotInheritable Class Unreal
 			flg = WinSECore.IRCdSupportFlags.QUIRK_CHANHOLD_WONTKICK Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_IPADDR Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_NICKNAME Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_REALNAME Or WinSECore.IRCdSupportFlags.SUPPORT_BAN_USERHOST Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_BANEXMPT Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_FORCEJOIN Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_FORCEPART Or _
 			WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_HALFOP Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_MASSDEOP Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_MODEHACK Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_NETBURST Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_OWNER Or WinSECore.IRCdSupportFlags.SUPPORT_CHANNEL_PROTECT Or WinSECore.IRCdSupportFlags.SUPPORT_HOLD_NICK Or WinSECore.IRCdSupportFlags.SUPPORT_SERVER_SVSNOOPERS Or WinSECore.IRCdSupportFlags.SUPPORT_TEMPBAN_IPADDR Or _
 			WinSECore.IRCdSupportFlags.SUPPORT_TEMPBAN_NICKNAME Or WinSECore.IRCdSupportFlags.SUPPORT_TEMPBAN_USERHOST Or WinSECore.IRCdSupportFlags.SUPPORT_UNBAN_IPADDR Or WinSECore.IRCdSupportFlags.SUPPORT_UNBAN_NICKNAME Or WinSECore.IRCdSupportFlags.SUPPORT_UNBAN_REALNAME Or WinSECore.IRCdSupportFlags.SUPPORT_UNBAN_USERHOST Or WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCENICK Or WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCEUMODE Or WinSECore.IRCdSupportFlags.SUPPORT_USER_SUPERKILL Or _
-			WinSECore.IRCdSupportFlags.SUPPORT_USER_SVSOPER Or WinSECore.IRCdSupportFlags.SUPPORT_USER_VHOST Or WinSECore.IRCdSupportFlags.SUPPORT_USER_VIDENT Or WinSECore.IRCdSupportFlags.QUIRK_VIDENT_REPLACES_REALIDENT
+			WinSECore.IRCdSupportFlags.SUPPORT_USER_SVSOPER Or WinSECore.IRCdSupportFlags.SUPPORT_USER_VHOST Or WinSECore.IRCdSupportFlags.SUPPORT_USER_VIDENT Or WinSECore.IRCdSupportFlags.QUIRK_VIDENT_REPLACES_REALIDENT Or WinSECore.IRCdSupportFlags.QUIRK_IDENTIFY_NICK_RESET
 			If PrefixAQ Then
 				flg = flg Or WinSECore.IRCdSupportFlags.QUIRK_PROTECT_ISOPER
 			Else
@@ -640,14 +640,14 @@ Public NotInheritable Class Unreal
 		If Source Is Target Then
 			c.API.PutServ("{0} {1} {2}", GetNSPrefix(Source), IIf(EnableTokens, TOK_SETHOST, "SETHOST"), VHost)
 		Else
-			c.API.PutServ("{0} {1} {2} {3}", GetNSPrefix(Source), IIf(EnableTokens, TOK_CHGHOST, "CHGHOST"), Target, VHost)
+			c.API.PutServ("{0} {1} {2} {3}", GetNSPrefix(Source), IIf(EnableTokens, TOK_CHGHOST, "CHGHOST"), Target.Name, VHost)
 		End If
 	End Sub
 	Public Overrides Sub SetVIdent(ByVal Source As WinSECore.IRCNode, ByVal Target As WinSECore.User, ByVal VIdent As String)
 		If Source Is Target Then
 			c.API.PutServ("{0} {1} {2}", GetNSPrefix(Source), IIf(EnableTokens, TOK_SETIDENT, "SETIDENT"), VIdent)
 		Else
-			c.API.PutServ("{0} {1} {2} {3}", GetNSPrefix(Source), IIf(EnableTokens, TOK_CHGIDENT, "CHGIDENT"), Target, VIdent)
+			c.API.PutServ("{0} {1} {2} {3}", GetNSPrefix(Source), IIf(EnableTokens, TOK_CHGIDENT, "CHGIDENT"), Target.Name, VIdent)
 		End If
 	End Sub
 	Public Overrides Sub SendNumeric(ByVal Source As WinSECore.IRCNode, ByVal Target As WinSECore.IRCNode, ByVal Numeric As Integer, ByVal Format As String, ByVal ParamArray Parameters() As Object)

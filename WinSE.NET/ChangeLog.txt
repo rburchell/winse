@@ -9,11 +9,17 @@ Tags:
 [AG] = Agent
 [AS] = AdminServ
 [DS] = DebugServ
+[CF] = ChanFix
 [**] = ALL
 [DB] = Database Module (include name of module)
 [--] = Miscellaneous.
 
 -- WinSE .NET 0.1 --
+25/06/2005 - aquanight
+-[CF] [New] Everything. ChanFix is the newest addition to the set of services modules with this commit :) .
+            (What's left to do be done here: implement all the commands. Test it.)
+-[CO] [CVS] Forgot to add Database.vb... fixed.
+
 26/04/2005 (Update #2) - aquanight
 Whoops, jumped the gun a bit on the last update:
 -[NS] [Fix] Enforcement timers now properly deleted when the user changes nick. (Of course, it'll

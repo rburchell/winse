@@ -327,6 +327,9 @@ Public NotInheritable Class Core
 			sName = Split(s, ",", 3)(0)
 			sImage = Split(s, ",", 3)(1)
 			If Split(s, ",", 3).Length = 3 Then sArgs = Split(s, ",", 3)(2)
+			If sImage = "*" Then
+				sImage = sName & "/" & Mid(sName, InStrRev(sName, "/") + 1) & ".dll"
+			End If
 			If mModules.Contains(s) Then
 				mMod = DirectCast(mModules(s), WinSECore.Module)
 				'It's loaded, is it active?
@@ -406,7 +409,7 @@ Public NotInheritable Class Core
 			sck.Blocking = True
 			sck.Connect(Conf.UplinkAddress)
 		Catch ex As Exception
-			Events.FireLogMessage("Core", "ERROR", String.Format("Failed to connect to server: {0)", ex.Message))
+			Events.FireLogMessage("Core", "ERROR", String.Format("Failed to connect to server: {0}", ex.Message))
 			sck = Nothing
 			Return 1
 		End Try

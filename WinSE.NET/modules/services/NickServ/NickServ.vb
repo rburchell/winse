@@ -29,6 +29,7 @@ Imports Microsoft.VisualBasic
 Imports System
 Imports System.Collections
 Imports System.Collections.Specialized
+Imports WinSECore.API
 Public NotInheritable Class NickServ
 	Inherits WinSECore.Module
 	Dim sc As WinSECore.ServiceClient
@@ -45,6 +46,8 @@ Public NotInheritable Class NickServ
 		sc.CmdHash.Add("HELP", AddressOf CmdHelp)
 		sc.CmdHash.Add("REGISTER", AddressOf CmdRegister)
 		sc.CmdHash.Add("IDENTIFY", AddressOf CmdIdentify)
+		sc.CmdHash.Add("SET", AddressOf CmdSet)
+		sc.CmdHash.Add("OSET", AddressOf CmdOSet)
 	End Sub
 	Public Overrides Function ModLoad(ByVal params() As String) As Boolean
 		c.Clients.Add(sc)
@@ -74,47 +77,50 @@ Public NotInheritable Class NickServ
 					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing EMail.")
 					r.Name = ""
 				ElseIf Not .Contains("LastAddress") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing LastAddress.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing LastAddress.")
+					r.SetField("LastAddress", "")
 				ElseIf Not .Contains("LastQuit") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing LastQuit.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing LastQuit.")
+					r.SetField("LastQuit", "")
 				ElseIf Not .Contains("AccessList") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing AccessList.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing AccessList.")
+					r.SetField("AccessList", "")
 				ElseIf Not .Contains("LastSeenTime") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing LastSeenTime.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing LastSeenTime.")
+					r.SetField("LastSeenTime", 0)
 				ElseIf Not .Contains("Aliases") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing Aliases.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing Aliases.")
+					r.SetField("Aliases", "")
 				ElseIf Not .Contains("Flags") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing Flags.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing Flags.")
+					r.SetField("Flags", "")
 				ElseIf Not .Contains("Greet") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing Greet.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing Greet.")
+					r.SetField("Greet", "")
 				ElseIf Not .Contains("Private") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing Private.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing Private.")
+					r.SetField("Private", False)
 				ElseIf Not .Contains("HideQuit") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing HideQuit.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing HideQuit.")
+					r.SetField("HideQuit", False)
 				ElseIf Not .Contains("HideEMail") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing HideEMail.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing HideEMail.")
+					r.SetField("HideEMail", False)
 				ElseIf Not .Contains("HideAddress") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing HideAddress.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing HideAddress.")
+					r.SetField("HideAddress", False)
 				ElseIf Not .Contains("NoAOP") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing NoAOP.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing NoAOP.")
+					r.SetField("NoAOP", False)
+				ElseIf Not .Contains("Communication") Then
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing Communication.")
+					r.SetField("Communication", "NOTICE")
 				ElseIf Not .Contains("VHost") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing VHost.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing VHost.")
+					r.SetField("VHost", "")
 				ElseIf Not .Contains("AbuseTeam") Then
-					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " invalid: missing AbuseTeam.")
-					r.Name = ""
+					c.Events.FireLogMessage("NickServ.Database", "WARNING", "Record " & r.Name & " missing AbuseTeam.")
+					r.SetField("AbuseTeam", False)
 				End If
 				If .GetField("Password") Is Nothing Then
 					.SetField("Password", "")
@@ -207,7 +213,17 @@ Public NotInheritable Class NickServ
 				Else
 					.SetField("NoAOP", False)
 				End If
-				If .GetField("VHost") Is Nothing Then
+				If .GetField("Communication") Is Nothing Then
+					.SetField("Communication", "NOTICE")
+				Else
+					Select Case UCase(.GetField("Communication").ToString())
+						Case "NOTICE", "PRIVNOTICE", "PRIVMSG", "PRIVATE", "MESSAGE", "SNOTICE", "SERVER", "304", "RPLTEXT", "TEXT"
+							'No conversion needed...
+						Case Else
+							.SetField("Communication", "NOTICE")
+					End Select
+				End If
+				If .GetField("VHost") Is Nothing OrElse Not WinSECore.API.IsValidHost(.GetField("VHost").ToString(), True) Then
 					.SetField("VHost", "")
 				ElseIf Not TypeOf .GetField("VHost") Is String Then
 					.SetField("VHost", .GetField("VHost").ToString())
@@ -257,6 +273,7 @@ Public NotInheritable Class NickServ
 	End Function
 
 	'Callbacks go below here.
+#Region "Command Functions"
 	Private Function CmdHelp(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
 		c.API.SendHelp(sc.node, Source, "NickServ", Args)
 	End Function
@@ -305,6 +322,7 @@ Public NotInheritable Class NickServ
 			.SetField("HideEmail", False)
 			.SetField("HideAddress", False)
 			.SetField("NoAOP", False)
+			.SetField("Communication", "NOTICE")
 			.SetField("VHost", "")
 			.SetField("AbuseTeam", False)
 		End With
@@ -347,6 +365,16 @@ Public NotInheritable Class NickServ
 				Source.IdentifiedNick = r.Name
 				Source.AbuseTeam = DirectCast(r("AbuseTeam").Value, Boolean)
 				Source.Flags = DirectCast(r("Flags").Value, String)
+				Select Case r("Communication").Value
+					Case "NOTICE", "PRIVNOTICE"
+						Source.SendMessage = AddressOf c.API.SendMsg_NOTICE
+					Case "PRIVMSG", "PRIVATE", "MESSAGE"
+						Source.SendMessage = AddressOf c.API.SendMsg_PRIVMSG
+					Case "SNOTICE", "SERVER"
+						Source.SendMessage = AddressOf c.API.SendMsg_SNOTICE
+					Case "304", "RPLTEXT", "TEXT"
+						Source.SendMessage = AddressOf c.API.SendMsg_304
+				End Select
 				c.protocol.SetIdentify(sc.node, Source.Name, Source.IdentifiedNick)
 				If r Is FindRecord(Source.Nick, True) Then
 					If Source.Custom.ContainsKey("nicktimer") Then
@@ -355,7 +383,11 @@ Public NotInheritable Class NickServ
 					End If
 				End If
 				Source.SendMessage(sc.node, Source, "Password accepted for nick " & WinSECore.API.FORMAT_BOLD & Args(0) & WinSECore.API.FORMAT_BOLD)
+				If CStr(r("VHost").Value) <> "" Then
+					Source.SendMessage(sc.node, Source, "Your vhost, " & CStr(r("VHost").Value) & ", is now active.")
+					c.protocol.SetVHost(sc.node, Source, CStr(r("VHost").Value))
 				End If
+			End If
 		Else
 			r = FindRecord(Source.Nick, True)
 			If r Is Nothing Then
@@ -375,9 +407,268 @@ Public NotInheritable Class NickServ
 					Source.Custom.Remove("nicktimer")
 				End If
 				Source.SendMessage(sc.node, Source, "Password accepted for nick " & WinSECore.API.FORMAT_BOLD & Source.Name & WinSECore.API.FORMAT_BOLD)
+				If CStr(r("VHost").Value) <> "" Then
+					Source.SendMessage(sc.node, Source, "Your vhost, " & CStr(r("VHost").Value) & ", is now active.")
+					c.protocol.SetVHost(sc.node, Source, CStr(r("VHost").Value))
+				End If
 			End If
 		End If
 	End Function
+	Private Function CmdSet(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
+		Dim r As WinSECore.Record
+		r = FindRecord(Source.IdentifiedNick, False)
+		If r Is Nothing Then
+			Source.SendMessage(sc.node, Source, "Your nick is not registered or you haven't identified yet.")
+			Return False
+		End If
+		If Args.Length < 2 Then
+			Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "SET " & WinSECore.API.FORMAT_UNDERLINE & "option" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "value" & WinSECore.API.FORMAT_UNDERLINE & WinSECore.API.FORMAT_BOLD)
+			Return False
+		End If
+		Select Case UCase(Args(0))
+			Case "PASSWORD"
+				r.SetField("Password", Args(1))
+				Source.SendMessage(sc.node, Source, "Your password has been changed - do not forget it!")
+			Case "EMAIL"
+				r.SetField("EMail", Args(1))
+				Source.SendMessage(sc.node, Source, "E-mail address updated.")
+			Case "GREET"
+				r.SetField("Greet", String.Join(" "c, Args, 1, Args.Length - 1))
+				Source.SendMessage(sc.node, Source, "Greet message changed.")
+			Case "PRIVATE"
+				Select Case UCase(Args(1))
+					Case "YES", "ON", "1", "TRUE"
+						r.SetField("Private", True)
+						Source.SendMessage(sc.node, Source, "Option PRIVATE is now ON.")
+					Case "NO", "OFF", "0", "FALSE"
+						r.SetField("Private", False)
+						Source.SendMessage(sc.node, Source, "Option PRIVATE is now OFF.")
+					Case Else
+						Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "SET PRIVATE {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+				End Select
+			Case "HIDE"
+				If Args.Length < 3 Then
+					Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "SET HIDE {QUIT|EMAIL|ADDRESS} {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+					Return False
+				End If
+				Select Case UCase(Args(2))
+					Case "QUIT"
+						Select Case UCase(Args(2))
+							Case "YES", "ON", "1", "TRUE"
+								r.SetField("HideQuit", True)
+								Source.SendMessage(sc.node, Source, "Option HIDE QUIT is now ON.")
+							Case "NO", "OFF", "0", "FALSE"
+								r.SetField("HideQuit", False)
+								Source.SendMessage(sc.node, Source, "Option HIDE QUIT is now OFF.")
+							Case Else
+								Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "SET HIDE QUIT {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+								Return False
+						End Select
+					Case "EMAIL"
+						Select Case UCase(Args(2))
+							Case "YES", "ON", "1", "TRUE"
+								r.SetField("HideEmail", True)
+								Source.SendMessage(sc.node, Source, "Option HIDE EMAIL is now ON.")
+							Case "NO", "OFF", "0", "FALSE"
+								r.SetField("HideEmail", False)
+								Source.SendMessage(sc.node, Source, "Option HIDE EMAIL is now OFF.")
+							Case Else
+								Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "SET HIDE EMAIL {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+								Return False
+						End Select
+					Case "ADDRESS"
+						Select Case UCase(Args(2))
+							Case "YES", "ON", "1", "TRUE"
+								r.SetField("HideQuit", True)
+								Source.SendMessage(sc.node, Source, "Option HIDE ADDRESS is now ON.")
+							Case "NO", "OFF", "0", "FALSE"
+								r.SetField("HideQuit", False)
+								Source.SendMessage(sc.node, Source, "Option HIDE ADDRESS is now OFF.")
+							Case Else
+								Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "SET HIDE ADDRESS {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+								Return False
+						End Select
+				End Select
+			Case "NOAOP"
+				Select Case UCase(Args(1))
+					Case "YES", "ON", "1", "TRUE"
+						r.SetField("NoAOP", True)
+						Source.SendMessage(sc.node, Source, "Option NOAOP is now ON.")
+					Case "NO", "OFF", "0", "FALSE"
+						r.SetField("NoAOP", False)
+						Source.SendMessage(sc.node, Source, "Option NOAOP is now OFF.")
+					Case Else
+						Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "SET NOAOP {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+				End Select
+			Case "COMMUNICATION"
+				Select Case UCase(Args(1))
+					Case "NOTICE", "PRIVNOTICE"
+						r.SetField("Communication", "NOTICE")
+						Source.SendMessage = AddressOf c.API.SendMsg_NOTICE
+						Source.SendMessage(sc.node, Source, "Services will now communicate via " & WinSECore.API.FORMAT_BOLD & "private notice" & WinSECore.API.FORMAT_BOLD & ".")
+					Case "PRIVMSG", "PRIVATE", "MESSAGE"
+						r.SetField("Communication", "PRIVMSG")
+						Source.SendMessage = AddressOf c.API.SendMsg_PRIVMSG
+						Source.SendMessage(sc.node, Source, "Services will now communicate via " & WinSECore.API.FORMAT_BOLD & "private message" & WinSECore.API.FORMAT_BOLD & ".")
+					Case "SNOTICE", "SERVER"
+						r.SetField("Communication", "SNOTICE")
+						Source.SendMessage = AddressOf c.API.SendMsg_SNOTICE
+						Source.SendMessage(sc.node, Source, "Services will now communicate via " & WinSECore.API.FORMAT_BOLD & "private server notice" & WinSECore.API.FORMAT_BOLD & ".")
+					Case "304", "TEXT"
+						r.SetField("Communication", "304")
+						Source.SendMessage = AddressOf c.API.SendMsg_304
+						Source.SendMessage(sc.node, Source, "Services will now communicate via " & WinSECore.API.FORMAT_BOLD & "private text" & WinSECore.API.FORMAT_BOLD & ".")
+					Case Else
+						Source.SendMessage(sc.node, Source, "Unsupported message type.")
+						Return False
+				End Select
+			Case "VHOST"
+				If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_USER_VHOST) = 0 Then
+					Source.SendMessage(sc.node, Source, "The VHOST option is not available on this network.")
+					Return False
+				End If
+				If Not c.protocol.IsIRCop(Source) Then
+					Source.SendMessage(sc.node, Source, "Permission denied.")
+					Return False
+				End If
+				'Verify the host is proper.
+				If Not WinSECore.API.IsValidHost(Args(1), True) Then
+					Source.SendMessage(sc.node, Source, "Requested host is not a valid hostname.")
+					Return False
+				End If
+				r.SetField("VHost", Args(1))
+				Source.SendMessage(sc.node, Source, "Your nick vhost has been changed.")
+				c.protocol.SetVHost(sc.node, Source, Args(1))
+		End Select
+	End Function
+	Private Function CmdOSet(ByVal Source As WinSECore.User, ByVal Cmd As String, ByVal Args() As String) As Boolean
+		Dim r As WinSECore.Record
+		If Args.Length < 3 Then
+			Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "OSET " & WinSECore.API.FORMAT_UNDERLINE & "nickname" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "option" & WinSECore.API.FORMAT_UNDERLINE & " " & WinSECore.API.FORMAT_UNDERLINE & "value" & WinSECore.API.FORMAT_UNDERLINE & WinSECore.API.FORMAT_BOLD)
+			Return False
+		End If
+		If Not Source.HasFlag(c.FLAG_Master) Then
+			Source.SendMessage(sc.node, Source, "Permission denied.")
+			Return False
+		End If
+		r = FindRecord(Args(0), False)
+		If r Is Nothing Then
+			Source.SendMessage(sc.node, Source, "Nick " & Args(0) & " is not registered.")
+			Return False
+		End If
+		Select Case UCase(Args(1))
+			Case "PASSWORD"
+				r.SetField("Password", Args(2))
+				Source.SendMessage(sc.node, Source, "Password for " & Args(0) & " has been changed.")
+			Case "EMAIL"
+				r.SetField("EMail", Args(1))
+				Source.SendMessage(sc.node, Source, "E-mail address updated for " & Args(0) & ".")
+			Case "GREET"
+				r.SetField("Greet", String.Join(" "c, Args, 1, Args.Length - 1))
+				Source.SendMessage(sc.node, Source, "Greet message for " & Args(0) & " changed.")
+			Case "PRIVATE"
+				Select Case UCase(Args(1))
+					Case "YES", "ON", "1", "TRUE"
+						r.SetField("Private", True)
+						Source.SendMessage(sc.node, Source, "Option PRIVATE is now ON for " & Args(0) & ".")
+					Case "NO", "OFF", "0", "FALSE"
+						r.SetField("Private", False)
+						Source.SendMessage(sc.node, Source, "Option PRIVATE is now OFF for " & Args(0) & ".")
+					Case Else
+						Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "OSET " & Args(0) & " PRIVATE {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+				End Select
+			Case "HIDE"
+				If Args.Length < 3 Then
+					Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "SET HIDE {QUIT|EMAIL|ADDRESS} {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+					Return False
+				End If
+				Select Case UCase(Args(2))
+					Case "QUIT"
+						Select Case UCase(Args(2))
+							Case "YES", "ON", "1", "TRUE"
+								r.SetField("HideQuit", True)
+								Source.SendMessage(sc.node, Source, "Option HIDE QUIT is now ON for " & Args(0) & ".")
+							Case "NO", "OFF", "0", "FALSE"
+								r.SetField("HideQuit", False)
+								Source.SendMessage(sc.node, Source, "Option HIDE QUIT is now OFF for " & Args(0) & ".")
+							Case Else
+								Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "OSET " & Args(0) & " HIDE QUIT {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+								Return False
+						End Select
+					Case "EMAIL"
+						Select Case UCase(Args(2))
+							Case "YES", "ON", "1", "TRUE"
+								r.SetField("HideEmail", True)
+								Source.SendMessage(sc.node, Source, "Option HIDE EMAIL is now ON for " & Args(0) & ".")
+							Case "NO", "OFF", "0", "FALSE"
+								r.SetField("HideEmail", False)
+								Source.SendMessage(sc.node, Source, "Option HIDE EMAIL is now OFF for " & Args(0) & ".")
+							Case Else
+								Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "OSET " & Args(0) & " HIDE EMAIL {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+								Return False
+						End Select
+					Case "ADDRESS"
+						Select Case UCase(Args(2))
+							Case "YES", "ON", "1", "TRUE"
+								r.SetField("HideQuit", True)
+								Source.SendMessage(sc.node, Source, "Option HIDE ADDRESS is now ON for " & Args(0) & ".")
+							Case "NO", "OFF", "0", "FALSE"
+								r.SetField("HideQuit", False)
+								Source.SendMessage(sc.node, Source, "Option HIDE ADDRESS is now OFF for " & Args(0) & ".")
+							Case Else
+								Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "OSET " & Args(0) & " HIDE ADDRESS {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+								Return False
+						End Select
+				End Select
+			Case "NOAOP"
+				Select Case UCase(Args(1))
+					Case "YES", "ON", "1", "TRUE"
+						r.SetField("NoAOP", True)
+						Source.SendMessage(sc.node, Source, "Option NOAOP is now ON for" & Args(0) & ".")
+					Case "NO", "OFF", "0", "FALSE"
+						r.SetField("NoAOP", False)
+						Source.SendMessage(sc.node, Source, "Option NOAOP is now OFF for " & Args(0) & ".")
+					Case Else
+						Source.SendMessage(sc.node, Source, "Syntax: " & WinSECore.API.FORMAT_BOLD & "OSET " & Args(0) & " NOAOP {ON|OFF}" & WinSECore.API.FORMAT_BOLD)
+				End Select
+			Case "COMMUNICATION"
+				Select Case UCase(Args(1))
+					Case "NOTICE", "PRIVNOTICE"
+						r.SetField("Communication", "NOTICE")
+						Source.SendMessage = AddressOf c.API.SendMsg_NOTICE
+						Source.SendMessage(sc.node, Source, "Services will now communicate with " & Args(0) & " via " & WinSECore.API.FORMAT_BOLD & "private notice" & WinSECore.API.FORMAT_BOLD & ".")
+					Case "PRIVMSG", "PRIVATE", "MESSAGE"
+						r.SetField("Communication", "PRIVMSG")
+						Source.SendMessage = AddressOf c.API.SendMsg_PRIVMSG
+						Source.SendMessage(sc.node, Source, "Services will now communicate with " & Args(0) & " via " & WinSECore.API.FORMAT_BOLD & "private message" & WinSECore.API.FORMAT_BOLD & ".")
+					Case "SNOTICE", "SERVER"
+						r.SetField("Communication", "SNOTICE")
+						Source.SendMessage = AddressOf c.API.SendMsg_SNOTICE
+						Source.SendMessage(sc.node, Source, "Services will now communicate with " & Args(0) & " via " & WinSECore.API.FORMAT_BOLD & "private server notice" & WinSECore.API.FORMAT_BOLD & ".")
+					Case "304", "TEXT"
+						r.SetField("Communication", "304")
+						Source.SendMessage = AddressOf c.API.SendMsg_304
+						Source.SendMessage(sc.node, Source, "Services will now communicate with " & Args(0) & " via " & WinSECore.API.FORMAT_BOLD & "private text" & WinSECore.API.FORMAT_BOLD & ".")
+					Case Else
+						Source.SendMessage(sc.node, Source, "Unsupported message type.")
+						Return False
+				End Select
+			Case "VHOST"
+				If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_USER_VHOST) = 0 Then
+					Source.SendMessage(sc.node, Source, "The VHOST option is not available on this network.")
+					Return False
+				End If
+				'Verify the host is proper.
+				If Not WinSECore.API.IsValidHost(Args(1), True) Then
+					Source.SendMessage(sc.node, Source, "Requested host is not a valid hostname.")
+					Return False
+				End If
+				r.SetField("VHost", Args(1))
+				Source.SendMessage(sc.node, Source, "Vhost for " & Args(0) & " has been changed.")
+		End Select
+	End Function
+#End Region
+#Region "Event Callbacks"
 	Private Sub OnClientConnect(ByVal cptr As WinSECore.Server, ByVal sptr As WinSECore.User)
 		c.protocol.SetIdentify(sc.node, sptr.Nick, "")
 		BeginEnforce(sptr)
@@ -386,9 +677,9 @@ Public NotInheritable Class NickServ
 		Dim rUsing As WinSECore.Record, rIdent As WinSECore.Record
 		rUsing = FindRecord(sptr, True)
 		rIdent = FindRecord(sptr.IdentifiedNick, True)
-		If rUsing Is Nothing OrElse rIdent Is Nothing Then
+		If (rUsing Is Nothing OrElse rIdent Is Nothing) AndAlso (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.QUIRK_IDENTIFY_NO_LOGOUT) = 0 Then
 			c.protocol.SetIdentify(sc.node, sptr.Nick, "")
-		ElseIf rUsing Is rIdent Then
+		ElseIf rUsing Is rIdent AndAlso (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.QUIRK_IDENTIFY_NICK_RESET) = WinSECore.IRCdSupportFlags.QUIRK_IDENTIFY_NICK_RESET Then
 			c.protocol.SetIdentify(sc.node, sptr.Name, sptr.IdentifiedNick)
 		End If
 		If sptr.Custom.ContainsKey("nicktimer") Then
@@ -397,6 +688,34 @@ Public NotInheritable Class NickServ
 		End If
 		If LCase(oldnick) <> LCase(nick) Then BeginEnforce(sptr)
 	End Sub
+	Private Sub EnforceTimer(ByVal t As WinSECore.Timer)
+		'Since repeat count is decreased after our run.
+		Dim who As WinSECore.User = DirectCast(t.Params(0), WinSECore.User)
+		Select Case t.Repeat
+			Case 3			 '40 sec left
+				who.SendMessage(sc.node, who, "You now have 40 seconds to identify or change your nick. The nick you are using is owned by someone else.")
+			Case 2			 '20 sec left
+				If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCENICK) <> 0 Then
+					who.SendMessage(sc.node, who, "You now have 20 seconds to identify or change your nick. If you do not comply, I will change your nick for you. This is your final warning.")
+				Else
+					who.SendMessage(sc.node, who, "You now have 20 seconds to identify or change your nick. If you do not comply, you will be disconnected from the network. This is your final warning.")
+				End If
+			Case 1			 'DO IT.
+				who.SendMessage(sc.node, who, "This nick is registered and protected. You may not use it.")
+				EndEnforce(who)
+		End Select
+	End Sub
+	Private Sub RemoveEnforcer(ByVal t As WinSECore.Timer)
+		Dim n As String = DirectCast(t.Params(0), String)
+		Dim cptr As WinSECore.IRCNode = c.API.FindNode(n, c.Services)
+		If Not TypeOf cptr Is WinSECore.User Then Return
+		If Not cptr Is Nothing Then
+			c.protocol.QuitUser(DirectCast(cptr, WinSECore.User), "My work here is done...")
+			cptr.Dispose()
+		End If
+	End Sub
+#End Region
+#Region "Internal Procedures"
 	Private Sub BeginEnforce(ByVal who As WinSECore.User)
 		Dim rUsing As WinSECore.Record, rIdent As WinSECore.Record
 		rUsing = FindRecord(who, True)
@@ -423,23 +742,6 @@ Public NotInheritable Class NickServ
 			'20 second timeout done 3 times, so we can do stuff at the 40sec and 20sec left marks...
 			who.Custom.Add("nicktimer", c.API.AddTimer(New TimeSpan(0, 0, 20), AddressOf EnforceTimer, 3, who))
 		End If
-	End Sub
-	Private Sub EnforceTimer(ByVal t As WinSECore.Timer)
-		'Since repeat count is decreased after our run.
-		Dim who As WinSECore.User = DirectCast(t.Params(0), WinSECore.User)
-		Select Case t.Repeat
-			Case 3			 '40 sec left
-				who.SendMessage(sc.node, who, "You now have 40 seconds to identify or change your nick. The nick you are using is owned by someone else.")
-			Case 2			 '20 sec left
-				If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCENICK) <> 0 Then
-					who.SendMessage(sc.node, who, "You now have 20 seconds to identify or change your nick. If you do not comply, I will change your nick for you. This is your final warning.")
-				Else
-					who.SendMessage(sc.node, who, "You now have 20 seconds to identify or change your nick. If you do not comply, you will be disconnected from the network. This is your final warning.")
-				End If
-			Case 1			 'DO IT.
-				who.SendMessage(sc.node, who, "This nick is registered and protected. You may not use it.")
-				EndEnforce(who)
-		End Select
 	End Sub
 	Private Sub EndEnforce(ByVal who As WinSECore.User)
 		If (c.protocol.SupportFlags And WinSECore.IRCdSupportFlags.SUPPORT_USER_FORCENICK) <> 0 Then
@@ -468,13 +770,5 @@ Public NotInheritable Class NickServ
 			End If
 		End If
 	End Sub
-	Private Sub RemoveEnforcer(ByVal t As WinSECore.Timer)
-		Dim n As String = DirectCast(t.Params(0), String)
-		Dim cptr As WinSECore.IRCNode = c.API.FindNode(n, c.Services)
-		If Not TypeOf cptr Is WinSECore.User Then Return
-		If Not cptr Is Nothing Then
-			c.protocol.QuitUser(DirectCast(cptr, WinSECore.User), "My work here is done...")
-			cptr.Dispose()
-		End If
-	End Sub
+#End Region
 End Class

@@ -84,6 +84,10 @@ Public NotInheritable Class INIDBDriver
 			For Each kCur As WinSECore.Key In kRoot.SubKeys
 				r = New WinSECore.Record(kCur.name)
 				For Each v As WinSECore.Value In kCur.Values
+					If r.Contains(v.name) Then
+						'Option Strict == no += on Objects. Oh well.
+						r(v.name).Value = CStr(r(v.name).Value) & vbLf & CStr(v.value)
+					End If
 					r.Add(v.name, CStr(v.value))
 				Next
 				t.Add(r)
@@ -107,7 +111,9 @@ Public NotInheritable Class INIDBDriver
 			For Each r As WinSECore.Record In t
 				kCur = New WinSECore.Key(r.Name, kRoot)
 				For Each f As WinSECore.Field In r
-					kCur.Values.Add(New WinSECore.Value(f.Name, f.Value, kCur))
+					For Each line As String In Split(f.Value.ToString(), vbLf)
+						kCur.Values.Add(New WinSECore.Value(f.Name, line, kCur))
+					Next
 				Next
 				kRoot.SubKeys.Add(kCur)
 			Next
