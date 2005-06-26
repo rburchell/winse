@@ -35,8 +35,10 @@ Public NotInheritable Class API
 	Public Const FORMAT_COLOR As Char = Chr(3)
 	Public Const FORMAT_UNDERLINE As Char = Chr(31)
 	Public Const FORMAT_RESET As Char = Chr(15)
+	Public ReadOnly Cron As Cron
 	Friend Sub New(ByVal c As Core)
 		Me.c = c
+		Cron = New Cron(c)
 	End Sub
 	'Invokes a service command routine from the given hashtable.
 	'Exceptions thrown:

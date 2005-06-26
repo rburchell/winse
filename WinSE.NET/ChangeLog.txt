@@ -15,6 +15,9 @@ Tags:
 [--] = Miscellaneous.
 
 -- WinSE .NET 0.1 --
+25/06/2005 - Jason
+-[CO] [Add] Cron.vb, Cron-like system for timing more complex, or irregular events.
+
 25/06/2005 - aquanight
 -[CF] [New] Everything. ChanFix is the newest addition to the set of services modules with this commit :) .
             (What's left to do be done here: implement all the commands. Test it.)
