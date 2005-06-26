@@ -102,11 +102,16 @@ Public NotInheritable Class CronJob
 	End Function
 
 	Public Overloads Function RunNow(ByVal RunWhen As Date) As Boolean
-		If Not Minutes.Length = 0 AndAlso Not Array.IndexOf(Minutes, Now.Minute) >= 0 Then Return False
-		If Not Hours.Length = 0 AndAlso Not Array.IndexOf(Hours, Now.Hour) >= 0 Then Return False
-		If Not DaysOfMonth.Length = 0 AndAlso Not Array.IndexOf(DaysOfMonth, Now.Day) >= 0 Then Return False
-		If Not Months.Length = 0 AndAlso Not Array.IndexOf(Months, Now.Month) >= 0 Then Return False
-		If Not DaysOfWeek.Length = 0 AndAlso Not Array.IndexOf(DaysOfWeek, Now.DayOfWeek) >= 0 Then Return False
+		If Minutes.Length <> 0 AndAlso Array.IndexOf(Minutes, Now.Minute) < 0 Then Return False
+		If Hours.Length <> 0 AndAlso Array.IndexOf(Hours, Now.Hour) < 0 Then Return False
+		If Months.Length <> 0 AndAlso Array.IndexOf(Months, Now.Month) < 0 Then Return False
+
+		If DaysOfMonth.Length = 0 Xor DaysOfWeek.Length = 0 Then
+			If DaysOfMonth.Length <> 0 AndAlso Array.IndexOf(DaysOfMonth, Now.Day) < 0 Then Return False
+			If DaysOfWeek.Length <> 0 AndAlso Array.IndexOf(DaysOfWeek, Now.DayOfWeek) < 0 Then Return False
+		ElseIf DaysOfMonth.Length <> 0 And DaysOfWeek.Length <> 0 Then
+			If Array.IndexOf(DaysOfMonth, Now.Day) < 0 AndAlso Array.IndexOf(DaysOfWeek, Now.DayOfWeek) < 0 Then Return False
+		End If
 		Return True
 	End Function
 

@@ -15,6 +15,9 @@ Tags:
 [--] = Miscellaneous.
 
 -- WinSE .NET 0.1 --
+26/06/2005 - Jason
+-[CO] [Fix] Cron.vb, Job timing was not the same as cron.  The Job will now run if EITHER DayOfWeek OR DayOfMonth is matched, rather than requiring both.
+
 25/06/2005 - Jason
 -[CO] [Add] Cron.vb, Cron-like system for timing more complex, or irregular events.
 
